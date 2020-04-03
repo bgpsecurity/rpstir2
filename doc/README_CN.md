@@ -73,7 +73,7 @@ RPSTIR2支持的功能包括：
     database=rpstir2
  ```
 
- （3）执行编译
+  （3）执行编译
    进入/root/rpki/source/rpstir2/build目录，执行
    ```
     chmod +x *.sh 
@@ -82,7 +82,7 @@ RPSTIR2支持的功能包括：
 将完成自动化的部署，然后即可按后文的“运行RPSTIR2”启动运行。
   注：如果部署时，编译失败，提示Go Lang缺少依赖包，则请根据提示，自行下载所需的依赖。
    
- 2. 使用docker
+ 2. 使用docker 
    即将发布
     
 ## 运行RPSTIR2
