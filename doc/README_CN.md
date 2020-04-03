@@ -62,29 +62,29 @@ RPSTIR2支持的功能包括：
     programdir=/root/rpki/rpstir2
     datadir=/root/rpki/data
 	[mysql]
-	server=127.0.0.1:3306
-	user=rpstir2
-	password=Rpstir-123
-	database=rpstir2
+    server=127.0.0.1:3306
+    user=rpstir2
+    password=Rpstir-123
+    database=rpstir2
 ```
   修改完毕后，即可按后文的“运行RPSTIR2”启动运行
 
 
 2. 下载源代码手动编译
     需要安装开发环境，且过程比较复杂，不建议一般用户使用。
-  （1） 本机安装GoLang开发环境
+   （1） 本机安装GoLang开发环境
    版本需要1.13及以上
-  （2）下载源代码
-   从https://github.com/bgpsecurity/rpstir2.git下载源代码到/root/rpki/source/rpstir2。进入/root/rpki/source/rpstir2/conf目录，修改配置文件project.conf，根据实际修改程序目录和数据目录，和MySQL参数
+   （2）下载源代码
+   从https://github.com/bgpsecurity/rpstir2.git 下载源代码到/root/rpki/source/rpstir2。进入/root/rpki/source/rpstir2/conf目录，修改配置文件project.conf，根据实际修改程序目录和数据目录，和MySQL参数
 ```
     [rpstir2]
     programdir=/root/rpki/rpstir2
     datadir=/root/rpki/data
     [mysql]
-	server=127.0.0.1:3306
-	user=rpstir2
-	password=Rpstir-123
-	database=rpstir2
+    server=127.0.0.1:3306
+    user=rpstir2
+    password=Rpstir-123
+    database=rpstir2
  ```
  （3）执行编译
    进入/root/rpki/source/rpstir2/build目录，执行
