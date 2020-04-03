@@ -56,7 +56,7 @@ RPSTIR2支持的功能包括：
     RPSTIR2支持多种安装方式，建议采用方法1，简单修改配置后，即可运行。
    
   1. 安装预编译版本
-      从https://github.com/bgpsecruity/rpstir2/releases/ 下载最新预编译版本到/root/rpki/rpstir2。 解压后进入/root/rpki/rpstir2/conf目录，修改配置文件project.conf，根据实际修改程序目录和数据目录，和MySQL参数
+      从https://github.com/bgpsecruity/rpstir2/releases/ 下载最新预编译版本到/root/rpki/，包括了rpstir2和data两个子目录。 解压后进入/root/rpki/rpstir2/conf目录，修改配置文件project.conf，根据实际修改程序目录和数据目录，和MySQL参数
 ```
     [rpstir2]
     programdir=/root/rpki/rpstir2
