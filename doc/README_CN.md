@@ -53,25 +53,9 @@ RPSTIR2支持的功能包括：
 ```
  * ### 安装RPSTIR2
     首先规划好三个目录：  源代码目录为/root/rpki/source/rpstir2，  程序运行目录为/root/rpki/rpstir2， 数据缓存目录为/root/rpki/data，后文均按此配置安装和运行，可根据实际情况修改。
-    RPSTIR2支持多种安装方式，建议采用方法1，简单修改配置后，即可运行。
-   
-  1. 安装预编译版本
-      从https://github.com/bgpsecruity/rpstir2/releases/ 下载最新预编译版本到/root/rpki/，包括了rpstir2和data两个子目录。 解压后进入/root/rpki/rpstir2/conf目录，修改配置文件project.conf，根据实际修改程序目录和数据目录，和MySQL参数
-```
-    [rpstir2]
-    programdir=/root/rpki/rpstir2
-    datadir=/root/rpki/data
-	[mysql]
-    server=127.0.0.1:3306
-    user=rpstir2
-    password=Rpstir-123
-    database=rpstir2
-```
-  修改完毕后，即可按后文的“运行RPSTIR2”启动运行
-
-
-2. 下载源代码手动编译
-    需要安装开发环境，且过程比较复杂，不建议一般用户使用。
+ 
+1. 下载源代码手动编译
+    需要安装开发环境。
  
    （1） 本机安装GoLang开发环境
    版本需要1.13及以上
@@ -89,7 +73,7 @@ RPSTIR2支持的功能包括：
     database=rpstir2
  ```
 
- （3）执行编译
+  （3）执行编译
    进入/root/rpki/source/rpstir2/build目录，执行
    ```
     chmod +x *.sh 
@@ -98,7 +82,7 @@ RPSTIR2支持的功能包括：
 将完成自动化的部署，然后即可按后文的“运行RPSTIR2”启动运行。
   注：如果部署时，编译失败，提示Go Lang缺少依赖包，则请根据提示，自行下载所需的依赖。
    
- 3. 使用docker
+ 2. 使用docker 
    即将发布
     
 ## 运行RPSTIR2
