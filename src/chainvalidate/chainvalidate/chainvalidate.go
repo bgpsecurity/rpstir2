@@ -33,14 +33,9 @@ func ChainValidateStart() (err error) {
 		belogs.Error("ChainValidateStart():UpdateRsyncLogChainValidateStateEnd fail:", err)
 		return
 	}
-	belogs.Info("ChainValidateStart(): end, will call statistic")
+	belogs.Info("ChainValidateStart(): end")
 
-	// will call roa compation
-	/*
-		go func() {
 
-		}()
-	*/
 
 	/////////////////////
 	// Advanced functions
