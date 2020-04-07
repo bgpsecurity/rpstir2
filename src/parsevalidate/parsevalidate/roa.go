@@ -50,7 +50,7 @@ func parseRoaModel(certFile string, roaModel *model.RoaModel, stateModel *model.
 	if err != nil {
 		belogs.Error("parseRoaModel(): ParseByOpensslAns1: err: ", err, ": "+certFile)
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
-			Fail:   "Failed to read file",
+			Fail:   "Fail to read file",
 			Detail: err.Error()}
 		stateModel.AddError(&stateMsg)
 		return err
@@ -61,7 +61,7 @@ func parseRoaModel(certFile string, roaModel *model.RoaModel, stateModel *model.
 	if err != nil {
 		belogs.Error("parseRoaModel(): ParseRoaModelByOpensslResults:  certFile:", certFile, "  err:", err, " will try parseMftModelByPacket")
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
-			Fail:   "Failed to parse file",
+			Fail:   "Fail to parse file",
 			Detail: err.Error()}
 		stateModel.AddError(&stateMsg)
 
@@ -69,7 +69,7 @@ func parseRoaModel(certFile string, roaModel *model.RoaModel, stateModel *model.
 		if err != nil {
 			belogs.Error("parseRoaModel(): parseRoaModelByPacket err:", certFile, err)
 			stateMsg := model.StateMsg{Stage: "parsevalidate",
-				Fail:   "Failed to parse file",
+				Fail:   "Fail to parse file",
 				Detail: err.Error()}
 			stateModel.AddError(&stateMsg)
 			return err
@@ -80,7 +80,7 @@ func parseRoaModel(certFile string, roaModel *model.RoaModel, stateModel *model.
 	if err != nil {
 		belogs.Error("parseRoaModel():ParseEContentTypeByOpensslResults  certFile:", certFile, "  err:", err)
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
-			Fail:   "Failed to parse file",
+			Fail:   "Fail to parse file",
 			Detail: err.Error()}
 		stateModel.AddError(&stateMsg)
 	}
@@ -89,7 +89,7 @@ func parseRoaModel(certFile string, roaModel *model.RoaModel, stateModel *model.
 	if err != nil {
 		belogs.Error("parseRoaModel():ParseSignerInfoModelByOpensslResults  certFile:", certFile, "  err:", err)
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
-			Fail:   "Failed to parse file",
+			Fail:   "Fail to parse file",
 			Detail: err.Error()}
 		stateModel.AddError(&stateMsg)
 	}
@@ -99,7 +99,7 @@ func parseRoaModel(certFile string, roaModel *model.RoaModel, stateModel *model.
 	if err != nil {
 		belogs.Error("parseRoaModel():ParseByOpensslAns1ToX509  certFile:", certFile, "  err:", err)
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
-			Fail:   "Failed to parse file",
+			Fail:   "Fail to parse file",
 			Detail: err.Error()}
 		stateModel.AddError(&stateMsg)
 		return err
@@ -110,7 +110,7 @@ func parseRoaModel(certFile string, roaModel *model.RoaModel, stateModel *model.
 	if err != nil {
 		belogs.Error("parseRoaModel(): GetResultsByOpensslX509: err: ", err, ": "+cerFile.Name())
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
-			Fail:   "Failed to parse file",
+			Fail:   "Fail to parse file",
 			Detail: err.Error()}
 		stateModel.AddError(&stateMsg)
 		return err
@@ -121,7 +121,7 @@ func parseRoaModel(certFile string, roaModel *model.RoaModel, stateModel *model.
 	if err != nil {
 		belogs.Error("parseRoaModel(): ParseAiaModelSiaModelByOpensslResults: err: ", err, ": "+certFile)
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
-			Fail:   "Failed to parse file",
+			Fail:   "Fail to parse file",
 			Detail: err.Error()}
 		stateModel.AddError(&stateMsg)
 	}
@@ -131,7 +131,7 @@ func parseRoaModel(certFile string, roaModel *model.RoaModel, stateModel *model.
 	if err != nil {
 		belogs.Error("parseRoaModel(): ParseAiaModelSiaModelByOpensslResults: err: ", err, ": "+certFile)
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
-			Fail:   "Failed to parse file",
+			Fail:   "Fail to parse file",
 			Detail: err.Error()}
 		stateModel.AddError(&stateMsg)
 	}
@@ -151,7 +151,7 @@ func parseRoaModel(certFile string, roaModel *model.RoaModel, stateModel *model.
 	if err != nil {
 		belogs.Error("parseRoaModel(): ParseCerIpAddressModelByOpensslResults: err: ", err, ": "+certFile)
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
-			Fail:   "Failed to parse file",
+			Fail:   "Fail to parse file",
 			Detail: err.Error()}
 		stateModel.AddError(&stateMsg)
 	}
@@ -195,7 +195,7 @@ func ValidateRoaModel(roaModel *model.RoaModel, stateModel *model.StateModel) (e
 
 	if roaModel.Version != 0 {
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
-			Fail:   "Version number is not 0",
+			Fail:   "Wrong Version number",
 			Detail: ""}
 		stateModel.AddError(&stateMsg)
 	}

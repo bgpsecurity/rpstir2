@@ -121,7 +121,7 @@ func validateCrl(chains *chainmodel.Chains, crlId uint64, wg *sync.WaitGroup, ch
 					"  crl:", crl, "   parentCer:", parentCer, "  chainCrl.Id:", chainCrl.Id, err)
 			}
 			stateMsg := model.StateMsg{Stage: "chainvalidate",
-				Fail:   "Failed to be verified by its issuing certificate",
+				Fail:   "Fail to be verified by its issuing certificate",
 				Detail: desc + "  parent cer file is " + chainCrl.ParentChainCerAlones[0].FileName + ",  crl file is " + chainCrl.FileName}
 			chainCrl.StateModel.AddError(&stateMsg)
 		}
@@ -153,7 +153,7 @@ func validateCrl(chains *chainmodel.Chains, crlId uint64, wg *sync.WaitGroup, ch
 	if err != nil {
 		belogs.Error("validateCrl():GetSameAkiCrlFiles fail, aki:", chainCrl.Aki)
 		stateMsg := model.StateMsg{Stage: "chainvalidate",
-			Fail:   "Failed to get CRL under specific AKI",
+			Fail:   "Fail to get CRL under specific AKI",
 			Detail: err.Error()}
 		chainCrl.StateModel.AddError(&stateMsg)
 	} else {
@@ -166,14 +166,14 @@ func validateCrl(chains *chainmodel.Chains, crlId uint64, wg *sync.WaitGroup, ch
 			if sameAkiChainCrls[0].FileName != chainCrl.FileName {
 				belogs.Error("validateCrl():same crl files is not self, aki:", sameAkiChainCrls[0].FileName, chainCrl.FileName, chainCrl.Aki)
 				stateMsg := model.StateMsg{Stage: "chainvalidate",
-					Fail:   "Failed to get CRL under specific AKI",
+					Fail:   "Fail to get CRL under specific AKI",
 					Detail: "aki is" + chainCrl.Aki + "  fileName is " + chainCrl.FileName}
 				chainCrl.StateModel.AddError(&stateMsg)
 			}
 		} else if len(sameAkiChainCrls) == 0 {
 			belogs.Debug("validateCrl():same mft files is zero, aki:", chainCrl.Aki)
 			stateMsg := model.StateMsg{Stage: "chainvalidate",
-				Fail:   "Failed to get CRL under specific AKI",
+				Fail:   "Fail to get CRL under specific AKI",
 				Detail: "aki is " + chainCrl.Aki + ",  fileName should be " + chainCrl.FileName}
 			chainCrl.StateModel.AddError(&stateMsg)
 		} else {

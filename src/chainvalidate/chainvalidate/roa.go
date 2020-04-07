@@ -123,7 +123,7 @@ func validateRoa(chains *chainmodel.Chains, roaId uint64, wg *sync.WaitGroup, ch
 				belogs.Debug("validateRoa(): VerifyEeCertByX509 fail, roaId:", chainRoa.Id, result, err)
 			}
 			stateMsg := model.StateMsg{Stage: "chainvalidate",
-				Fail:   "Failed to be verified by its issuing certificate",
+				Fail:   "Fail to be verified by its issuing certificate",
 				Detail: desc + "  parent cer file is " + chainRoa.ParentChainCerAlones[0].FileName + ",  roa file is " + chainRoa.FileName}
 			chainRoa.StateModel.AddError(&stateMsg)
 
