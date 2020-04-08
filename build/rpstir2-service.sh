@@ -4,6 +4,7 @@
 
 function startFunc()
 {
+  cd "$(dirname "$0")";
   configFile="../conf/project.conf"
   source $(pwd)/read-conf.sh
 
@@ -42,6 +43,7 @@ function stopFunc()
 } 
 function deployFunc()
 {
+  cd "$(dirname "$0")";
   curpath=$(pwd)
   configFile="../conf/project.conf"
   source $(pwd)/read-conf.sh
@@ -95,6 +97,7 @@ function deployFunc()
 
 function updateFunc()
 {
+  cd "$(dirname "$0")";
   curpath=$(pwd)
   configFile="../conf/project.conf"
   source $(pwd)/read-conf.sh
