@@ -1,8 +1,7 @@
 #!/bin/bash
 cd "$(dirname "$0")";
-cd ./bin
 configFile="../conf/project.conf"
-source ./read-conf.sh
+source $(pwd)/read-conf.sh
 
 case $1 in
   init ) 
