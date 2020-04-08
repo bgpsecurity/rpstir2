@@ -48,7 +48,7 @@ cp ${rpstir2_build_dir}/rpstir2-service.sh ${rpstir2_program_dir}/bin/
 cp ${rpstir2_build_dir}/read-conf.sh ${rpstir2_program_dir}/bin/
 cp ${rpstir2_build_dir}/rpstir2-crontab.sh ${rpstir2_program_dir}/bin/
 cp -r ${rpstir2_source_dir}/conf/* ${rpstir2_program_dir}/conf/
-cp ${rpstir2_source_dir}/build/tal/*   ${rpstir2_data_dir}/tal
+cp -r ${rpstir2_source_dir}/build/tal/*   ${rpstir2_data_dir}/tal
 chmod +x ${rpstir2_program_dir}/bin/*
 
 
