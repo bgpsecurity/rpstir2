@@ -4,8 +4,13 @@
 
 function startFunc()
 {
-abpath=$(readlink -f  "$0")
-rpstir2_program_bin_dir=$(dirname "$abpath")  
+curfile=$(readlink -f  "$0")
+curpath=$(dirname "$curfile")  
+cd $curpath
+configFile="../conf/project.conf"
+source ./read-conf.sh
+
+rpstir2_program_bin_dir=$(ReadINIfile $configFile rpstir2 programdir)
 cd $rpstir2_program_bin_dir
 ./rpstir2-http &
 ./rpstir2-rtr-tcp &
@@ -154,7 +159,7 @@ case $1 in
   *)
     echo "rpstir2-service.sh help:"
     echo "1). deploy: deploy rpstir2"
-    echo "2). rebuild: update rpstir2. It will stop rpstir2, and update source code and rebuild, then restart rpstir2"     
+    echo "2). update: update rpstir2. It will stop rpstir2, and update source code and rebuild, then restart rpstir2"     
     echo "3). start: start rpstir2"
     echo "4). stop: stop rpstir2" 
     ;;
