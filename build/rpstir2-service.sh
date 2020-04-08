@@ -1,32 +1,6 @@
 #!/bin/sh
 
-case $1 in
-  start | begin)
-    echo "start rpstir2 http and tcp server"
-    startFunc
-    ;;
-  stop | end | shutdown | shut)
-    echo "stop rpstir2 http and tcp server"
-    stopFunc
-    ;;
-  deploy)
-    echo "deploy rpstir2"
-    deployFunc
-    ;; 
-  update | rebuild)
-    echo "deploy rpstir2"
-    stopFunc
-    updateFunc
-    startFunc
-    ;;     
-  *)
-    echo "rpstir2-service.sh help:"
-    echo "1). deploy: deploy rpstir2"
-    echo "2). rebuild: update rpstir2. It will stop rpstir2, and update source code and rebuild, then restart rpstir2"     
-    echo "3). start: start rpstir2"
-    echo "4). stop: stop rpstir2" 
-    ;;
-esac
+
 
 function startFunc()
 {
@@ -156,3 +130,34 @@ cp ${rpstir2_build_dir}/rpstir2-service.sh ${rpstir2_program_dir}/bin/
 chmod +x ${rpstir2_program_dir}/bin/*
 return 0
 }
+
+
+case $1 in
+  start | begin)
+    echo "start rpstir2 http and tcp server"
+    startFunc
+    ;;
+  stop | end | shutdown | shut)
+    echo "stop rpstir2 http and tcp server"
+    stopFunc
+    ;;
+  deploy)
+    echo "deploy rpstir2"
+    deployFunc
+    ;; 
+  update | rebuild)
+    echo "deploy rpstir2"
+    stopFunc
+    updateFunc
+    startFunc
+    ;;     
+  *)
+    echo "rpstir2-service.sh help:"
+    echo "1). deploy: deploy rpstir2"
+    echo "2). rebuild: update rpstir2. It will stop rpstir2, and update source code and rebuild, then restart rpstir2"     
+    echo "3). start: start rpstir2"
+    echo "4). stop: stop rpstir2" 
+    ;;
+esac
+
+
