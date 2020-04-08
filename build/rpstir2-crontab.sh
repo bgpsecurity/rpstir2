@@ -1,7 +1,11 @@
 #!/bin/bash
 source /etc/profile
 source /root/.bashrc
-cd /root/rpki/rpstir2/bin/
+
+abpath=$(readlink -f  "$0")
+rpstir2_program_bin_dir=$(dirname "$abpath")  
+cd $rpstir2_program_bin_dir
+
 run="$1"
 echo $run
 if [ $run == "rsync" ] ; then

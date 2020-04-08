@@ -1,4 +1,5 @@
 #!/bin/bash
+
 configFile="../conf/project.conf"
 source ./read-conf.sh
 
