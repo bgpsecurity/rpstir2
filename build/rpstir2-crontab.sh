@@ -2,8 +2,8 @@
 source /etc/profile
 source /root/.bashrc
 cd /root/rpki/rpstir2/bin/
-var run="$1"
-var rsync="rsync"
+run="$1"
+rsync="rsync"
 if [ $run -eq $rsync ] ; then
 ./rpstir2-command.sh rsync
 else
