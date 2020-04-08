@@ -11,7 +11,8 @@ configFile="../conf/project.conf"
 source ./read-conf.sh
 
 rpstir2_program_bin_dir=$(ReadINIfile $configFile rpstir2 programdir)
-cd $rpstir2_program_bin_dir
+cd $rpstir2_program_bin_dir/bin
+
 ./rpstir2-http &
 ./rpstir2-rtr-tcp &
 return 0
@@ -48,20 +49,16 @@ function deployFunc()
 configFile="../conf/project.conf"
 source ./read-conf.sh
 
-cur=$(pwd)
-rpstir2_build_dir=$(pwd)
-cd ..
-rpstir2_source_dir=$(pwd)
-cd ${rpstir2_build_dir}
 rpstir2_program_dir=$(ReadINIfile $configFile rpstir2 programdir)
+rpstir2_source_dir=$(ReadINIfile $configFile rpstir2 sourcedir)
 rpstir2_data_dir=$(ReadINIfile $configFile rpstir2 datadir)
-echo "source directory is " $rpstir2_source_dir
-echo "build directory is " $rpstir2_build_dir
+
 echo "program directory is " $rpstir2_program_dir
+echo "source directory is " $rpstir2_source_dir
+echo "data directory is " $rpstir2_data_dir
 
 mkdir -p ${rpstir2_program_dir} ${rpstir2_program_dir}/bin    ${rpstir2_program_dir}/conf  ${rpstir2_program_dir}/log  
 mkdir -p ${rpstir2_data_dir}    ${rpstir2_data_dir}/rsyncrepo ${rpstir2_data_dir}/rrdprepo ${rpstir2_data_dir}/slurm  ${rpstir2_data_dir}/tal 
-
      
 mkdir -p $GOPATH/src/golang.org/x
 cd  $GOPATH/src/golang.org/x
@@ -79,7 +76,6 @@ go get -u github.com/cpusoft/goutil
 
 cd $rpstir2_source_dir
 oldgopath=$GOPATH
-# linux / windows
 CGO_ENABLED=0
 GOOS=linux
 GOARCH=amd64
@@ -87,15 +83,15 @@ GOPATH=$GOPATH:$rpstir2_source_dir
 # see: go tool compile -help
 go install -v -gcflags "-N -l" ./...
 export GOPATH=$oldgopath
-cd $cur
-cp ${rpstir2_source_dir}/bin/* ${rpstir2_program_dir}/bin/
-cp ${rpstir2_build_dir}/rpstir2-command.sh ${rpstir2_program_dir}/bin/
-cp ${rpstir2_build_dir}/rpstir2-service.sh ${rpstir2_program_dir}/bin/
-cp ${rpstir2_build_dir}/read-conf.sh ${rpstir2_program_dir}/bin/
-cp ${rpstir2_build_dir}/rpstir2-crontab.sh ${rpstir2_program_dir}/bin/
+cp ${rpstir2_source_dir}/bin/*                    ${rpstir2_program_dir}/bin/
+cp ${rpstir2_source_dir}/build/rpstir2-command.sh ${rpstir2_program_dir}/bin/
+cp ${rpstir2_source_dir}/build/rpstir2-service.sh ${rpstir2_program_dir}/bin/
+cp ${rpstir2_source_dir}/build/read-conf.sh       ${rpstir2_program_dir}/bin/
+chmod +x ${rpstir2_program_dir}/bin/*
+
 cp -r ${rpstir2_source_dir}/conf/* ${rpstir2_program_dir}/conf/
 cp -r ${rpstir2_source_dir}/build/tal/*   ${rpstir2_data_dir}/tal
-chmod +x ${rpstir2_program_dir}/bin/*
+
 return 0
 }
 
@@ -105,22 +101,20 @@ function updateFunc()
 configFile="../conf/project.conf"
 source ./read-conf.sh
 
-cur=$(pwd)
-rpstir2_build_dir=$(pwd)
-cd ..
-rpstir2_source_dir=$(pwd)
-cd ${rpstir2_build_dir}
 rpstir2_program_dir=$(ReadINIfile $configFile rpstir2 programdir)
+rpstir2_source_dir=$(ReadINIfile $configFile rpstir2 sourcedir)
 rpstir2_data_dir=$(ReadINIfile $configFile rpstir2 datadir)
-echo "source directory is " $rpstir2_source_dir
-echo "build directory is " $rpstir2_build_dir
-echo "program directory is " $rpstir2_program_dir
 
-go get -u github.com/cpusoft/goutil
+echo "program directory is " $rpstir2_program_dir
+echo "source directory is " $rpstir2_source_dir
+echo "data directory is " $rpstir2_data_dir
 
 cd $rpstir2_source_dir
+go get -u github.com/cpusoft/goutil
+git checkout .
+git pull
+
 oldgopath=$GOPATH
-# linux / windows
 CGO_ENABLED=0
 GOOS=linux
 GOARCH=amd64
@@ -128,10 +122,11 @@ GOPATH=$GOPATH:$rpstir2_source_dir
 # see: go tool compile -help
 go install -v -gcflags "-N -l" ./...
 export GOPATH=$oldgopath
-cd $cur
-cp ${rpstir2_source_dir}/bin/* ${rpstir2_program_dir}/bin/
-cp ${rpstir2_build_dir}/rpstir2-command.sh ${rpstir2_program_dir}/bin/
-cp ${rpstir2_build_dir}/rpstir2-service.sh ${rpstir2_program_dir}/bin/
+
+cp ${rpstir2_source_dir}/bin/*                    ${rpstir2_program_dir}/bin/
+cp ${rpstir2_source_dir}/build/rpstir2-command.sh ${rpstir2_program_dir}/bin/
+cp ${rpstir2_source_dir}/build/rpstir2-service.sh ${rpstir2_program_dir}/bin/
+cp ${rpstir2_source_dir}/build/read-conf.sh       ${rpstir2_program_dir}/bin/
 chmod +x ${rpstir2_program_dir}/bin/*
 return 0
 }
@@ -158,7 +153,7 @@ case $1 in
     ;;     
   *)
     echo "rpstir2-service.sh help:"
-    echo "1). deploy: deploy rpstir2"
+    echo "1). deploy: deploy rpstir2, just run once"
     echo "2). update: update rpstir2. It will stop rpstir2, and update source code and rebuild, then restart rpstir2"     
     echo "3). start: start rpstir2"
     echo "4). stop: stop rpstir2" 
