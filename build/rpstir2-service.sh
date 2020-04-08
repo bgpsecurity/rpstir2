@@ -158,5 +158,5 @@ case $1 in
     echo "4). stop: stop rpstir2" 
     ;;
 esac
-
+echo -e "\n"
 
