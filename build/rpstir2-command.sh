@@ -1,4 +1,6 @@
 #!/bin/bash
+cd "$(dirname "$0")";
+cd ./bin
 configFile="../conf/project.conf"
 source ./read-conf.sh
 
