@@ -3,5 +3,5 @@ Description=rpstir2 service
 [Service]
 Type=simple
 WorkingDirectory=/root/rpki/rpstir2/bin
-ExecStart=/root/rpki/rpstir2/bin/rpstir2-service.sh start
-ExecStop=/root/rpki/rpstir2/bin/rpstir2-service.sh stop
+ExecStart=/root/rpki/rpstir2/bin/rpstir2-crontab.sh start
+ExecStop=/root/rpki/rpstir2/bin/rpstir2-crontab.sh stop
