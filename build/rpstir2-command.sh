@@ -24,6 +24,18 @@ case $1 in
     echo "curl -d \"\" http://$rsyncserver:$httpport/rsync/start"
     curl -d "" http://$rsyncserver:$httpport/rsync/start
     ;;
+  crontab )
+    source /etc/profile
+    source /root/.bashrc
+    echo "start rpstir2 crontab rsync"
+    # `ReadINIfile "file" "[section]" "item" `
+    rsyncserver=`ReadINIfile "$configFile" "rpstir2" "rsyncserver" `
+    httpport=`ReadINIfile "$configFile" "rpstir2" "httpport" `
+    echo $rsyncserver $httpport
+    # curl
+    echo "curl -d \"\" http://$rsyncserver:$httpport/rsync/start"
+    curl -d "" http://$rsyncserver:$httpport/rsync/start
+    ;;  
   rrdpstart | rrdp | delta)
     echo "start rpstir2 rrdp"
     # `ReadINIfile "file" "[section]" "item" `
