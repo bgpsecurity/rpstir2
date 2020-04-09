@@ -145,8 +145,8 @@ chmod +x *.sh
 ./rpstir2-service.sh deploy
 ```
 
-Now, the RPSTIR2 will automatically run. You can enter "ctrl-d" to exist the rpstir2_centos8. 
-Note: On the host, the cache data is stored in "/root/rpki/rpstir2data/data/", and the logs of rpstir2 are saved in "/root/rpki/rpstir2data/log", and tcpport of rtr is 18082.
+Now, the RPSTIR2 will automatically download and validate RPKI objects according to schedule task. 
+Note: You can enter "ctrl-d" to exist the rpstir2_centos8 and return to the host. On the host, the cache data is stored in "/root/rpki/rpstir2data/data/", and the logs of rpstir2 are saved in "/root/rpki/rpstir2data/log", and tcpport of rtr is 18082.
 
 ### 2.3 Running RPSTIR2
 All functions of RPSTIR2 are accessible on the command line via sub-commands.
