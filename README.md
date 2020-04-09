@@ -30,8 +30,8 @@ $ make install
 $ echo "export PATH=/usr/local/ssl/bin:$PATH" >> /root/.bashrc
 $ source /root/.bashrc
 ```
-&nbsp;
-#### 2.1.2 Install and configure MySQL
+
+#### 2.1.2 Install MySQL
 You can download and install MySQL from https://dev.mysql.com/downloads/ according to your platform. MySQL version must be 8 or higher and should support JSON. After MySQL has been installed, please login in MySQL and create RPSTIR2's user accounts and database.
 
 ```mysql
@@ -45,8 +45,6 @@ GRANT ALL PRIVILEGES ON rpstir2.* TO 'rpstir2'@'localhost'  with grant option;
 GRANT ALL PRIVILEGES ON rpstir2.* TO 'rpstir2'@'%'  with grant option;
 flush privileges;
 ```
-&nbsp;
-
 
 #### 2.1.3 Install GoLang
 The GoLang version must be 1.13 or higher.
@@ -63,15 +61,16 @@ $ source  /root/.bashrc
 #### 2.1.4 Create RPSTIR2 directories
 Before installing RPSTIR2, you should create three directories in advance, one of which is for RPSTIR2 source code, and one is for program and the other is for the cache data. The following documents are explained according to the configuration given in the following table, which can be modified in locations of your choice.
 
+```shell
+$ mkdir -p /root/rpki/source/ /root/rpki/rpstir2  /root/rpki/data 
+```
+
 | Directory  | Path                      |
 | :--------: | ------------------------- |
 | sourcedir  | /root/rpki/source/rpstir2 |
 | programdir | /root/rpki/rpstir2        |
 | datadir    | /root/rpki/data           |
 
-```shell
-$ mkdir -p /root/rpki/source/ /root/rpki/rpstir2  /root/rpki/data 
-```
 
 #### 2.1.5 Download RPSTIR2 
 
@@ -149,7 +148,6 @@ chmod +x *.sh
 Now, the RPSTIR2 will automatically run. You can enter "ctrl-d" to exist the rpstir2_centos8. 
 Note: On the host, the cache data is stored in "/root/rpki/rpstir2data/data/", and the logs of rpstir2 are saved in "/root/rpki/rpstir2data/log", and tcpport of rtr is 18082.
 
-
 ### 2.3 Running RPSTIR2
 All functions of RPSTIR2 are accessible on the command line via sub-commands.
 
@@ -208,9 +206,7 @@ $ cd /root/rpki/rpstir2/bin
 $./rpstir2-command.sh reset  
 ```
 
-&nbsp;
 ## 3 Reporting bugs and getting help
-
 Please open an issue on our [GitHub page](https://github.com/bgpsecurity/rpstir2/issues) or mail to [shaoqing@zdns.cn](mailto:shaoqing@zdns.cn) with any problems or bugs you encounter.
 
 
