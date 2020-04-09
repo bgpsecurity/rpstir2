@@ -206,6 +206,14 @@ $ cd /root/rpki/rpstir2/bin
 $./rpstir2-command.sh reset  
 ```
 
+#### 2.3.5 Help
+
+```shell
+$ cd /root/rpki/rpstir2/bin
+$./rpstir2-command.sh
+```
+
+
 ## 3 Reporting bugs and getting help
 Please open an issue on our [GitHub page](https://github.com/bgpsecurity/rpstir2/issues) or mail to [shaoqing@zdns.cn](mailto:shaoqing@zdns.cn) with any problems or bugs you encounter.
 
