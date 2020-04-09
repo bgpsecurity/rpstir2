@@ -48,7 +48,7 @@ func parseCrlModel(certFile string, crlModel *model.CrlModel, stateModel *model.
 	if err != nil {
 		belogs.Error("parseCrlModel():ReadFile return err: ", certFile, err)
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
-			Fail:   "Failed to read file",
+			Fail:   "Fail to read file",
 			Detail: err.Error()}
 		stateModel.AddError(&stateMsg)
 		return err
@@ -60,7 +60,7 @@ func parseCrlModel(certFile string, crlModel *model.CrlModel, stateModel *model.
 	if err != nil {
 		belogs.Error("parseCrlModel():ParseCrlModelByX509 err:", err)
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
-			Fail:   "Failed to parse file",
+			Fail:   "Fail to parse file",
 			Detail: err.Error()}
 		stateModel.AddError(&stateMsg)
 		return err
@@ -70,7 +70,7 @@ func parseCrlModel(certFile string, crlModel *model.CrlModel, stateModel *model.
 	if err != nil {
 		belogs.Error("parseCrlModel(): GetResultsByOpensslAns1: err: ", err, ": "+certFile)
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
-			Fail:   "Failed to parse file",
+			Fail:   "Fail to parse file",
 			Detail: err.Error()}
 		stateModel.AddError(&stateMsg)
 		return err
@@ -81,7 +81,7 @@ func parseCrlModel(certFile string, crlModel *model.CrlModel, stateModel *model.
 	if err != nil {
 		belogs.Error("parseCrlModel(): ParseCrlModelByOpensslResults: err: ", err, ": "+certFile)
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
-			Fail:   "Failed to parse file",
+			Fail:   "Fail to parse file",
 			Detail: err.Error()}
 		stateModel.AddError(&stateMsg)
 		return err
@@ -99,7 +99,7 @@ func ValidateCrlModel(crlModel *model.CrlModel, stateModel *model.StateModel) (e
 
 	if crlModel.Version != 1 {
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
-			Fail:   "Version number is not 1",
+			Fail:   "Wrong Version number",
 			Detail: ""}
 		stateModel.AddError(&stateMsg)
 	}

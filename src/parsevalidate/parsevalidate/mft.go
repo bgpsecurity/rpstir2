@@ -53,7 +53,7 @@ func parseMftModel(certFile string, mftModel *model.MftModel, stateModel *model.
 	if err != nil {
 		belogs.Error("parseMftModel(): ParseByOpensslAns1: err: ", err, ": "+certFile)
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
-			Fail:   "Failed to read file",
+			Fail:   "Fail to read file",
 			Detail: err.Error()}
 		stateModel.AddError(&stateMsg)
 		return err
@@ -76,7 +76,7 @@ func parseMftModel(certFile string, mftModel *model.MftModel, stateModel *model.
 	if err != nil {
 		belogs.Error("parseMftModel():ParseByOpensslAns1ToX509  certFile:", certFile, "  err:", err, " will try parseMftModelByPacket")
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
-			Fail:   "Failed to parse file",
+			Fail:   "Fail to parse file",
 			Detail: err.Error()}
 		stateModel.AddError(&stateMsg)
 
@@ -84,7 +84,7 @@ func parseMftModel(certFile string, mftModel *model.MftModel, stateModel *model.
 		if err != nil {
 			belogs.Error("parseMftModel():parseMftModelByPacket err:", certFile, err)
 			stateMsg := model.StateMsg{Stage: "parsevalidate",
-				Fail:   "Failed to parse file",
+				Fail:   "Fail to parse file",
 				Detail: err.Error()}
 			stateModel.AddError(&stateMsg)
 			return err
@@ -96,7 +96,7 @@ func parseMftModel(certFile string, mftModel *model.MftModel, stateModel *model.
 	if err != nil {
 		belogs.Error("parseMftModel():ParseEContentTypeByOpensslResults  certFile:", certFile, "  err:", err)
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
-			Fail:   "Failed to parse file",
+			Fail:   "Fail to parse file",
 			Detail: err.Error()}
 		stateModel.AddError(&stateMsg)
 	}
@@ -105,7 +105,7 @@ func parseMftModel(certFile string, mftModel *model.MftModel, stateModel *model.
 	if err != nil {
 		belogs.Error("parseMftModel():ParseSignerInfoModelByOpensslResults  certFile:", certFile, "  err:", err)
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
-			Fail:   "Failed to parse file",
+			Fail:   "Fail to parse file",
 			Detail: err.Error()}
 		stateModel.AddError(&stateMsg)
 	}
@@ -115,7 +115,7 @@ func parseMftModel(certFile string, mftModel *model.MftModel, stateModel *model.
 	if err != nil {
 		belogs.Error("parseMftModel():ParseByOpensslAns1ToX509  certFile:", certFile, "  err:", err)
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
-			Fail:   "Failed to parse file",
+			Fail:   "Fail to parse file",
 			Detail: err.Error()}
 		stateModel.AddError(&stateMsg)
 		return err
@@ -126,7 +126,7 @@ func parseMftModel(certFile string, mftModel *model.MftModel, stateModel *model.
 	if err != nil {
 		belogs.Error("parseMftModel(): GetResultsByOpensslX509: err: ", err, ": "+cerFile.Name())
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
-			Fail:   "Failed to parse file",
+			Fail:   "Fail to parse file",
 			Detail: err.Error()}
 		stateModel.AddError(&stateMsg)
 		return err
@@ -137,7 +137,7 @@ func parseMftModel(certFile string, mftModel *model.MftModel, stateModel *model.
 	if err != nil {
 		belogs.Error("parseMftByOpenssl(): ParseAiaModelSiaModelByOpensslResults: err: ", err, ": "+certFile)
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
-			Fail:   "Failed to parse file",
+			Fail:   "Fail to parse file",
 			Detail: err.Error()}
 		stateModel.AddError(&stateMsg)
 	}
@@ -147,7 +147,7 @@ func parseMftModel(certFile string, mftModel *model.MftModel, stateModel *model.
 	if err != nil {
 		belogs.Error("parseMftModel(): ParseAiaModelSiaModelByOpensslResults: err: ", err, ": "+certFile)
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
-			Fail:   "Failed to parse file",
+			Fail:   "Fail to parse file",
 			Detail: err.Error()}
 		stateModel.AddError(&stateMsg)
 	}
@@ -157,7 +157,7 @@ func parseMftModel(certFile string, mftModel *model.MftModel, stateModel *model.
 	if err != nil {
 		belogs.Error("parseMftModel(): ParseEeCertModel: err: ", err, ": "+certFile)
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
-			Fail:   "Failed to parse file",
+			Fail:   "Fail to parse file",
 			Detail: err.Error()}
 		stateModel.AddError(&stateMsg)
 	}
@@ -202,7 +202,7 @@ func ValidateMftModel(mftModel *model.MftModel, stateModel *model.StateModel) (e
 	// The version of the rpkiManifest is 0
 	if mftModel.Version != 0 {
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
-			Fail:   "Version number is not 0",
+			Fail:   "Wrong Version number",
 			Detail: ""}
 		stateModel.AddError(&stateMsg)
 	}

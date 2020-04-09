@@ -53,7 +53,7 @@ func ParseEeCertModel(certFile string, fileByte []byte, start int, end int) (eeC
 func ValidateEeCertModel(stateModel *StateModel, eeCertModel *EeCertModel) error {
 	if eeCertModel.Version != 3 {
 		stateMsg := StateMsg{Stage: "parsevalidate",
-			Fail:   "Version number of EE is not 3",
+			Fail:   "Wrong Version number",
 			Detail: ""}
 		stateModel.AddError(&stateMsg)
 	}

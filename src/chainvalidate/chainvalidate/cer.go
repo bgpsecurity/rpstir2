@@ -125,7 +125,7 @@ func validateCer(chains *chainmodel.Chains, cerId uint64, wg *sync.WaitGroup, ch
 		}
 		if result != "ok" {
 			stateMsg := model.StateMsg{Stage: "chainvalidate",
-				Fail:   "Failed to self verification of root certificate",
+				Fail:   "Fail to self verification of root certificate",
 				Detail: desc}
 			chainCer.StateModel.AddError(&stateMsg)
 		}
@@ -148,7 +148,7 @@ func validateCer(chains *chainmodel.Chains, cerId uint64, wg *sync.WaitGroup, ch
 					belogs.Error("validateCer(): VerifyCerByX509 fail, cerId:", chainCer.Id, result, err)
 				}
 				stateMsg := model.StateMsg{Stage: "chainvalidate",
-					Fail: "Failed to be verified by its issuing certificate",
+					Fail: "Fail to be verified by its issuing certificate",
 					Detail: desc + ",  parent cer file is " + chainCer.ParentChainCerAlones[0].FileName +
 						",  this cer file is " + chainCer.FileName}
 				chainCer.StateModel.AddError(&stateMsg)

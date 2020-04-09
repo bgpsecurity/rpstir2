@@ -37,9 +37,7 @@ func ChainValidateStart() (err error) {
 
 
 
-	/////////////////////
-	// Advanced functions
-	/////////////////////
+
 	/////////////////////
 	// will call rtr
 	go func() {

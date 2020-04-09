@@ -61,3 +61,16 @@ func SummaryStates(w rest.ResponseWriter, req *rest.Request) {
 	}
 	w.WriteJson(stateResponse)
 }
+
+// just return valid/warning/invalid count in cer/roa/mft/crl
+func Results(w rest.ResponseWriter, req *rest.Request) {
+	belogs.Info("Results()")
+
+	results, err := sys.Results()
+	if err != nil {
+		w.WriteJson(httpserver.GetFailHttpResponse(err))
+		return
+	}
+	belogs.Info("Results():results:", jsonutil.MarshalJson(results))
+	w.WriteJson(results)
+}

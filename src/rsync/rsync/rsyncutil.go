@@ -1,6 +1,7 @@
 package rsync
 
 import (
+	"runtime"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -145,8 +146,8 @@ func waitForRsyncUrl(curRsyncCount int, url string) {
 	if curRsyncCount == 0 {
 		return
 	}
-	belogs.Debug("waitForRsyncUrl(): curRsyncCount : ", curRsyncCount, "  will add:", conf.Int("rsync::rsyncDefaultWaitMs"))
-	curRsyncCount = curRsyncCount + conf.Int("rsync::rsyncDefaultWaitMs")
+	belogs.Debug("waitForRsyncUrl(): curRsyncCount : ", curRsyncCount, "  will add:", conf.Int("rsync::rsyncDefaultWaitMs"), " 2* runtime.NumCPU():", 2*runtime.NumCPU())
+	curRsyncCount = curRsyncCount + conf.Int("rsync::rsyncDefaultWaitMs") + 2*runtime.NumCPU()
 
 	// apnic and afrinic should not visit too often
 	if strings.Contains(url, "rpki.apnic.net") {

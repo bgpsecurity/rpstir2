@@ -7,6 +7,7 @@ import (
 
 	"model"
 	db "sys/db"
+	sysmodel "sys/model"
 )
 
 func DetailStates() (detailStates map[string]interface{}, err error) {
@@ -87,4 +88,9 @@ func SummaryStates() (summaryStates map[string]interface{}, err error) {
 	summaryStates["endTime"] = endTime
 	belogs.Info("SummaryStates(): summaryStates:", jsonutil.MarshalJson(summaryStates))
 	return summaryStates, nil
+}
+
+func Results() (results sysmodel.Results, err error) {
+
+	return db.Results()
 }

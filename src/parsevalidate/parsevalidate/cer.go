@@ -52,7 +52,7 @@ func parseCerModel(certFile string, cerModel *model.CerModel, stateModel *model.
 	if err != nil {
 		belogs.Error("parseCerModel():ReadFile err: ", certFile, err)
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
-			Fail:   "Failed to read file",
+			Fail:   "Fail to read file",
 			Detail: err.Error()}
 		stateModel.AddError(&stateMsg)
 		return err
@@ -65,7 +65,7 @@ func parseCerModel(certFile string, cerModel *model.CerModel, stateModel *model.
 	if err != nil {
 		belogs.Error("parseCerModel():ParseCerModelByX509 err:", certFile, err)
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
-			Fail:   "Failed to parse file",
+			Fail:   "Fail to parse file",
 			Detail: err.Error()}
 		stateModel.AddError(&stateMsg)
 		return err
@@ -76,7 +76,7 @@ func parseCerModel(certFile string, cerModel *model.CerModel, stateModel *model.
 	if err != nil {
 		belogs.Error("parseCerModel(): GetResultsByOpensslX509: err: ", err, ": "+certFile)
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
-			Fail:   "Failed to parse file",
+			Fail:   "Fail to parse file",
 			Detail: err.Error()}
 		stateModel.AddError(&stateMsg)
 		return err
@@ -89,7 +89,7 @@ func parseCerModel(certFile string, cerModel *model.CerModel, stateModel *model.
 	if err != nil {
 		belogs.Error("parseCerModel(): ParseCerIpAddressModelByOpensslResults: err: ", err, ": "+certFile)
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
-			Fail:   "Failed to obtain IP address",
+			Fail:   "Fail to obtain IP address",
 			Detail: err.Error()}
 		stateModel.AddError(&stateMsg)
 		//no return
@@ -102,7 +102,7 @@ func parseCerModel(certFile string, cerModel *model.CerModel, stateModel *model.
 	if err != nil {
 		belogs.Error("parseCerModel(): ParseAsnModelByOpensslResults: err: ", err, ": "+certFile)
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
-			Fail:   "Failed to obtain AS address",
+			Fail:   "Fail to obtain ASN",
 			Detail: err.Error()}
 		stateModel.AddError(&stateMsg)
 	}
@@ -112,7 +112,7 @@ func parseCerModel(certFile string, cerModel *model.CerModel, stateModel *model.
 	if noCerIpAddress && noAsn {
 		belogs.Error("parseCerModel(): noCerIpAddress && noAsn: ", certFile)
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
-			Fail:   "There is neither IP address nor AS",
+			Fail:   "Fail to find INR extension",
 			Detail: err.Error()}
 		stateModel.AddError(&stateMsg)
 	}
@@ -122,7 +122,7 @@ func parseCerModel(certFile string, cerModel *model.CerModel, stateModel *model.
 	if err != nil {
 		belogs.Error("parseCerModel(): ParseAiaModelSiaModelByOpensslResults: err: ", err, ": "+certFile)
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
-			Fail:   "Failed to obtain AIA or SIA",
+			Fail:   "Fail to obtain AIA or SIA",
 			Detail: err.Error()}
 		stateModel.AddError(&stateMsg)
 	}
@@ -133,7 +133,7 @@ func parseCerModel(certFile string, cerModel *model.CerModel, stateModel *model.
 	if err != nil {
 		belogs.Error("parseCerModel(): ParseSignatureAndPublicKeyByOpensslResults: err: ", err, ": "+certFile)
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
-			Fail:   "Failed to obtain Signature Algorithm",
+			Fail:   "Fail to obtain Signature Algorithm",
 			Detail: err.Error()}
 		stateModel.AddError(&stateMsg)
 	}
@@ -143,7 +143,7 @@ func parseCerModel(certFile string, cerModel *model.CerModel, stateModel *model.
 	if err != nil {
 		belogs.Error("parseCerModel(): ParseKeyUsageModelByOpensslResults: err: ", err, ": "+certFile)
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
-			Fail:   "Failed to obtain Key Usage",
+			Fail:   "Fail to obtain Key Usage",
 			Detail: err.Error()}
 		stateModel.AddError(&stateMsg)
 	}
@@ -153,7 +153,7 @@ func parseCerModel(certFile string, cerModel *model.CerModel, stateModel *model.
 	if err != nil {
 		belogs.Error("parseCerModel(): ParseCrldpModelByOpensslResults: err: ", err, ": "+certFile)
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
-			Fail:   "Failed to obtain CRL Distribution Points",
+			Fail:   "Fail to obtain CRL Distribution Points",
 			Detail: err.Error()}
 		stateModel.AddError(&stateMsg)
 	}
@@ -163,7 +163,7 @@ func parseCerModel(certFile string, cerModel *model.CerModel, stateModel *model.
 	if err != nil {
 		belogs.Error("parseCerModel(): ParseCertPolicyModelByOpensslResults: err: ", err, ": "+certFile)
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
-			Fail:   "Failed to obtain Certificate Policies",
+			Fail:   "Fail to obtain Certificate Policies",
 			Detail: err.Error()}
 		stateModel.AddError(&stateMsg)
 	}
@@ -173,7 +173,7 @@ func parseCerModel(certFile string, cerModel *model.CerModel, stateModel *model.
 	if err != nil {
 		belogs.Error("parseCerModel(): ParseBasicConstraintsModelByOpensslResults: err: ", err, ": "+certFile)
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
-			Fail:   "Failed to obtain Basic Constraints",
+			Fail:   "Fail to obtain Basic Constraints",
 			Detail: err.Error()}
 		stateModel.AddError(&stateMsg)
 	}
@@ -193,7 +193,7 @@ func ValidateCerlModel(cerModel *model.CerModel, stateModel *model.StateModel) (
 	// myssl.c P1952 rescert_version_chk
 	if cerModel.Version != 3 {
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
-			Fail:   "Version number is not 3",
+			Fail:   "Wrong Version number",
 			Detail: ""}
 		stateModel.AddError(&stateMsg)
 	}
@@ -359,7 +359,7 @@ func ValidateCerlModel(cerModel *model.CerModel, stateModel *model.StateModel) (
 		}
 		if !foundCN {
 			stateMsg := model.StateMsg{Stage: "parsevalidate",
-				Fail:   "Subject attribute should contain CN",
+				Fail:   "Subject attribute MUST contain CN",
 				Detail: ""}
 			stateModel.AddError(&stateMsg)
 		}

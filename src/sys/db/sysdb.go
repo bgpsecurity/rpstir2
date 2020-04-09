@@ -11,6 +11,7 @@ import (
 	"github.com/go-xorm/xorm"
 
 	"model"
+	sysmodel "sys/model"
 )
 
 var intiSqls []string = []string{
@@ -702,4 +703,48 @@ func GetMaxSyncLog() (syncLog model.LabRpkiSyncLog, err error) {
 	}
 	belogs.Debug("GetMaxSyncLog():syncLog :", jsonutil.MarshalJson(syncLog))
 	return syncLog, nil
+}
+
+func Results() (results sysmodel.Results, err error) {
+	results.CerResult, err = result("lab_rpki_cer", "cer")
+	if err != nil {
+		belogs.Error("result():select lab_rpki_cer, fail:", err)
+		return results, err
+	}
+	results.CrlResult, err = result("lab_rpki_crl", "crl")
+	if err != nil {
+		belogs.Error("result():select lab_rpki_crl , fail:", err)
+		return results, err
+	}
+	results.MftResult, err = result("lab_rpki_mft", "mft")
+	if err != nil {
+		belogs.Error("result():select lab_rpki_mft, fail:", err)
+		return results, err
+	}
+	results.RoaResult, err = result("lab_rpki_roa", "roa")
+	if err != nil {
+		belogs.Error("result():select lab_rpki_roa, fail:", err)
+		return results, err
+	}
+	return results, nil
+}
+
+func result(table, fileType string) (result sysmodel.Result, err error) {
+	sql :=
+		`select al.count as allCount, va.count as validCount, wa.count as warnigCount, ia.count as invalidCount , '` + fileType + `' as fileType  from 
+		(select count(*) as count from ` + table + ` c) al,
+		(select count(*) as count from ` + table + ` c where c.state->>"$.state" ='valid' ) va,
+		(select count(*) as count from ` + table + ` c where c.state->>"$.state" ='warning') wa,
+		(select count(*) as count from ` + table + ` c where c.state->>"$.state" ='invalid') ia`
+	has, err := xormdb.XormEngine.Sql(sql).Get(&result)
+	if err != nil {
+		belogs.Error("result():select count, fail:", table, err)
+		return result, err
+	}
+	if !has {
+		belogs.Error("result(): not get count, fail:", table)
+		return result, errors.New("not get count")
+	}
+	belogs.Debug("result():result :", jsonutil.MarshalJson(result))
+	return result, nil
 }

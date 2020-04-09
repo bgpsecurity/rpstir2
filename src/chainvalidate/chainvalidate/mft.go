@@ -123,7 +123,7 @@ func validateMft(chains *chainmodel.Chains, mftId uint64, wg *sync.WaitGroup, ch
 				belogs.Debug("validateMft():verify mft by parent cer fail, fail, mftId:", chainMft.Id, err)
 			}
 			stateMsg := model.StateMsg{Stage: "chainvalidate",
-				Fail:   "Failed to be verified by its issuing certificate",
+				Fail:   "Fail to be verified by its issuing certificate",
 				Detail: desc + ",  parent cer file is " + chainMft.ParentChainCerAlones[0].FileName + ",  mft file is " + chainMft.FileName}
 			chainMft.StateModel.AddError(&stateMsg)
 
@@ -195,7 +195,7 @@ func validateMft(chains *chainmodel.Chains, mftId uint64, wg *sync.WaitGroup, ch
 	if err != nil {
 		belogs.Debug("validateMft():GetSameAkiCerRoaCrlFiles fail, aki:", chainMft.Aki)
 		stateMsg := model.StateMsg{Stage: "chainvalidate",
-			Fail:   "Failed to get CER/ROA/CRL/MFT under specific AKI",
+			Fail:   "Fail to get CER/ROA/CRL/MFT under specific AKI",
 			Detail: err.Error()}
 		chainMft.StateModel.AddError(&stateMsg)
 	} else {
@@ -203,7 +203,7 @@ func validateMft(chains *chainmodel.Chains, mftId uint64, wg *sync.WaitGroup, ch
 		if len(sameAkiCerRoaCrlFiles) == 0 {
 			belogs.Debug("validateMft():GetSameAkiCerRoaCrlFiles len(akiFiles)==0, aki:", chainMft.Aki)
 			stateMsg := model.StateMsg{Stage: "chainvalidate",
-				Fail:   "Failed to get CER/ROA/CRL/MFT under specific AKI",
+				Fail:   "Fail to get CER/ROA/CRL/MFT under specific AKI",
 				Detail: "the aki is " + chainMft.Aki}
 			chainMft.StateModel.AddError(&stateMsg)
 		}
@@ -247,14 +247,14 @@ func validateMft(chains *chainmodel.Chains, mftId uint64, wg *sync.WaitGroup, ch
 		if sameAkiChainMfts[0].FileName != chainMft.FileName {
 			belogs.Debug("validateMft():same mft files is not self, aki:", sameAkiChainMfts[0].FileName, chainMft.FileName, chainMft.Aki)
 			stateMsg := model.StateMsg{Stage: "chainvalidate",
-				Fail:   "Failed to get Manifest under specific AKI",
+				Fail:   "Fail to get Manifest under specific AKI",
 				Detail: "aki is" + chainMft.Aki + "  fileName is " + chainMft.FileName + "  same aki file is " + sameAkiChainMfts[0].FileName}
 			chainMft.StateModel.AddError(&stateMsg)
 		}
 	} else if len(sameAkiChainMfts) == 0 {
 		belogs.Debug("validateMft():same mft files is zero, aki:", chainMft.Aki)
 		stateMsg := model.StateMsg{Stage: "chainvalidate",
-			Fail:   "Failed to get Manifest under specific AKI",
+			Fail:   "Fail to get Manifest under specific AKI",
 			Detail: "aki is " + chainMft.Aki + ",  fileName should be " + chainMft.FileName}
 		chainMft.StateModel.AddError(&stateMsg)
 	} else {
