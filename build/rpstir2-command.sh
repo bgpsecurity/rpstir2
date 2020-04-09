@@ -75,11 +75,11 @@ case $1 in
   results|result )    
     # `ReadINIfile "file" "[section]" "item" `
     sysserver=`ReadINIfile "$configFile" "rpstir2" "sysserver" `
-    echo $sysserver 
+    #echo $sysserver 
     httpport=`ReadINIfile "$configFile" "rpstir2" "httpport" `
-    echo $httpport
+    #echo $httpport
     # curl
-    echo "curl -d \"\" http://$sysserver:$httpport/sys/results"
+    #echo "curl -d \"\" http://$sysserver:$httpport/sys/results"
     curl -d "" http://$sysserver:$httpport/sys/results
     ;;      
   reset ) 
