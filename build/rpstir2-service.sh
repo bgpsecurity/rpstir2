@@ -86,7 +86,7 @@ function deployFunc()
   cp ${rpstir2_source_dir}/build/rpstir2-command.sh ${rpstir2_program_dir}/bin/
   cp ${rpstir2_source_dir}/build/rpstir2-service.sh ${rpstir2_program_dir}/bin/
   cp ${rpstir2_source_dir}/build/read-conf.sh       ${rpstir2_program_dir}/bin/
-  cp -r ${rpstir2_source_dir}/build/tal/*           ${rpstir2_data_dir}/tal
+  cp -r ${rpstir2_source_dir}/build/tal/*           ${rpstir2_data_dir}/tal/
   cp -r ${rpstir2_source_dir}/conf/*                ${rpstir2_program_dir}/conf/
   
 
@@ -131,7 +131,7 @@ function updateFunc()
   cp ${rpstir2_source_dir}/build/rpstir2-command.sh ${rpstir2_program_dir}/bin/
   cp ${rpstir2_source_dir}/build/rpstir2-service.sh ${rpstir2_program_dir}/bin/
   cp ${rpstir2_source_dir}/build/read-conf.sh       ${rpstir2_program_dir}/bin/
-  cp -r ${rpstir2_source_dir}/build/tal/*           ${rpstir2_data_dir}/tal
+  cp -r ${rpstir2_source_dir}/build/tal/*           ${rpstir2_data_dir}/tal/
   
   chmod +x ${rpstir2_source_dir}/build/*.sh
   chmod +x ${rpstir2_program_dir}/bin/*  
