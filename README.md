@@ -149,6 +149,7 @@ crontab -e
 ##### (4)  Login out and see cache data
 "Ctrl-D" to exist rpstir2_centos8, and you can see cache data in "/root/rpki/rpstir2data/data/" and log of rpstir2 in "/root/rpki/rpstir2data/log"
 &nbsp;
+&nbsp;
 ## Running
 
 All functions of RPSTIR2 are accessible on the command line via sub-commands.
