@@ -11,8 +11,8 @@ function helpFunc()
     echo -e "2) ./rpstir2-command.sh rrdp:                 it will download rpki data by rrdp(delta), and need use '3)' to get result " 
     echo -e "3) ./rpstir2-command.sh states:               when result shows 'state:end', it means rsync/rrdp is end" 
     echo -e "4) ./rpstir2-command.sh reset:                it will reset all data in mysql and in local cache" 
-    echo -e "5) ./rpstir2-command.sh parsefile /***/file:  it will parse and validate the $file"
-    echo -e "6) ./rpstir2-command.sh slurm /***/file:      it will upload slurm $file"
+    echo -e "5) ./rpstir2-command.sh parsefile xxx.cer:    it will parse and validate the file(*.cer/*.mft/*.roa/*.crl)"
+    echo -e "6) ./rpstir2-command.sh slurm xxx.json:       it will upload slurm file(*.json)"
     echo -e "*) ./rpstir2-command.sh:                      it will show this help"
 }
 
