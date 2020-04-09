@@ -86,11 +86,12 @@ function deployFunc()
   cp ${rpstir2_source_dir}/build/rpstir2-command.sh ${rpstir2_program_dir}/bin/
   cp ${rpstir2_source_dir}/build/rpstir2-service.sh ${rpstir2_program_dir}/bin/
   cp ${rpstir2_source_dir}/build/read-conf.sh       ${rpstir2_program_dir}/bin/
+  cp -r ${rpstir2_source_dir}/build/tal/*           ${rpstir2_data_dir}/tal
+  cp -r ${rpstir2_source_dir}/conf/*                ${rpstir2_program_dir}/conf/
+  
+
   chmod +x ${rpstir2_source_dir}/build/*.sh
   chmod +x ${rpstir2_program_dir}/bin/*
-
-  cp -r ${rpstir2_source_dir}/conf/* ${rpstir2_program_dir}/conf/
-  cp -r ${rpstir2_source_dir}/build/tal/*   ${rpstir2_data_dir}/tal
   cd $curpath
   return 0
 }
@@ -125,10 +126,13 @@ function updateFunc()
   go install -v -gcflags "-N -l" ./...
   export GOPATH=$oldgopath
 
+  # will not copy conf/project.conf
   cp ${rpstir2_source_dir}/bin/*                    ${rpstir2_program_dir}/bin/
   cp ${rpstir2_source_dir}/build/rpstir2-command.sh ${rpstir2_program_dir}/bin/
   cp ${rpstir2_source_dir}/build/rpstir2-service.sh ${rpstir2_program_dir}/bin/
   cp ${rpstir2_source_dir}/build/read-conf.sh       ${rpstir2_program_dir}/bin/
+  cp -r ${rpstir2_source_dir}/build/tal/*           ${rpstir2_data_dir}/tal
+  
   chmod +x ${rpstir2_source_dir}/build/*.sh
   chmod +x ${rpstir2_program_dir}/bin/*  
   cd $curpath
@@ -158,7 +162,7 @@ case $1 in
   *)
     echo "rpstir2-service.sh help:"
     echo "1). deploy: deploy rpstir2, just run once"
-    echo "2). update: update rpstir2. It will stop rpstir2, and update source code and rebuild, then restart rpstir2"     
+    echo "2). update: update rpstir2. It will stop rpstir2, and update source code (not update project.conf) and rebuild, then restart rpstir2"     
     echo "3). start: start rpstir2"
     echo "4). stop: stop rpstir2" 
     ;;
