@@ -139,6 +139,15 @@ function updateFunc()
   return 0
 }
 
+function helpFunc()
+{
+    echo "rpstir2-service.sh help:"
+    echo "1) ./rpstir2-service.sh deploy: deploy rpstir2, just run once"
+    echo "2) ./rpstir2-service.sh update: update rpstir2. It will stop rpstir2, and update source code (not update project.conf) and rebuild, then restart rpstir2"     
+    echo "3) ./rpstir2-service.sh start: start rpstir2 service"
+    echo "4) ./rpstir2-service.sh stop: stop rpstir2 service" 
+    echo "*) ./rpstir2-command.sh: it will show this help"
+}
 
 case $1 in
   start | begin)
@@ -158,13 +167,12 @@ case $1 in
     stopFunc
     updateFunc
     startFunc
-    ;;     
+    ;; 
+  help)
+    helpFunc
+    ;;      
   *)
-    echo "rpstir2-service.sh help:"
-    echo "1). deploy: deploy rpstir2, just run once"
-    echo "2). update: update rpstir2. It will stop rpstir2, and update source code (not update project.conf) and rebuild, then restart rpstir2"     
-    echo "3). start: start rpstir2"
-    echo "4). stop: stop rpstir2" 
+    helpFunc
     ;;
 esac
 echo -e "\n"

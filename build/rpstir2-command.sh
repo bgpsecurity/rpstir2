@@ -3,6 +3,20 @@ cd "$(dirname "$0")";
 configFile="../conf/project.conf"
 source $(pwd)/read-conf.sh
 
+function helpFunc()
+{
+    echo "rpstir2-command.sh help:"
+    echo -e "1) ./rpstir2-command.sh init: it will init all data in mysql and in local cache, just run once" 
+    echo -e "1) ./rpstir2-command.sh rsync: it will download rpki data by rsync, and need use '3)' to get result "
+    echo -e "2) ./rpstir2-command.sh rrdp: it will download rpki data by rrdp(delta), and need use '3)' to get result " 
+    echo -e "3) ./rpstir2-command.sh states: when result shows 'state:end', it means rsync/rrdp is end" 
+    echo -e "4) ./rpstir2-command.sh reset: it will reset all data in mysql and in local cache" 
+    echo -e "5) ./rpstir2-command.sh parsefile $file: it will parse and validate the $file"
+    echo -e "6) ./rpstir2-command.sh slurm $file: it will upload slurm $file"
+    echo -e "*) ./rpstir2-command.sh: it will show this help"
+}
+
+
 case $1 in
   init ) 
     # `ReadINIfile "file" "[section]" "item" `
@@ -107,16 +121,11 @@ case $1 in
     echo "curl -d \"\" http://$roacompserver:$httpport/roacomp/roacompstart"
     curl -d "" http://$roacompserver:$httpport/roacomp/roacompstart
     ;;          
+  help)
+    helpFunc
+    ;;  
   *)
-    echo "rpstir2-command.sh help:"
-    echo -e "1). system init: rpstir2-command.sh init\n  will init all data in mysql and in local cache" 
-    echo -e "1). start rsync: rpstir2-command.sh rsync\n  and need use '3)' periodically to get result "
-    echo -e "2). start rrdp: rpstir2-command.sh rrdp\n  and need use '3)' periodically to get result " 
-    echo -e "3). get rsync/rrdp state: rpstir2-command.sh sumstates\n  when result shows 'state:end', it means rsync/rrdp is end" 
-    echo -e "4). system reset: rpstir2-command.sh resetall\n  will reset all data in mysql and in local cache" 
-    echo -e "5). parse cer/crl/mft/roa file: rpstir2-command.sh parsefile $file\n   $file is the acutal file name"
-    echo -e "6). upload slurm file: rpstir2-command.sh slurm $file\n   $file is the acutal file name"
-    echo -e "7). start roacomp: rpstir2-command.sh roacomp\n"
+    helpFunc
     ;;
  esac
  
