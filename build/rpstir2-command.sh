@@ -6,14 +6,14 @@ source $(pwd)/read-conf.sh
 function helpFunc()
 {
     echo "rpstir2-command.sh help:"
-    echo -e "1) ./rpstir2-command.sh init:            it will init all data in mysql and in local cache, just run once" 
-    echo -e "1) ./rpstir2-command.sh rsync:           it will download rpki data by rsync, and need use '3)' to get result "
-    echo -e "2) ./rpstir2-command.sh rrdp:            it will download rpki data by rrdp(delta), and need use '3)' to get result " 
-    echo -e "3) ./rpstir2-command.sh states:          when result shows 'state:end', it means rsync/rrdp is end" 
-    echo -e "4) ./rpstir2-command.sh reset:           it will reset all data in mysql and in local cache" 
-    echo -e "5) ./rpstir2-command.sh parsefile $file: it will parse and validate the $file"
-    echo -e "6) ./rpstir2-command.sh slurm $file:     it will upload slurm $file"
-    echo -e "*) ./rpstir2-command.sh:                 it will show this help"
+    echo -e "1) ./rpstir2-command.sh init:                 it will init all data in mysql and in local cache, just run once" 
+    echo -e "1) ./rpstir2-command.sh rsync:                it will download rpki data by rsync, and need use '3)' to get result "
+    echo -e "2) ./rpstir2-command.sh rrdp:                 it will download rpki data by rrdp(delta), and need use '3)' to get result " 
+    echo -e "3) ./rpstir2-command.sh states:               when result shows 'state:end', it means rsync/rrdp is end" 
+    echo -e "4) ./rpstir2-command.sh reset:                it will reset all data in mysql and in local cache" 
+    echo -e "5) ./rpstir2-command.sh parsefile /***/file:  it will parse and validate the $file"
+    echo -e "6) ./rpstir2-command.sh slurm /***/file:      it will upload slurm $file"
+    echo -e "*) ./rpstir2-command.sh:                      it will show this help"
 }
 
 
