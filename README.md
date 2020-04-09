@@ -1,7 +1,7 @@
 
 
 # RPSTIR2
-## Introduction
+## 1. Introduction
 
 RPKI is a hierarchical Public Key Infrastructure(PKI) that binds Internet Number Resources(INRs) such as Autonomous System Numbers(ASNs) and IP addresses to public keys via certificates. RPKI allows INR holder(certificate holder) to allocate certain IP prefix to their customers via issuing resource certificates(RCs) and authorizing an ASN to announce certain IP prefixes via issuing ROAs, and all of these RPKI objects are published in RPKI repository.
 
@@ -11,9 +11,9 @@ RPSTIR2 is a kind of RP software written in GO, which based on design idea of RP
 
 RPSTIR2 is capable of running on CentOS8(64bit)/Ubuntu18(64bit) or higher.
 &nbsp;
-## Getting started
+## 2. Getting started
 
-### Install OpenSSL
+### 2.1 Install OpenSSL
 
 OpenSSL version must be 1.1.1b or higher, and  "enable-rfc3779" needs to be set when compiling OpenSSL.
 
@@ -29,7 +29,7 @@ $ echo "export PATH=/usr/local/ssl/bin:$PATH" >> /root/.bashrc
 $ source /root/.bashrc
 ```
 &nbsp;
-### Configure MySQL
+### 2.2 Configure MySQL
 
 MySQL version must be 8 or higher and should support JSON. After MySQL has been installed, please login to MySQL and create user accounts and data tables according to the following script.
 
@@ -45,7 +45,7 @@ GRANT ALL PRIVILEGES ON rpstir2.* TO 'rpstir2'@'%'  with grant option;
 flush privileges;
 ```
 &nbsp;
-## Install RPSTIR2
+### 2.3 Install RPSTIR2
 
 Before installing RPSTIR2, you should create three directories in advance, one of which is for RPSTIR2 source code, and one is for program and the other is for the cache data. The following documents are explained according to the configuration given in the following table, which can be modified in locations of your choice.
 
@@ -60,7 +60,7 @@ $ mkdir -p /root/rpki/source/ /root/rpki/rpstir2  /root/rpki/data
 ```
 There are two ways to install RPSTIR2, including installing from source code and using docker.
 
-### 1. Install from source code
+#### 2.3.1. Install from source code
 
 ##### (1) Install GoLang
 Before install RPSTIR2 from source code, you should install the GoLang development environment, and the version must be 1.13 or higher
@@ -118,7 +118,7 @@ crontab -e
 1 1 * * *  /root/rpki/rpstir2/bin/rpstir2-command.sh crontab
 ```
 
-### 2. Install from Docker
+#### 2.3.2. Install from Docker
 ##### (1) Pull RPSTIR2 docker image
 The RPSTIR2 images is based on centos8, you can pull docker image and run RPSTIR2 as rpstir2_centos8
 
@@ -149,12 +149,11 @@ crontab -e
 ##### (4)  Login out and see cache data
 "Ctrl-D" to exist rpstir2_centos8, and you can see cache data in "/root/rpki/rpstir2data/data/" and log of rpstir2 in "/root/rpki/rpstir2data/log"
 &nbsp;
-&nbsp;
-## Running
+### 2.4 Running RPSTIR2
 
 All functions of RPSTIR2 are accessible on the command line via sub-commands.
 
-### Start and stop the RPSTIR2 service
+#### 2.4.1 Start and stop the RPSTIR2 service
 
 To execute all RPSTIR2 commands, the RPSTIR2 service must be started first. 
 
@@ -172,7 +171,7 @@ httpport=8080
 tcpport=8082
 ```
 
-### Initing
+#### 2.4.2 Initing
 
 After installing RPSTIR2, you should execute the following command to complete the initialization of the data tables.
 
@@ -180,23 +179,23 @@ After installing RPSTIR2, you should execute the following command to complete t
 $ ./rpstir2-command.sh init  
 ```
 
-### Sync and validate RPKI objects
+#### 2.4.3 Sync and validate RPKI objects
 
 You can download RPKI objects with rsync or RRDP protocol and complete the subsequent validation procedure.
 
-​1. rsync
+#####  (1)  rsync
 
 ```shell
 $ ./rpstir2-command.sh rsync 
 ```
 
-​2. RRDP
+#####  (2)  rrdp
 
 ```shell
 $ ./rpstir2-command.sh rrdp  
 ```
 
-### Get sync and validation status
+#### 2.4.4 Get sync and validation status
 
 Because rsync and RRDP are executed in the background, and they will take long time to run. So you need a command to determine if the synchronization and validation process is complete.
 
@@ -217,7 +216,7 @@ When you get the following JSON message, it indicates that synchronization and v
  }
 ```
 
-### Reset
+#### 2.4.5 Reset
 
 When you need to re-synchronize and re-validate RPKI objects, you can clean the tables in MySQL and cached data by executing the following command.
 
@@ -225,7 +224,7 @@ When you need to re-synchronize and re-validate RPKI objects, you can clean the 
 $./rpstir2-command.sh reset  
 ```
 &nbsp;
-## Technical consultation and bug report
+## 3 Technical consultation and bug report
 
 Please open an issue on our [GitHub page](https://github.com/bgpsecurity/rpstir2/issues) or mail to [shaoqing@zdns.cn](mailto:shaoqing@zdns.cn) with any problems or bugs you encounter.
 
