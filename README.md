@@ -101,7 +101,7 @@ database=rpstir2
 tcpport=8082
 ```
 
-Note: if you want change parameters after building RPSTIR2, you can modify configuration file in /root/rpki/rpstir2/conf/project.conf, and restart RPSTIR2.
+Note: If you want change parameters after building RPSTIR2, you can modify configuration file in /root/rpki/rpstir2/conf/project.conf, and restart RPSTIR2.
 
 ##### 2.1.7 Build and initialize RPSTIR2
 The RPSTIR2 will build and deploy automatically to /root/rpki/rpstir2. 
@@ -122,7 +122,8 @@ You can use crontab to perform scheduled synchronization tasks. Then RPSTIR2 wil
 $ crontab -e
 1 1 * * *  /root/rpki/rpstir2/bin/rpstir2-command.sh crontab
 ```
-Note: the RPSTIR2 service must be started first as shown in section 2.3.1. 
+
+Note: The RPSTIR2 service must be started first as shown in section 2.3.1. 
 
 #### 2.2 Install from Docker
 ##### 2.2.1 Pull RPSTIR2 docker image
@@ -146,6 +147,7 @@ chmod +x *.sh
 ```
 
 Now, the RPSTIR2 will automatically download and validate RPKI objects according to schedule task. 
+
 Note: You can enter "ctrl-d" to exist the rpstir2_centos8 and return to the host. On the host, the cache data is stored in "/root/rpki/rpstir2data/data/", and the logs of rpstir2 are saved in "/root/rpki/rpstir2data/log", and tcpport of rtr is 18082.
 
 ### 2.3 Running RPSTIR2
