@@ -141,7 +141,7 @@ func RsyncByUrl(rsyncModelChan rsyncmodel.RsyncModelChan) {
 		"     rsyncDestPath:", rsyncDestPath)
 	if err != nil {
 		rpQueue.RsyncMisc.FailRsyncUrls[rsyncModelChan.Url] = err.Error()
-		belogs.Error("RsyncByUrl():RsyncQuiet fail, rsyncModelChan.Url:", rsyncModelChan.Url, "   err:", err)
+		belogs.Error("RsyncByUrl():RsyncQuiet fail, rsyncModelChan.Url:", rsyncModelChan.Url, "   err:", err, "  time(s):", time.Now().Sub(start).Seconds())
 		belogs.Debug("RsyncByUrl():RsyncQuiet fail, before RsyncingParsingCount-1:", atomic.LoadInt64(&rpQueue.RsyncingParsingCount))
 		atomic.AddInt64(&rpQueue.RsyncingParsingCount, -1)
 		belogs.Debug("RsyncByUrl():RsyncQuiet fail, after RsyncingParsingCount-1:", atomic.LoadInt64(&rpQueue.RsyncingParsingCount))

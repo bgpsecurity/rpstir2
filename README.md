@@ -143,7 +143,7 @@ Then, you should login in rpstir2_centos8, and run deploy. And you can check syn
 docker exec -it rpstir2_centos8 /bin/bash
 cd /root/rpki/source/rpstir2/build 
 chmod +x *.sh
-./rpstir2-service.sh deploy
+./rpstir2-service.sh update
 ```
 
 Now, the RPSTIR2 will automatically download and validate RPKI objects according to schedule task. 

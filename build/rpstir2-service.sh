@@ -112,6 +112,10 @@ function updateFunc()
   echo "source directory is " $rpstir2_source_dir
   echo "data directory is " $rpstir2_data_dir
 
+  mkdir -p ${rpstir2_program_dir} ${rpstir2_program_dir}/bin    ${rpstir2_program_dir}/conf  ${rpstir2_program_dir}/log  
+  mkdir -p ${rpstir2_data_dir}    ${rpstir2_data_dir}/rsyncrepo ${rpstir2_data_dir}/rrdprepo ${rpstir2_data_dir}/slurm  ${rpstir2_data_dir}/tal 
+ 
+ 
   cd $rpstir2_source_dir
   go get -u github.com/cpusoft/goutil
   git checkout .
