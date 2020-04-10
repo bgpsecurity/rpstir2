@@ -137,7 +137,7 @@ docker run -itd --privileged -p 13306:3306 -p 18080-18090:8080-8090  -v /root/rp
 ```
 
 ##### 2.2.2 Configure rpstir2_centos8
-Then, you should login in rpstir2_centos8, and run deploy. And you can check synchronization schedule task in crontab as shown in section 2.1.8
+Then, you should login in rpstir2_centos8, and run update. And you can check synchronization schedule task in crontab as shown in section 2.1.8
 
 ```shell
 docker exec -it rpstir2_centos8 /bin/bash
