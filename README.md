@@ -171,6 +171,8 @@ chmod +x *.sh
 And you can change synchronization schedule task in crontab as shown in section 2.1.8.
 Now, the RPSTIR2 will automatically download and validate RPKI objects according to schedule task. 
 
+Note: Because RPSTIR2 use the docker's bridge network (172.17.0.1) to link MySQL in other container, the configuration of mysql server is changed to "127.0.0.1:13306" in /root/rpki/rpstir2/conf/project.conf.
+
 
 ### 2.3 Running RPSTIR2
 All functions of RPSTIR2 are accessible on the command line via sub-commands.
