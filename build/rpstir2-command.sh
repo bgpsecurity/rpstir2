@@ -90,16 +90,6 @@ case $1 in
     echo "curl -d \"\" http://$sysserver:$httpport/sys/reset"
     curl -d "" http://$sysserver:$httpport/sys/reset
     ;;      
-  parsevalidatefile | parsefile) 
-    # `ReadINIfile "file" "[section]" "item" `
-    parsevalidateserver=`ReadINIfile "$configFile" "rpstir2" "parsevalidateserver" `
-    echo $parsevalidateserver 
-    httpport=`ReadINIfile "$configFile" "rpstir2" "httpport" `
-    echo $httpport
-    # curl
-    echo "curl -F  \"file=@${2}\" http://$parsevalidateserver:$httpport/parsevalidate/file"
-    curl -F  "file=@${2}" http://$parsevalidateserver:$httpport/parsevalidate/file
-    ;;   
   slurmupload | slurm) 
     # `ReadINIfile "file" "[section]" "item" `
     slurmserver=`ReadINIfile "$configFile" "rpstir2" "slurmserver" `
