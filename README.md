@@ -32,10 +32,9 @@ $ source /root/.bashrc
 ```
 
 #### 2.1.2 Install MySQL
-You can download and install MySQL from https://dev.mysql.com/downloads/ according to your platform. MySQL version must be 8 or higher and should support JSON. After MySQL has been installed, please login in MySQL and create RPSTIR2's user accounts and database.
+You can download and install MySQL from https://dev.mysql.com/downloads/ according to your platform. MySQL version must be 8 or higher and should support JSON. You should login in MySQL as root, and create user accounts and database of RPSTIR2. 
 
 ```mysql
-ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'Rpstir-123';
 CREATE USER 'rpstir2'@'localhost' IDENTIFIED WITH mysql_native_password BY 'Rpstir-123';
 CREATE USER 'rpstir2'@'%' IDENTIFIED WITH mysql_native_password BY 'Rpstir-123';
 flush privileges;
@@ -45,6 +44,8 @@ GRANT ALL PRIVILEGES ON rpstir2.* TO 'rpstir2'@'localhost'  with grant option;
 GRANT ALL PRIVILEGES ON rpstir2.* TO 'rpstir2'@'%'  with grant option;
 flush privileges;
 ```
+
+Note: You also can use docker to run MySQL as shown in section 2.2.1. 
 
 #### 2.1.3 Install GoLang
 The GoLang version must be 1.13 or higher.
@@ -123,20 +124,43 @@ $ crontab -e
 Note: The RPSTIR2 service must be started first as shown in section 2.3.1. 
 
 #### 2.2 Install from Docker
-##### 2.2.1 Pull RPSTIR2 docker image
-The RPSTIR2 Docker includes two docker images, on includes RPSTIR2, other includes MySQL.
+##### 2.2.1 Pull RPSTIR2 MySQL docker image
+You can pull mysql docker image and login in MySQL as root.
 
 ```shell
-docker pull cpusoft/rpstir2_mysql
-docker run -itd --name rpstir2_mysql -p 13306:3306 cpusoft/rpstir2_mysql
+docker pull mysql
+docker run -itd --name rpstir2_mysql -p 13306:3306 -e MYSQL_ROOT_PASSWORD=Rpstir-123 mysql
+docker exec -it rpstir2_mysql /bin/bash
+mysql -uroot -p
+Rpstir-123
+```
 
+After that, you should create user accounts and database of RPSTIR2 as shown in section 2.1.2. 
+
+```SQL
+CREATE USER 'rpstir2'@'localhost' IDENTIFIED WITH mysql_native_password BY 'Rpstir-123';
+CREATE USER 'rpstir2'@'%' IDENTIFIED WITH mysql_native_password BY 'Rpstir-123';
+flush privileges;
+
+CREATE DATABASE rpstir2;
+GRANT ALL PRIVILEGES ON rpstir2.* TO 'rpstir2'@'localhost'  with grant option;
+GRANT ALL PRIVILEGES ON rpstir2.* TO 'rpstir2'@'%'  with grant option;
+flush privileges;
+quit;
+```
+
+##### 2.2.2 Pull RPSTIR2 docker image
+On the host, the cache data is stored in "/root/rpki/rpstir2data/data/", and the logs of rpstir2 are saved in "/root/rpki/rpstir2data/log", and tcpport of rtr is 18082.
+
+```shell
+cd /root/rpki/
 mkdir -p /root/rpki/rpstir2data /root/rpki/rpstir2data/data  /root/rpki/rpstir2data/log
 docker pull cpusoft/rpstir2_centos8
 docker run -itd --privileged -p 18080-18090:8080-8090   -v /root/rpki/rpstir2data/data:/root/rpki/data  -v /root/rpki/rpstir2data/log:/root/rpki/rpstir2/log --name rpstir2_centos8 cpusoft/rpstir2_centos8  /usr/sbin/init
 ```
 
-##### 2.2.2 Configure rpstir2_centos8
-Then, you should login in rpstir2_centos8 container, and run update. And you can change synchronization schedule task in crontab as shown in section 2.1.8
+##### 2.2.3 Configure RPSTIR2
+Then, you should login in RPSTIR2 container, and run update. 
 
 ```shell
 docker exec -it rpstir2_centos8 /bin/bash
@@ -144,10 +168,9 @@ cd /root/rpki/source/rpstir2/build
 chmod +x *.sh
 ./rpstir2-service.sh update
 ```
-
+And you can change synchronization schedule task in crontab as shown in section 2.1.8.
 Now, the RPSTIR2 will automatically download and validate RPKI objects according to schedule task. 
 
-Note: You can enter "ctrl-d" to exist the rpstir2_centos8 and return to the host. On the host, the cache data is stored in "/root/rpki/rpstir2data/data/", and the logs of rpstir2 are saved in "/root/rpki/rpstir2data/log", and tcpport of rtr is 18082.
 
 ### 2.3 Running RPSTIR2
 All functions of RPSTIR2 are accessible on the command line via sub-commands.

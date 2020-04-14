@@ -9,14 +9,14 @@ import (
 	db "sys/db"
 )
 
-func InitReset(isInit bool) {
+func InitReset(isInit bool) (err error) {
 	belogs.Info("InitReset():", isInit)
 
 	// reset db
-	err := db.InitResetDb(isInit)
+	err = db.InitResetDb(isInit)
 	if err != nil {
 		belogs.Error("InitReset():InitResetDb fail:", err)
-		return
+		return err
 	}
 	belogs.Info("InitReset(): InitResetDb ok")
 
@@ -29,4 +29,5 @@ func InitReset(isInit bool) {
 	os.MkdirAll(conf.VariableString("rrdp::destpath"), os.ModePerm)
 
 	belogs.Info("InitReset():ok")
+	return nil
 }
