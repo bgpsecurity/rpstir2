@@ -103,16 +103,13 @@ tcpport=8082
 
 Note: If you want change parameters after building RPSTIR2, you can modify configuration file in /root/rpki/rpstir2/conf/project.conf, and restart RPSTIR2.
 
-##### 2.1.7 Build and initialize RPSTIR2
+##### 2.1.7 Deploy RPSTIR2
 The RPSTIR2 will build and deploy automatically to /root/rpki/rpstir2. 
 
 ```shell
 $ cd /root/rpki/source/rpstir2/build
 $ chmod +x *.sh 
 $ ./rpstir2-service.sh deploy
-$ cd /root/rpki/rpstir2/bin
-$ ./rpstir2-serverice.sh start 
-$ ./rpstir2-command.sh init  
 ```
 
 #### 2.1.8 Configure scheduled task
@@ -127,17 +124,19 @@ Note: The RPSTIR2 service must be started first as shown in section 2.3.1.
 
 #### 2.2 Install from Docker
 ##### 2.2.1 Pull RPSTIR2 docker image
-The RPSTIR2 images is based on centos8, you can pull docker image and run RPSTIR2 docker as rpstir2_centos8. The RPSTIR2 service starts automatically with Docker.
+The RPSTIR2 Docker includes two docker images, on includes RPSTIR2, other includes MySQL.
 
 ```shell
+docker pull cpusoft/rpstir2_mysql
+docker run -itd --name rpstir2_mysql -p 13306:3306 cpusoft/rpstir2_mysql
+
+mkdir -p /root/rpki/rpstir2data /root/rpki/rpstir2data/data  /root/rpki/rpstir2data/log
 docker pull cpusoft/rpstir2_centos8
-docker volume create --name=rpstir2data
-mkdir -p /root/rpki/rpstir2data /root/rpki/rpstir2data/data  /root/rpki/rpstir2data/log 
-docker run -itd --privileged -p 13306:3306 -p 18080-18090:8080-8090  -v /root/rpki/rpstir2data/data:/root/rpki/data  -v /root/rpki/rpstir2data/log:/root/rpki/rpstir2/log    --name=rpstir2_centos8   cpusoft/rpstir2_centos8 /usr/sbin/init
+docker run -itd --privileged -p 18080-18090:8080-8090   -v /root/rpki/rpstir2data/data:/root/rpki/data  -v /root/rpki/rpstir2data/log:/root/rpki/rpstir2/log --name rpstir2_centos8 cpusoft/rpstir2_centos8  /usr/sbin/init
 ```
 
 ##### 2.2.2 Configure rpstir2_centos8
-Then, you should login in rpstir2_centos8, and run update. And you can check synchronization schedule task in crontab as shown in section 2.1.8
+Then, you should login in rpstir2_centos8 container, and run update. And you can change synchronization schedule task in crontab as shown in section 2.1.8
 
 ```shell
 docker exec -it rpstir2_centos8 /bin/bash

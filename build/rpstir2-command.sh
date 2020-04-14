@@ -6,15 +6,14 @@ source $(pwd)/read-conf.sh
 function helpFunc()
 {
     echo "rpstir2-command.sh help:"
-    echo -e "1) ./rpstir2-command.sh init:                 it will init all data in mysql and in local cache, just run once" 
-    echo -e "2) ./rpstir2-command.sh rsync:                it will download rpki data by rsync, and need use '3)' to get result "
-    echo -e "3) ./rpstir2-command.sh crontab:              it just use in crontab, other functions are similar to rsync"
-    echo -e "4) ./rpstir2-command.sh rrdp:                 it will download rpki data by rrdp(delta), and need use '3)' to get result " 
-    echo -e "5) ./rpstir2-command.sh states:               when it shows 'state:end', it means rsync/rrdp is end" 
-    echo -e "6) ./rpstir2-command.sh results:              it shows the valid, warning and invalid number of cer, roa, mft and crl respectively."
-    echo -e "7) ./rpstir2-command.sh reset:                it will reset all data in mysql and in local cache" 
-    echo -e "8) ./rpstir2-command.sh parsefile xxx.cer:    it will parse and validate the file(*.cer/*.mft/*.roa/*.crl)"
-    echo -e "9) ./rpstir2-command.sh slurm xxx.json:       it will upload slurm file(*.json)"
+    echo -e "1) ./rpstir2-command.sh rsync:                it will download rpki data by rsync, and need use '3)' to get result "
+    echo -e "2) ./rpstir2-command.sh crontab:              it just use in crontab, other functions are similar to rsync"
+    echo -e "3) ./rpstir2-command.sh rrdp:                 it will download rpki data by rrdp(delta), and need use '3)' to get result " 
+    echo -e "4) ./rpstir2-command.sh states:               when it shows 'state:end', it means rsync/rrdp is end" 
+    echo -e "5) ./rpstir2-command.sh results:              it shows the valid, warning and invalid number of cer, roa, mft and crl respectively."
+    echo -e "6) ./rpstir2-command.sh reset:                it will reset all data in mysql and in local cache" 
+    echo -e "7) ./rpstir2-command.sh parsefile xxx.cer:    it will parse and validate the file(*.cer/*.mft/*.roa/*.crl)"
+    echo -e "8) ./rpstir2-command.sh slurm xxx.json:       it will upload slurm file(*.json)"
     echo -e "*) ./rpstir2-command.sh:                      it will show this help"
 }
 
