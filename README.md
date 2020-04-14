@@ -223,7 +223,7 @@ When you get the following JSON message, it indicates that synchronization and v
     } 
  }
 ```
-#### 2.3.5 Results
+#### 2.3.4 Results
 You can get results of synchronization and validation. It shows the valid, warning and invalid number of cer, roa, mft and crl respectively.
 
 ```shell
@@ -259,12 +259,19 @@ $./rpstir2-command.sh results
 }
 ```
 
-#### 2.3.6 Reset
-When you need to re-synchronize and re-validate RPKI objects, you can clean the tables in MySQL and cached data by executing the following command.
+#### 2.3.5 Reset
+When you need to re-synchronize and re-validate RPKI objects, you can call reset to clean the tables in MySQL and cached data.
 
 ```shell
 $ cd /root/rpki/rpstir2/bin
 $./rpstir2-command.sh reset  
+```
+
+#### 2.3.6 Slurm
+
+```shell
+$ cd /root/rpki/rpstir2/bin
+$./rpstir2-command.sh slurm xxx.json  
 ```
 
 #### 2.3.7 Help
