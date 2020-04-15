@@ -14,16 +14,22 @@ import (
 func Reset(w rest.ResponseWriter, req *rest.Request) {
 	belogs.Info("Reset()")
 
-	sys.InitReset(false)
-
-	w.WriteJson(httpserver.GetOkHttpResponse())
+	err := sys.InitReset(false)
+	if err != nil {
+		w.WriteJson(httpserver.GetFailHttpResponse(err))
+	} else {
+		w.WriteJson(httpserver.GetOkHttpResponse())
+	}
 }
 func Init(w rest.ResponseWriter, req *rest.Request) {
 	belogs.Info("Init()")
 
-	sys.InitReset(true)
-
-	w.WriteJson(httpserver.GetOkHttpResponse())
+	err := sys.InitReset(true)
+	if err != nil {
+		w.WriteJson(httpserver.GetFailHttpResponse(err))
+	} else {
+		w.WriteJson(httpserver.GetOkHttpResponse())
+	}
 }
 
 // detail

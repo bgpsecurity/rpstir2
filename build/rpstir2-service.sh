@@ -92,6 +92,19 @@ function deployFunc()
 
   chmod +x ${rpstir2_source_dir}/build/*.sh
   chmod +x ${rpstir2_program_dir}/bin/*
+  
+  # init
+  cd ${rpstir2_program_dir}/bin
+  ./rpstir2-http &
+  ./rpstir2-rtr-tcp &
+  sysserver=$(ReadINIfile $configFile rpstir2 sysserver) 
+  echo $sysserver 
+  httpport=$(ReadINIfile $configFile rpstir2 httpport) 
+  echo $httpport
+  # curl
+  echo "curl -d \"\" http://$sysserver:$httpport/sys/init"
+  curl -d "" http://$sysserver:$httpport/sys/init
+  
   cd $curpath
   return 0
 }
@@ -112,6 +125,10 @@ function updateFunc()
   echo "source directory is " $rpstir2_source_dir
   echo "data directory is " $rpstir2_data_dir
 
+  mkdir -p ${rpstir2_program_dir} ${rpstir2_program_dir}/bin    ${rpstir2_program_dir}/conf  ${rpstir2_program_dir}/log  
+  mkdir -p ${rpstir2_data_dir}    ${rpstir2_data_dir}/rsyncrepo ${rpstir2_data_dir}/rrdprepo ${rpstir2_data_dir}/slurm  ${rpstir2_data_dir}/tal 
+ 
+ 
   cd $rpstir2_source_dir
   go get -u github.com/cpusoft/goutil
   git checkout .
