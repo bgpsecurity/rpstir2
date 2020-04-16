@@ -184,7 +184,7 @@ func getRoaParentChainCers(chains *chainmodel.Chains, roaId uint64) (chainCerAlo
 
 	parentChainCerAlone, err := getRoaParentChainCer(chains, roaId)
 	if err != nil {
-		belogs.Error("getRoaParentChainCers(): GetCerParentChainCer, roaId:", roaId, err)
+		belogs.Error("getRoaParentChainCers(): getRoaParentChainCer, roaId:", roaId, err)
 		return nil, err
 	}
 	belogs.Debug("getRoaParentChainCers(): roaId:", roaId, "  parentChainCerAlone.Id:", parentChainCerAlone.Id)
