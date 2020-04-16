@@ -160,12 +160,13 @@ docker run -itd --privileged -p 18080-18090:8080-8090   -v /root/rpki/rpstir2dat
 ```
 
 ##### 2.2.3 Configure RPSTIR2
-Then, you should login in RPSTIR2 container, and run update. 
+Then, you should login in RPSTIR2 container, and run deploy and update. 
 
 ```shell
 docker exec -it rpstir2_centos8 /bin/bash
 cd /root/rpki/source/rpstir2/build 
 chmod +x *.sh
+./rpstir2-service.sh deploy
 ./rpstir2-service.sh update
 ```
 And you can change synchronization schedule task in crontab as shown in section 2.1.8.
