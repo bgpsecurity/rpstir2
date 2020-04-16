@@ -17,6 +17,8 @@ import (
 )
 
 func ParseValidateStart() {
+
+	start := time.Now()
 	belogs.Info("ParseValidateStart(): start")
 	// save starttime to lab_rpki_sync_log
 	labRpkiSyncLogId, err := db.UpdateRsyncLogParseValidateStart("parsevalidating")
@@ -49,7 +51,7 @@ func ParseValidateStart() {
 		return
 	}
 
-	belogs.Info("ParseValidateStart(): end, will call chainvalidate")
+	belogs.Info("ParseValidateStart(): end, will call chainvalidate,  time(s):", time.Now().Sub(start).Seconds())
 	// will call ChainValidate
 	go func() {
 		httpclient.Post("http", conf.String("rpstir2::chainvalidateserver"), conf.Int("rpstir2::httpport"),
@@ -61,6 +63,8 @@ func ParseValidateStart() {
 // get update, because "update" should del first
 func DelCertByDelAndUpdate(labRpkiSyncLogId uint64) (updateCerSyncLogFileModels, updateCrlSyncLogFileModels,
 	updateMftSyncLogFileModels, updateRoaSyncLogFileModels []model.SyncLogFileModel, err error) {
+	start := time.Now()
+
 	belogs.Debug("DelCertByDelAndUpdate(): labRpkiSyncLogId:", labRpkiSyncLogId)
 
 	var wg sync.WaitGroup
@@ -133,6 +137,7 @@ func DelCertByDelAndUpdate(labRpkiSyncLogId uint64) (updateCerSyncLogFileModels,
 
 	}
 	wg.Wait()
+	belogs.Info("DelCertByDelAndUpdate(): end,  time(s):", time.Now().Sub(start).Seconds())
 	return updateCerSyncLogFileModels, updateCrlSyncLogFileModels,
 		updateMftSyncLogFileModels, updateRoaSyncLogFileModels, nil
 
@@ -143,6 +148,7 @@ func DelCertByDelAndUpdate(labRpkiSyncLogId uint64) (updateCerSyncLogFileModels,
 func InsertCertByAddAndUpdate(labRpkiSyncLogId uint64, updateCerSyncLogFileModels, updateCrlSyncLogFileModels,
 	updateMftSyncLogFileModels, updateRoaSyncLogFileModels []model.SyncLogFileModel) (err error) {
 
+	start := time.Now()
 	belogs.Debug("InsertCertByInsertAndUpdate(): labRpkiSyncLogId:", labRpkiSyncLogId)
 
 	var wg sync.WaitGroup
@@ -224,7 +230,7 @@ func InsertCertByAddAndUpdate(labRpkiSyncLogId uint64, updateCerSyncLogFileModel
 	}
 
 	wg.Wait()
-	belogs.Debug("InsertCertByInsertAndUpdate(): end")
+	belogs.Info("InsertCertByInsertAndUpdate(): end,  time(s):", time.Now().Sub(start).Seconds())
 	return nil
 }
 
