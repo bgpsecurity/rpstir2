@@ -177,6 +177,7 @@ case $1 in
     ;;
   deploy)
     echo "deploy rpstir2"
+    stopFunc
     deployFunc
     ;; 
   update | rebuild)

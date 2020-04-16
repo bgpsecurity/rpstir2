@@ -111,6 +111,7 @@ The RPSTIR2 will build and deploy automatically to /root/rpki/rpstir2.
 $ cd /root/rpki/source/rpstir2/build
 $ chmod +x *.sh 
 $ ./rpstir2-service.sh deploy
+$ ./rpstir2-service.sh update
 ```
 
 #### 2.1.8 Configure scheduled task
@@ -128,10 +129,10 @@ Note: The RPSTIR2 service must be started first as shown in section 2.3.1.
 You can pull mysql docker image and login in MySQL as root.
 
 ```shell
-docker pull mysql
-docker run -itd --name rpstir2_mysql -p 13306:3306 -e MYSQL_ROOT_PASSWORD=Rpstir-123 mysql
-docker exec -it rpstir2_mysql /bin/bash
-mysql -uroot -p
+$ docker pull mysql
+$ docker run -itd --name rpstir2_mysql -p 13306:3306 -e MYSQL_ROOT_PASSWORD=Rpstir-123 mysql
+$ docker exec -it rpstir2_mysql /bin/bash
+$ mysql -uroot -p
 Rpstir-123
 ```
 
@@ -153,20 +154,21 @@ quit;
 On the host, the cache data is stored in "/root/rpki/rpstir2data/data/", and the logs of rpstir2 are saved in "/root/rpki/rpstir2data/log", and tcpport of rtr is 18082.
 
 ```shell
-cd /root/rpki/
-mkdir -p /root/rpki/rpstir2data /root/rpki/rpstir2data/data  /root/rpki/rpstir2data/log
-docker pull cpusoft/rpstir2_centos8
-docker run -itd --privileged -p 18080-18090:8080-8090   -v /root/rpki/rpstir2data/data:/root/rpki/data  -v /root/rpki/rpstir2data/log:/root/rpki/rpstir2/log --name rpstir2_centos8 cpusoft/rpstir2_centos8  /usr/sbin/init
+$ cd /root/rpki/
+$ mkdir -p /root/rpki/rpstir2data /root/rpki/rpstir2data/data  /root/rpki/rpstir2data/log
+$ docker pull cpusoft/rpstir2_centos8
+$ docker run -itd --privileged -p 18080-18090:8080-8090   -v /root/rpki/rpstir2data/data:/root/rpki/data  -v /root/rpki/rpstir2data/log:/root/rpki/rpstir2/log --name rpstir2_centos8 cpusoft/rpstir2_centos8  /usr/sbin/init
 ```
 
 ##### 2.2.3 Configure RPSTIR2
-Then, you should login in RPSTIR2 container, and run update. 
+Then, you should login in RPSTIR2 container, and run deploy and update. 
 
 ```shell
-docker exec -it rpstir2_centos8 /bin/bash
-cd /root/rpki/source/rpstir2/build 
-chmod +x *.sh
-./rpstir2-service.sh update
+$ docker exec -it rpstir2_centos8 /bin/bash
+$ cd /root/rpki/source/rpstir2/build 
+$ chmod +x *.sh
+$ ./rpstir2-service.sh deploy
+$ ./rpstir2-service.sh update
 ```
 And you can change synchronization schedule task in crontab as shown in section 2.1.8.
 Now, the RPSTIR2 will automatically download and validate RPKI objects according to schedule task. 

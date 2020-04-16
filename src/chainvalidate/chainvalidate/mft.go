@@ -328,7 +328,7 @@ func getMftParentChainCers(chains *chainmodel.Chains, mftId uint64) (chainCerAlo
 
 	parentChainCerAlone, err := getMftParentChainCer(chains, mftId)
 	if err != nil {
-		belogs.Error("getMftParentChainCers(): getCrlParentChainCer, mftId:", mftId, err)
+		belogs.Error("getMftParentChainCers(): getMftParentChainCer, mftId:", mftId, err)
 		return nil, err
 	}
 	belogs.Debug("getMftParentChainCers(): mftId:", mftId, "  parentChainCerAlone.Id:", parentChainCerAlone.Id)
