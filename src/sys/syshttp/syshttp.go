@@ -80,3 +80,14 @@ func Results(w rest.ResponseWriter, req *rest.Request) {
 	belogs.Info("Results():results:", jsonutil.MarshalJson(results))
 	w.WriteJson(results)
 }
+
+func ExportRoas(w rest.ResponseWriter, req *rest.Request) {
+	belogs.Info("ExportRoas()")
+	results, err := sys.ExportRoas()
+	if err != nil {
+		w.WriteJson(httpserver.GetFailHttpResponse(err))
+		return
+	}
+	belogs.Info("ExportRoas():results:", jsonutil.MarshalJson(results))
+	w.WriteJson(results)
+}

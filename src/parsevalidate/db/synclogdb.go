@@ -11,51 +11,6 @@ import (
 	"model"
 )
 
-func GetSyncLogFileModels(labRpkiSyncLogId uint64, syncType, fileType string) (syncLogFileModels []model.SyncLogFileModel, err error) {
-	// get lastest syncLogFile.Id
-
-	belogs.Debug("GetSyncLogFileModels():start")
-	syncLogFileModels = make([]model.SyncLogFileModel, 0)
-	err = xormdb.XormEngine.Table("lab_rpki_sync_log_file").Select("id,syncLogId,filePath,fileName, fileType, syncType").
-		Where("state->'$.updateCertTable'=?", "notYet").And("syncLogId=?", labRpkiSyncLogId).
-		And("syncType=?", syncType).
-		And("fileType=?", fileType).
-		OrderBy("id").Find(&syncLogFileModels)
-	if err != nil {
-		belogs.Error("GetSyncLogFileModels(): Find fail:", err)
-		return nil, err
-	}
-	belogs.Debug("GetSyncLogFileModels(): len(syncLogFileModels):", len(syncLogFileModels))
-
-	var certId uint64
-	var tableName string
-	for i, _ := range syncLogFileModels {
-		switch syncLogFileModels[i].FileType {
-		case "cer":
-			tableName = "lab_rpki_cer"
-		case "crl":
-			tableName = "lab_rpki_crl"
-		case "mft":
-			tableName = "lab_rpki_mft"
-		case "roa":
-			tableName = "lab_rpki_roa"
-		}
-		has, err := xormdb.XormEngine.Table(tableName).Where("filePath=?", syncLogFileModels[i].FilePath).
-			And("fileName=?", syncLogFileModels[i].FileName).Cols("id").Get(&certId)
-		if err != nil {
-			belogs.Error("GetSyncLogFileModels(): get id fail:", tableName,
-				syncLogFileModels[i].FilePath, syncLogFileModels[i].FileName, err)
-			return nil, err
-		}
-		if has {
-			syncLogFileModels[i].CertId = certId
-		}
-		belogs.Debug("GetSyncLogFileModels():get id: ", tableName,
-			syncLogFileModels[i].FilePath, syncLogFileModels[i].FileName, syncLogFileModels[i].CertId)
-	}
-	return syncLogFileModels, nil
-}
-
 // state: parseValidating;
 func UpdateRsyncLogParseValidateStart(state string) (labRpkiSyncLogId uint64, err error) {
 	belogs.Debug("UpdateRsyncLogParseValidateStart():  state:", state)
@@ -86,6 +41,7 @@ func UpdateRsyncLogParseValidateStart(state string) (labRpkiSyncLogId uint64, er
 		return 0, xormdb.RollbackAndLogError(session, "UpdateRsyncLogParseValidateStart(): CommitSession fail:"+
 			parseValidateState+","+state+",  labRpkiSyncLogId:"+convert.ToString(labRpkiSyncLogId), err)
 	}
+
 	return uint64(id), nil
 }
 func UpdateRsyncLogParseValidateStateEnd(labRpkiSyncLogId uint64, state string,

@@ -75,6 +75,7 @@ func startServer() {
 	routes = append(routes, rest.Post("/sys/detailstates", syshttp.DetailStates))
 	routes = append(routes, rest.Post("/sys/summarystates", syshttp.SummaryStates))
 	routes = append(routes, rest.Post("/sys/results", syshttp.Results))
+	routes = append(routes, rest.Post("/sys/exportroas", syshttp.ExportRoas))
 
 	// make router
 	router, err := rest.MakeRouter(

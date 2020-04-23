@@ -10,10 +10,11 @@ import (
 	"github.com/go-xorm/xorm"
 
 	"model"
+	parsevalidatemodel "parsevalidate/model"
 )
 
 // add
-func AddCrls(syncLogFileModels []model.SyncLogFileModel) error {
+func AddCrls(syncLogFileModels []parsevalidatemodel.SyncLogFileModel) error {
 	session, err := xormdb.NewSession()
 	defer session.Close()
 	start := time.Now()
@@ -27,23 +28,34 @@ func AddCrls(syncLogFileModels []model.SyncLogFileModel) error {
 			return xormdb.RollbackAndLogError(session, "AddCrls(): insertCrl fail: "+jsonutil.MarshalJson(syncLogFileModels[i]), err)
 		}
 	}
+
+	err = UpdateSyncLogFilesJsonAllAndState(session, syncLogFileModels)
+	if err != nil {
+		belogs.Error("AddCrls(): UpdateSyncLogFilesJsonAllAndState fail:", err)
+		return xormdb.RollbackAndLogError(session, "AddCrls(): UpdateSyncLogFilesJsonAllAndState fail", err)
+	}
+
 	err = xormdb.CommitSession(session)
 	if err != nil {
 		belogs.Error("AddCrls(): insertCrl CommitSession fail :", err)
 		return err
 	}
-	belogs.Info("AddCrls(): len(crls), ", len(syncLogFileModels), "  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Info("AddCrls(): len(crls):", len(syncLogFileModels), "  time(s):", time.Now().Sub(start).Seconds())
 	return nil
 
 }
-func DelCrls(syncLogFileModels []model.SyncLogFileModel, wg *sync.WaitGroup) (err error) {
+
+// del
+func DelCrls(delSyncLogFileModels []parsevalidatemodel.SyncLogFileModel, updateSyncLogFileModels []parsevalidatemodel.SyncLogFileModel, wg *sync.WaitGroup) (err error) {
 	defer func() {
 		wg.Done()
 	}()
+
+	start := time.Now()
 	session, err := xormdb.NewSession()
 	defer session.Close()
-	start := time.Now()
 
+	syncLogFileModels := append(delSyncLogFileModels, updateSyncLogFileModels...)
 	belogs.Debug("DelCrls(): len(syncLogFileModels):", len(syncLogFileModels))
 	for i, _ := range syncLogFileModels {
 		err = delCrlById(session, syncLogFileModels[i].CertId)
@@ -53,12 +65,19 @@ func DelCrls(syncLogFileModels []model.SyncLogFileModel, wg *sync.WaitGroup) (er
 		}
 	}
 
+	// only update del
+	err = UpdateSyncLogFilesJsonAllAndState(session, delSyncLogFileModels)
+	if err != nil {
+		belogs.Error("DelCrls(): UpdateSyncLogFilesJsonAllAndState fail:", err)
+		return xormdb.RollbackAndLogError(session, "DelCrls(): UpdateSyncLogFilesJsonAllAndState fail", err)
+	}
+
 	err = xormdb.CommitSession(session)
 	if err != nil {
 		belogs.Error("DelCrls(): CommitSession fail :", err)
 		return err
 	}
-	belogs.Info("DelCrls(): len(crls), ", len(syncLogFileModels), "  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Info("DelCrls(): len(crls):", len(syncLogFileModels), "  time(s):", time.Now().Sub(start).Seconds())
 	return nil
 }
 func DelCrlByFile(session *xorm.Session, filePath, fileName string) (err error) {
@@ -99,7 +118,7 @@ func delCrlById(session *xorm.Session, crlId uint64) (err error) {
 }
 
 func insertCrl(session *xorm.Session,
-	syncLogFileModel *model.SyncLogFileModel, now time.Time) error {
+	syncLogFileModel *parsevalidatemodel.SyncLogFileModel, now time.Time) error {
 
 	crlModel := syncLogFileModel.CertModel.(model.CrlModel)
 	thisUpdate := crlModel.ThisUpdate

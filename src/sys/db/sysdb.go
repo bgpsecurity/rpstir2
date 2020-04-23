@@ -554,11 +554,25 @@ CREATE TABLE lab_rpki_conf (
 #########################
 ## create view
 #########################
-CREATE VIEW lab_rpki_roa_ipaddress_view AS 
-select r.id AS id,r.asn AS asn,i.addressPrefix AS addressPrefix,i.maxLength AS maxLength, 
-    r.syncLogId AS syncLogId,r.syncLogFileId AS syncLogFileId  
-from (lab_rpki_roa r join lab_rpki_roa_ipaddress i)  
-where ((i.roaId = r.id) and (json_extract(r.state,'$.state') = 'valid')) order by i.id
+CREATE VIEW lab_rpki_roa_ipaddress_view AS  
+select r.id AS id, 
+  r.asn AS asn, 
+  i.addressPrefix AS addressPrefix, 
+  i.maxLength AS maxLength,  
+  r.syncLogId AS syncLogId, 
+  r.syncLogFileId AS syncLogFileId, 
+  r.origin->>'$.rir' as rir, 
+  r.origin->>'$.repo' as repo   
+from  lab_rpki_roa r join lab_rpki_roa_ipaddress i   
+where i.roaId = r.id and  
+  r.state->>'$.state' in ('valid','warning')  
+order by  
+  r.origin->>'$.rir', 
+  r.origin->>'$.repo', 
+  i.addressPrefix, 
+  i.maxLength, 
+  r.asn, 
+  r.id    
 `}
 
 var resetSqls []string = []string{
@@ -747,4 +761,19 @@ func result(table, fileType string) (result sysmodel.Result, err error) {
 	}
 	belogs.Debug("result():result :", jsonutil.MarshalJson(result))
 	return result, nil
+}
+
+func ExportRoas() (exportRoas []sysmodel.ExportRoa, err error) {
+	sql :=
+		`select asn, addressPrefix, maxLength, rir, repo 
+		from lab_rpki_roa_ipaddress_view v
+		order by rir, repo,addressPrefix,maxLength,asn`
+	err = xormdb.XormEngine.Sql(sql).Find(&exportRoas)
+	if err != nil {
+		belogs.Error("ExportRoas():Find, fail:", err)
+		return nil, err
+	}
+
+	belogs.Debug("ExportRoas():len(exportRoas):", len(exportRoas))
+	return exportRoas, nil
 }

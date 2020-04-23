@@ -30,11 +30,16 @@ func ParseValidateFile(w rest.ResponseWriter, req *rest.Request) {
 	var certType string
 	var certModel interface{}
 	var stateModel model.StateModel
+	var jsonAll string
 	if err == nil {
 		if len(receiveFiles) > 0 {
 			for _, receiveFile := range receiveFiles {
-				certType, certModel, stateModel, _, err = parsevalidate.ParseValidateFile(receiveFile)
+				certType, certModel, stateModel, jsonAll, err = parsevalidate.ParseValidateFile(receiveFile)
 				stateModel.JudgeState()
+				belogs.Info("ParseValidateFile(): certType: ", certType,
+					"     certModel:", certModel,
+					"     stateModel:", stateModel,
+					"     jsonAll:", jsonAll)
 				break
 			}
 		} else {

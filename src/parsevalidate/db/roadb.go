@@ -10,10 +10,11 @@ import (
 	"github.com/go-xorm/xorm"
 
 	"model"
+	parsevalidatemodel "parsevalidate/model"
 )
 
 // add
-func AddRoas(syncLogFileModels []model.SyncLogFileModel) error {
+func AddRoas(syncLogFileModels []parsevalidatemodel.SyncLogFileModel) error {
 	session, err := xormdb.NewSession()
 	defer session.Close()
 	start := time.Now()
@@ -27,22 +28,32 @@ func AddRoas(syncLogFileModels []model.SyncLogFileModel) error {
 			return xormdb.RollbackAndLogError(session, "AddRoas(): insertRoa fail: "+jsonutil.MarshalJson(syncLogFileModels[i]), err)
 		}
 	}
+
+	err = UpdateSyncLogFilesJsonAllAndState(session, syncLogFileModels)
+	if err != nil {
+		belogs.Error("AddRoas(): UpdateSyncLogFilesJsonAllAndState fail:", err)
+		return xormdb.RollbackAndLogError(session, "AddRoas(): UpdateSyncLogFilesJsonAllAndState fail ", err)
+	}
+
 	err = xormdb.CommitSession(session)
 	if err != nil {
 		belogs.Error("AddRoas(): insertRoa CommitSession fail :", err)
 		return err
 	}
-	belogs.Info("AddRoas(): len(roas), ", len(syncLogFileModels), "  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Info("AddRoas(): len(roas):", len(syncLogFileModels), "  time(s):", time.Now().Sub(start).Seconds())
 	return nil
 }
-func DelRoas(syncLogFileModels []model.SyncLogFileModel, wg *sync.WaitGroup) (err error) {
+
+// del
+func DelRoas(delSyncLogFileModels []parsevalidatemodel.SyncLogFileModel, updateSyncLogFileModels []parsevalidatemodel.SyncLogFileModel, wg *sync.WaitGroup) (err error) {
 	defer func() {
 		wg.Done()
 	}()
+	start := time.Now()
 	session, err := xormdb.NewSession()
 	defer session.Close()
-	start := time.Now()
 
+	syncLogFileModels := append(delSyncLogFileModels, updateSyncLogFileModels...)
 	belogs.Debug("DelRoas(): len(syncLogFileModels):", len(syncLogFileModels))
 	for i, _ := range syncLogFileModels {
 		err = delRoaById(session, syncLogFileModels[i].CertId)
@@ -50,6 +61,13 @@ func DelRoas(syncLogFileModels []model.SyncLogFileModel, wg *sync.WaitGroup) (er
 			belogs.Error("DelRoas(): DelRoaById fail, cerId:", syncLogFileModels[i].CertId, err)
 			return xormdb.RollbackAndLogError(session, "DelRoas(): DelRoaById fail: "+jsonutil.MarshalJson(syncLogFileModels[i]), err)
 		}
+	}
+
+	// only update del
+	err = UpdateSyncLogFilesJsonAllAndState(session, delSyncLogFileModels)
+	if err != nil {
+		belogs.Error("DelRoas(): UpdateSyncLogFilesJsonAllAndState fail:", err)
+		return xormdb.RollbackAndLogError(session, "DelRoas(): UpdateSyncLogFilesJsonAllAndState fail", err)
 	}
 
 	err = xormdb.CommitSession(session)
@@ -120,7 +138,7 @@ func delRoaById(session *xorm.Session, roaId uint64) (err error) {
 }
 
 func insertRoa(session *xorm.Session,
-	syncLogFileModel *model.SyncLogFileModel, now time.Time) error {
+	syncLogFileModel *parsevalidatemodel.SyncLogFileModel, now time.Time) error {
 
 	roaModel := syncLogFileModel.CertModel.(model.RoaModel)
 	//lab_rpki_roa
