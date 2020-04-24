@@ -127,6 +127,9 @@ func UpdateMfts(chains *chainmodel.Chains, wg *sync.WaitGroup) {
 
 	start := time.Now()
 	session, err := xormdb.NewSession()
+	if err != nil {
+		return
+	}
 	defer session.Close()
 
 	mftIds := chains.MftIds

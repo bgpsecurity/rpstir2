@@ -110,6 +110,9 @@ func UpdateRoas(chains *chainmodel.Chains, wg *sync.WaitGroup) {
 
 	start := time.Now()
 	session, err := xormdb.NewSession()
+	if err != nil {
+		return
+	}
 	defer session.Close()
 
 	roaIds := chains.RoaIds

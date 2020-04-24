@@ -16,6 +16,9 @@ import (
 // add
 func AddRoas(syncLogFileModels []parsevalidatemodel.SyncLogFileModel) error {
 	session, err := xormdb.NewSession()
+	if err != nil {
+		return err
+	}
 	defer session.Close()
 	start := time.Now()
 

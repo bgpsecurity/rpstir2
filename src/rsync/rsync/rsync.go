@@ -104,7 +104,7 @@ func startRsyncServer() {
 				return
 			}
 
-			belogs.Info("startRsyncServer():end this rsync sucess: len(rpQueue.RsyncMisc.FailRsyncUrls):",
+			belogs.Info("startRsyncServer():end this rsync success: len(rpQueue.RsyncMisc.FailRsyncUrls):",
 				len(rpQueue.RsyncMisc.FailRsyncUrls))
 			// close rpQueue
 			rpQueue.Close()

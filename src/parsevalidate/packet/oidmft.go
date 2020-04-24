@@ -7,11 +7,11 @@ import (
 	belogs "github.com/astaxie/beego/logs"
 	convert "github.com/cpusoft/goutil/convert"
 
-	. "model"
+	"model"
 	"parsevalidate/util"
 )
 
-func ExtractMftOid(oidPackets *[]OidPacket, certFile string, fileByte []byte, mftModel *MftModel) (err error) {
+func ExtractMftOid(oidPackets *[]OidPacket, certFile string, fileByte []byte, mftModel *model.MftModel) (err error) {
 
 	found := false
 	for _, oidPacket := range *oidPackets {
@@ -62,7 +62,7 @@ func ExtractMftOid(oidPackets *[]OidPacket, certFile string, fileByte []byte, mf
 }
 
 // if decode packet fail ,so try again using OID to decode
-func extractMftOidImpl(secPacketSeq *Packet, certFile string, mftModel *MftModel) (err error) {
+func extractMftOidImpl(secPacketSeq *Packet, certFile string, mftModel *model.MftModel) (err error) {
 	belogs.Debug("extractMftOidImpl():secPacketSeq:")
 
 	manifestNumber := secPacketSeq.Children[0]
@@ -86,13 +86,13 @@ func extractMftOidImpl(secPacketSeq *Packet, certFile string, mftModel *MftModel
 	PrintPacketString("fileHashAlg", fileHashAlg, true, false)
 	mftModel.FileHashAlg = fileHashAlg.Value.(string)
 
-	fileAndHashs := make([]FileHashModel, 0)
+	fileAndHashs := make([]model.FileHashModel, 0)
 
 	fileList := secPacketSeq.Children[4]
 	if len(fileList.Children) > 0 {
 		for _, fileAndHashPacket := range fileList.Children {
 			if len(fileAndHashPacket.Children) > 1 {
-				fileAndHash := FileHashModel{}
+				fileAndHash := model.FileHashModel{}
 
 				file := fileAndHashPacket.Children[0]
 				PrintPacketString("file", file, true, false)
@@ -122,7 +122,7 @@ func extractMftOidImpl(secPacketSeq *Packet, certFile string, mftModel *MftModel
 }
 
 // if decode packet fail ,so try again using OID to decode
-func reExtractMftOid(fileByte []byte, certFile string, mftModel *MftModel) (err error) {
+func reExtractMftOid(fileByte []byte, certFile string, mftModel *model.MftModel) (err error) {
 
 	/*
 		 IA5String include ASCII, such as NULL,BEL,TAB,NL,LF,CR and 32~126.

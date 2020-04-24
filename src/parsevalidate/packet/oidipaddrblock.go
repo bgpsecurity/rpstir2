@@ -5,12 +5,12 @@ import (
 
 	belogs "github.com/astaxie/beego/logs"
 
-	. "model"
+	"model"
 	"parsevalidate/util"
 )
 
-func ExtractIpAddrBlockOid(oidPackets *[]OidPacket) (cerIpAddressModel CerIpAddressModel, err error) {
-	cerIpAddressModel.CerIpAddresses = make([]CerIpAddress, 0)
+func ExtractIpAddrBlockOid(oidPackets *[]OidPacket) (cerIpAddressModel model.CerIpAddressModel, err error) {
+	cerIpAddressModel.CerIpAddresses = make([]model.CerIpAddress, 0)
 	var ipType int
 	for _, oidPacket := range *oidPackets {
 		if oidPacket.Oid == oidIpAddressKey {
@@ -51,7 +51,7 @@ func ExtractIpAddrBlockOid(oidPackets *[]OidPacket) (cerIpAddressModel CerIpAddr
 												PrintPacketString("addressesOrRanges", addressesOrRangesPacket, true, false)
 												belogs.Debug("addressesOrRanges: len: ", len(addressesOrRangesPacket.Children))
 
-												cerIpAddress := CerIpAddress{}
+												cerIpAddress := model.CerIpAddress{}
 
 												if len(addressesOrRangesPacket.Children) > 0 {
 
