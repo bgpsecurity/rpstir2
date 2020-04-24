@@ -127,7 +127,9 @@ func InsertCertByAddAndUpdate(syncLogFileModels *parsevalidatemodel.SyncLogFileM
 		"       len(syncLogFileModels.UpdateCerSyncLogFileModels):", len(syncLogFileModels.UpdateCerSyncLogFileModels))
 	if len(syncLogFileModels.AddCerSyncLogFileModels) > 0 || len(syncLogFileModels.UpdateCerSyncLogFileModels) > 0 {
 		wg.Add(1)
-		go parseValidateAndAddCers(append(syncLogFileModels.AddCerSyncLogFileModels, syncLogFileModels.UpdateCerSyncLogFileModels...), &wg)
+		go parseValidateAndAddCerts(
+			append(syncLogFileModels.AddCerSyncLogFileModels, syncLogFileModels.UpdateCerSyncLogFileModels...),
+			"cer", &wg)
 	}
 
 	// add/update crl
@@ -135,7 +137,9 @@ func InsertCertByAddAndUpdate(syncLogFileModels *parsevalidatemodel.SyncLogFileM
 		"       len(syncLogFileModels.UpdateCrlSyncLogFileModels):", len(syncLogFileModels.UpdateCrlSyncLogFileModels))
 	if len(syncLogFileModels.AddCrlSyncLogFileModels) > 0 || len(syncLogFileModels.UpdateCrlSyncLogFileModels) > 0 {
 		wg.Add(1)
-		go parseValidateAndAddCrls(append(syncLogFileModels.AddCrlSyncLogFileModels, syncLogFileModels.UpdateCrlSyncLogFileModels...), &wg)
+		go parseValidateAndAddCerts(
+			append(syncLogFileModels.AddCrlSyncLogFileModels, syncLogFileModels.UpdateCrlSyncLogFileModels...),
+			"crl", &wg)
 	}
 
 	// add/update mft
@@ -143,7 +147,9 @@ func InsertCertByAddAndUpdate(syncLogFileModels *parsevalidatemodel.SyncLogFileM
 		"       len(syncLogFileModels.UpdateMftSyncLogFileModels):", len(syncLogFileModels.UpdateMftSyncLogFileModels))
 	if len(syncLogFileModels.AddMftSyncLogFileModels) > 0 || len(syncLogFileModels.UpdateMftSyncLogFileModels) > 0 {
 		wg.Add(1)
-		go parseValidateAndAddMfts(append(syncLogFileModels.AddMftSyncLogFileModels, syncLogFileModels.UpdateMftSyncLogFileModels...), &wg)
+		go parseValidateAndAddCerts(
+			append(syncLogFileModels.AddMftSyncLogFileModels, syncLogFileModels.UpdateMftSyncLogFileModels...),
+			"mft", &wg)
 	}
 
 	// add/update roa
@@ -151,7 +157,9 @@ func InsertCertByAddAndUpdate(syncLogFileModels *parsevalidatemodel.SyncLogFileM
 		"       len(syncLogFileModels.UpdateRoaSyncLogFileModels):", len(syncLogFileModels.UpdateRoaSyncLogFileModels))
 	if len(syncLogFileModels.AddRoaSyncLogFileModels) > 0 || len(syncLogFileModels.UpdateRoaSyncLogFileModels) > 0 {
 		wg.Add(1)
-		go parseValidateAndAddRoas(append(syncLogFileModels.AddRoaSyncLogFileModels, syncLogFileModels.UpdateRoaSyncLogFileModels...), &wg)
+		go parseValidateAndAddCerts(
+			append(syncLogFileModels.AddRoaSyncLogFileModels, syncLogFileModels.UpdateRoaSyncLogFileModels...),
+			"roa", &wg)
 	}
 
 	wg.Wait()
@@ -159,58 +167,46 @@ func InsertCertByAddAndUpdate(syncLogFileModels *parsevalidatemodel.SyncLogFileM
 	return nil
 }
 
-func parseValidateAndAddCers(syncLogFileModels []parsevalidatemodel.SyncLogFileModel, wg *sync.WaitGroup) {
+func parseValidateAndAddCerts(syncLogFileModels []parsevalidatemodel.SyncLogFileModel, fileType string, wg *sync.WaitGroup) {
 	defer func() {
 		wg.Done()
 	}()
 	start := time.Now()
-	parseValidateCerts(syncLogFileModels)
-	db.AddCers(syncLogFileModels)
 
-	belogs.Info("parseValidateAndAddCers(): len(cers):", len(syncLogFileModels), "  time(s):", time.Now().Sub(start).Seconds())
-}
-func parseValidateAndAddCrls(syncLogFileModels []parsevalidatemodel.SyncLogFileModel, wg *sync.WaitGroup) {
-	defer func() {
-		wg.Done()
-	}()
-	start := time.Now()
-	parseValidateCerts(syncLogFileModels)
-	db.AddCrls(syncLogFileModels)
-	belogs.Info("parseValidateAndAddCrls(): len(crls):", len(syncLogFileModels), "  time(s):", time.Now().Sub(start).Seconds())
-}
-func parseValidateAndAddMfts(syncLogFileModels []parsevalidatemodel.SyncLogFileModel, wg *sync.WaitGroup) {
-	defer func() {
-		wg.Done()
-	}()
-	start := time.Now()
-	parseValidateCerts(syncLogFileModels)
-	db.AddMfts(syncLogFileModels)
-	belogs.Info("parseValidateAndAddMfts(): len(mfts):", len(syncLogFileModels), "  time(s):", time.Now().Sub(start).Seconds())
-}
-func parseValidateAndAddRoas(syncLogFileModels []parsevalidatemodel.SyncLogFileModel, wg *sync.WaitGroup) {
-	defer func() {
-		wg.Done()
-	}()
-	start := time.Now()
-	parseValidateCerts(syncLogFileModels)
-	db.AddRoas(syncLogFileModels)
-	belogs.Info("parseValidateAndAddRoas(): len(roas):", len(syncLogFileModels), "  time(s):", time.Now().Sub(start).Seconds())
-}
-func parseValidateCerts(syncLogFileModels []parsevalidatemodel.SyncLogFileModel) {
-
-	belogs.Debug("parseValidateCerts(): len(syncLogFileModels):", len(syncLogFileModels))
+	// parsevalidate
+	belogs.Debug("parseValidateAndAddCerts(): len(syncLogFileModels):", len(syncLogFileModels), "  fileType:", fileType)
+	var parseValidateWg sync.WaitGroup
+	parseValidateCh := make(chan int, conf.Int("parse::parseConcurrentCount"))
 	for i, _ := range syncLogFileModels {
-		parseFailFile, err := parseValidateCert(&syncLogFileModels[i])
-		if err != nil {
-			belogs.Error("parseValidateCerts(): parseValidateCert fail: ",
-				syncLogFileModels[i].FilePath, syncLogFileModels[i].FileName, parseFailFile, err)
-			// not return err
-			continue
-		}
+		parseValidateWg.Add(1)
+		parseValidateCh <- 1
+		go parseValidateCert(&syncLogFileModels[i], &parseValidateWg, parseValidateCh)
 	}
+	parseValidateWg.Wait()
+	close(parseValidateCh)
+
+	belogs.Info("parseValidateAndAddCerts():end parseValidate, len(syncLogFileModels):", len(syncLogFileModels), "  fileType:", fileType, "  fileType:", fileType, "  time(s):", time.Now().Sub(start).Seconds())
+
+	// add to db
+	switch fileType {
+	case "cer":
+		db.AddCers(syncLogFileModels)
+	case "crl":
+		db.AddCrls(syncLogFileModels)
+	case "mft":
+		db.AddMfts(syncLogFileModels)
+	case "roa":
+		db.AddRoas(syncLogFileModels)
+	}
+	belogs.Info("parseValidateAndAddCerts():end add***(), len(syncLogFileModels):", len(syncLogFileModels), "  fileType:", fileType, "  time(s):", time.Now().Sub(start).Seconds())
 }
 
-func parseValidateCert(syncLogFileModel *parsevalidatemodel.SyncLogFileModel) (parseFailFile string, err error) {
+func parseValidateCert(syncLogFileModel *parsevalidatemodel.SyncLogFileModel,
+	wg *sync.WaitGroup, parseValidateCh chan int) (parseFailFile string, err error) {
+	defer func() {
+		wg.Done()
+		<-parseValidateCh
+	}()
 
 	start := time.Now()
 	belogs.Debug("parseValidateCert(): syncLogFileModel :", jsonutil.MarshalJson(syncLogFileModel))

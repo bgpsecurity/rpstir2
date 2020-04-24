@@ -479,7 +479,7 @@ func getChildChainCersCrlsMftsRoas(chains *chainmodel.Chains, cerId uint64) (chi
 
 		}
 	}
-	belogs.Info("getChildChainCersCrlsMftsRoas():get all child, cerId:", cerId,
+	belogs.Debug("getChildChainCersCrlsMftsRoas():get all child, cerId:", cerId,
 		"  len(childChainCerAlones):", len(childChainCerAlones),
 		"  len(childChainCrls):", len(childChainCrls),
 		"  len(childChainRoas):", len(childChainRoas),
