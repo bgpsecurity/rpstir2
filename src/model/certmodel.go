@@ -314,9 +314,9 @@ func (my *RoaModel) Compare(other *RoaModel) bool {
 	if len(my.RoaIpAddressModels) != len(other.RoaIpAddressModels) {
 		return false
 	}
-	for i, _ := range my.RoaIpAddressModels {
+	for i := range my.RoaIpAddressModels {
 		found := false
-		for j, _ := range other.RoaIpAddressModels {
+		for j := range other.RoaIpAddressModels {
 			if my.RoaIpAddressModels[i].AddressFamily == other.RoaIpAddressModels[j].AddressFamily &&
 				my.RoaIpAddressModels[i].AddressPrefix == other.RoaIpAddressModels[j].AddressPrefix &&
 				my.RoaIpAddressModels[i].MaxLength == other.RoaIpAddressModels[j].MaxLength {

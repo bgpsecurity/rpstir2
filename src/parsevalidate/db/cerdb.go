@@ -21,7 +21,7 @@ func AddCers(syncLogFileModels []parsevalidatemodel.SyncLogFileModel) error {
 	start := time.Now()
 
 	belogs.Debug("AddCers(): len(syncLogFileModels):", len(syncLogFileModels))
-	for i, _ := range syncLogFileModels {
+	for i := range syncLogFileModels {
 		// insert new cer
 		err = insertCer(session, &syncLogFileModels[i], start)
 		if err != nil {
@@ -58,7 +58,7 @@ func DelCers(delSyncLogFileModels []parsevalidatemodel.SyncLogFileModel, updateS
 
 	syncLogFileModels := append(delSyncLogFileModels, updateSyncLogFileModels...)
 	belogs.Debug("DelCers(): len(syncLogFileModels):", len(syncLogFileModels))
-	for i, _ := range syncLogFileModels {
+	for i := range syncLogFileModels {
 		err = delCerById(session, syncLogFileModels[i].CertId)
 		if err != nil {
 			belogs.Error("DelCers(): DelCerById fail, cerId:", syncLogFileModels[i].CertId, err)

@@ -255,7 +255,7 @@ func (p *Packet) AppendChild(child *Packet) {
 
 func TransformPacket(p *Packet, oidPackets *[]OidPacket) {
 
-	for i, _ := range p.Children {
+	for i := range p.Children {
 
 		p.Children[i].Parent = p
 		//fmt.Println(p.Children[i].Tag, TagObjectIdentifier)

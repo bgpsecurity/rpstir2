@@ -27,7 +27,7 @@ func GetSyncLogFileModelsBySyncLogId(labRpkiSyncLogId uint64) (syncLogFileModels
 
 	var certId uint64
 	var tableName string
-	for i, _ := range dbSyncLogFileModels {
+	for i := range dbSyncLogFileModels {
 		// only "update" and "del" have certId
 		if dbSyncLogFileModels[i].SyncType == "add" {
 			continue
@@ -66,7 +66,7 @@ func UpdateSyncLogFilesJsonAllAndState(session *xorm.Session, syncLogFileModels 
 	sqlStr := `update lab_rpki_sync_log_file f set 	
 	  f.state=json_replace(f.state,'$.updateCertTable','finished','$.rtr',?) ,
 	  f.jsonAll=?  where f.id=?`
-	for i, _ := range syncLogFileModels {
+	for i := range syncLogFileModels {
 		rtrState := "notNeed"
 		if syncLogFileModels[i].FileType == "roa" && syncLogFileModels[i].SyncType != "del" {
 			rtrState = "notYet"

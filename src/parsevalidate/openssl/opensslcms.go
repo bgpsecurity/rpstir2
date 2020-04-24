@@ -1,7 +1,5 @@
 package openssl
 
-import ()
-
 /*
 openssl cms -in  AD74E5D0B0DF11E5A886C423C4F9AE02.roa -noout -cmsout -print -inform der
 CMS_ContentInfo:

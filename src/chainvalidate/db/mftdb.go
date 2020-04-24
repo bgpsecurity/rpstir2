@@ -71,7 +71,7 @@ func getChainFileHashs(mftId uint64, aki string) (chainFileHashs []chainmodel.Ch
 		return chainFileHashs, err
 	}
 
-	for i, _ := range chainFileHashs {
+	for i := range chainFileHashs {
 		filePath, err := getPath(chainFileHashs[i].File, aki)
 		if err != nil {
 			belogs.Error("getChainFileHashs(): getPath fail:", chainFileHashs[i].File, aki)

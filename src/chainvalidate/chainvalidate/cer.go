@@ -249,7 +249,7 @@ func AsnsIncludeInParents(parentChainCerAlones []chainmodel.ChainCerAlone, self 
 	}
 
 	// found ip one by one,
-	for i, _ := range parentChainCerAlones {
+	for i := range parentChainCerAlones {
 		if len(parentChainCerAlones[i].ChainAsns) == 0 {
 			belogs.Debug("IncludeInParents(): len(parentChainCerAlones[i].ChainAsn) is 0 ")
 			continue
@@ -302,7 +302,7 @@ func IpAddressesIncludeInParents(parentChainCerAlones []chainmodel.ChainCerAlone
 	}
 
 	// found ip one by one,
-	for i, _ := range parentChainCerAlones {
+	for i := range parentChainCerAlones {
 		if len(parentChainCerAlones[i].ChainIpAddresses) == 0 {
 			belogs.Debug("IpAddressesIncludeInParents(): len(parentChainCerAlones[i].ChainIpAddresses) is 0 ")
 			continue
@@ -436,7 +436,7 @@ func getChildChainCersCrlsMftsRoas(chains *chainmodel.Chains, cerId uint64) (chi
 	fileTypeIds, ok := chains.AkiToFileTypeIds[childsAki]
 	belogs.Debug("getChildChainCersCrlsMftsRoas(): cerId fileTypeIds, ok:", cerId, fileTypeIds, ok)
 	if ok {
-		for i, _ := range fileTypeIds.FileTypeIds {
+		for i := range fileTypeIds.FileTypeIds {
 			fileTypeId := fileTypeIds.FileTypeIds[i]
 			belogs.Debug("getChildChainCersCrlsMftsRoas(): cerId, fileTypeId, ok:", cerId, fileTypeId, ok)
 			if ok {

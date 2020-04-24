@@ -21,7 +21,7 @@ func AddMfts(syncLogFileModels []parsevalidatemodel.SyncLogFileModel) error {
 
 	belogs.Debug("AddMfts(): len(syncLogFileModels):", len(syncLogFileModels))
 	// insert new mft
-	for i, _ := range syncLogFileModels {
+	for i := range syncLogFileModels {
 		err = insertMft(session, &syncLogFileModels[i], start)
 		if err != nil {
 			belogs.Error("AddMfts(): insertMft fail:", jsonutil.MarshalJson(syncLogFileModels[i]), err)
@@ -56,7 +56,7 @@ func DelMfts(delSyncLogFileModels []parsevalidatemodel.SyncLogFileModel, updateS
 
 	syncLogFileModels := append(delSyncLogFileModels, updateSyncLogFileModels...)
 	belogs.Debug("DelMfts(): len(syncLogFileModels):", len(syncLogFileModels))
-	for i, _ := range syncLogFileModels {
+	for i := range syncLogFileModels {
 		err = delMftById(session, syncLogFileModels[i].CertId)
 		if err != nil {
 			belogs.Error("DelMfts(): DelMftByFile fail, cerId:", syncLogFileModels[i].CertId, err)

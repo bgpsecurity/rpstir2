@@ -21,7 +21,7 @@ func AddCrls(syncLogFileModels []parsevalidatemodel.SyncLogFileModel) error {
 
 	// add
 	belogs.Debug("AddCrls(): len(syncLogFileModels):", len(syncLogFileModels))
-	for i, _ := range syncLogFileModels {
+	for i := range syncLogFileModels {
 		err = insertCrl(session, &syncLogFileModels[i], start)
 		if err != nil {
 			belogs.Error("AddCrls(): insertCrl fail:", jsonutil.MarshalJson(syncLogFileModels[i]), err)
@@ -57,7 +57,7 @@ func DelCrls(delSyncLogFileModels []parsevalidatemodel.SyncLogFileModel, updateS
 
 	syncLogFileModels := append(delSyncLogFileModels, updateSyncLogFileModels...)
 	belogs.Debug("DelCrls(): len(syncLogFileModels):", len(syncLogFileModels))
-	for i, _ := range syncLogFileModels {
+	for i := range syncLogFileModels {
 		err = delCrlById(session, syncLogFileModels[i].CertId)
 		if err != nil {
 			belogs.Error("DelCrls(): DelCrlByFile fail, cerId:", syncLogFileModels[i].CertId, err)

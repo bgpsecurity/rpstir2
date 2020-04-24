@@ -21,7 +21,7 @@ func AddRoas(syncLogFileModels []parsevalidatemodel.SyncLogFileModel) error {
 
 	belogs.Debug("AddRoas(): len(syncLogFileModels):", len(syncLogFileModels))
 	// insert new mft
-	for i, _ := range syncLogFileModels {
+	for i := range syncLogFileModels {
 		err = insertRoa(session, &syncLogFileModels[i], start)
 		if err != nil {
 			belogs.Error("AddRoas(): insertRoa fail:", jsonutil.MarshalJson(syncLogFileModels[i]), err)
@@ -55,7 +55,7 @@ func DelRoas(delSyncLogFileModels []parsevalidatemodel.SyncLogFileModel, updateS
 
 	syncLogFileModels := append(delSyncLogFileModels, updateSyncLogFileModels...)
 	belogs.Debug("DelRoas(): len(syncLogFileModels):", len(syncLogFileModels))
-	for i, _ := range syncLogFileModels {
+	for i := range syncLogFileModels {
 		err = delRoaById(session, syncLogFileModels[i].CertId)
 		if err != nil {
 			belogs.Error("DelRoas(): DelRoaById fail, cerId:", syncLogFileModels[i].CertId, err)

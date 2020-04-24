@@ -69,12 +69,12 @@ func (s *StateModel) ClearStage(stage string) {
 	}
 	newErrors := make([]StateMsg, 0)
 	newWarnings := make([]StateMsg, 0)
-	for i, _ := range s.Errors {
+	for i := range s.Errors {
 		if s.Errors[i].Stage != stage {
 			newErrors = append(newErrors, s.Errors[i])
 		}
 	}
-	for i, _ := range s.Warnings {
+	for i := range s.Warnings {
 		if s.Warnings[i].Stage != stage {
 			newWarnings = append(newWarnings, s.Warnings[i])
 		}
@@ -83,7 +83,7 @@ func (s *StateModel) ClearStage(stage string) {
 	s.Warnings = newWarnings
 }
 func (s *StateModel) AddError(stateMsg *StateMsg) {
-	for i, _ := range s.Errors {
+	for i := range s.Errors {
 		if s.Errors[i].Equal(stateMsg) {
 			return
 		}
@@ -91,7 +91,7 @@ func (s *StateModel) AddError(stateMsg *StateMsg) {
 	s.Errors = append(s.Errors, *stateMsg)
 }
 func (s *StateModel) AddWarning(stateMsg *StateMsg) {
-	for i, _ := range s.Warnings {
+	for i := range s.Warnings {
 		if s.Warnings[i].Equal(stateMsg) {
 			return
 		}

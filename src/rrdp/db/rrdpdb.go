@@ -31,7 +31,7 @@ func UpdateRrdpSnapshot(snapshotModel *rrdputil.SnapshotModel,
 
 	// insert synclog
 	rrdpTime := time.Now()
-	for i, _ := range snapshotModel.SnapshotPublishs {
+	for i := range snapshotModel.SnapshotPublishs {
 
 		pathFileName, err := osutil.GetPathFileNameFromUrl(conf.VariableString("rrdp::destpath"), snapshotModel.SnapshotPublishs[i].Uri)
 		if err != nil {
@@ -108,7 +108,7 @@ func UpdateRrdpDelta(deltaModel *rrdputil.DeltaModel,
 	// insert synclog
 	rrdpTime := time.Now()
 	// first to withdraw
-	for i, _ := range deltaModel.DeltaWithdraws {
+	for i := range deltaModel.DeltaWithdraws {
 
 		pathFileName, err := osutil.GetPathFileNameFromUrl(conf.VariableString("rrdp::destpath"), deltaModel.DeltaWithdraws[i].Uri)
 		if err != nil {
@@ -129,7 +129,7 @@ func UpdateRrdpDelta(deltaModel *rrdputil.DeltaModel,
 		}
 	}
 
-	for i, _ := range deltaModel.DeltaPublishs {
+	for i := range deltaModel.DeltaPublishs {
 
 		pathFileName, err := osutil.GetPathFileNameFromUrl(conf.VariableString("rrdp::destpath"), deltaModel.DeltaPublishs[i].Uri)
 		if err != nil {

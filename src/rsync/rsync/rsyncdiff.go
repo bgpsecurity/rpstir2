@@ -150,16 +150,16 @@ func getFilesHashFromDb() (files map[string]rsyncmodel.RsyncFileHash, err error)
 
 	files = make(map[string]rsyncmodel.RsyncFileHash, len(cerFileHashs)+len(roaFileHashs)+
 		len(crlFileHashs)+len(mftFileHashs)+1000)
-	for i, _ := range cerFileHashs {
+	for i := range cerFileHashs {
 		files[osutil.JoinPathFile(cerFileHashs[i].FilePath, cerFileHashs[i].FileName)] = cerFileHashs[i]
 	}
-	for i, _ := range roaFileHashs {
+	for i := range roaFileHashs {
 		files[osutil.JoinPathFile(roaFileHashs[i].FilePath, roaFileHashs[i].FileName)] = roaFileHashs[i]
 	}
-	for i, _ := range crlFileHashs {
+	for i := range crlFileHashs {
 		files[osutil.JoinPathFile(crlFileHashs[i].FilePath, crlFileHashs[i].FileName)] = crlFileHashs[i]
 	}
-	for i, _ := range mftFileHashs {
+	for i := range mftFileHashs {
 		files[osutil.JoinPathFile(mftFileHashs[i].FilePath, mftFileHashs[i].FileName)] = mftFileHashs[i]
 	}
 	belogs.Debug("getFilesHashFromDb(): len(files):", len(files))
@@ -181,7 +181,7 @@ func getFilesHashFromDisk() (files map[string]rsyncmodel.RsyncFileHash, err erro
 	}
 	belogs.Debug("getFilesHashFromDisk(): len(fileStats):", len(fileStats))
 	files = make(map[string]rsyncmodel.RsyncFileHash, len(fileStats))
-	for i, _ := range fileStats {
+	for i := range fileStats {
 		fileHash := rsyncmodel.RsyncFileHash{}
 		fileHash.FileHash = fileStats[i].Hash256
 		fileHash.FileName = fileStats[i].FileName

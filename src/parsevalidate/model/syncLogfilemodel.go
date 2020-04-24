@@ -56,7 +56,7 @@ func NewSyncLogFileModels(syncLogId uint64, dbSyncLogFileModels []SyncLogFileMod
 	syncLogFileModels.UpdateRoaSyncLogFileModels = make([]SyncLogFileModel, 0)
 	syncLogFileModels.DelRoaSyncLogFileModels = make([]SyncLogFileModel, 0)
 
-	for i, _ := range dbSyncLogFileModels {
+	for i := range dbSyncLogFileModels {
 		if dbSyncLogFileModels[i].FileType == "cer" {
 			if dbSyncLogFileModels[i].SyncType == "add" {
 				syncLogFileModels.AddCerSyncLogFileModels = append(syncLogFileModels.AddCerSyncLogFileModels, dbSyncLogFileModels[i])

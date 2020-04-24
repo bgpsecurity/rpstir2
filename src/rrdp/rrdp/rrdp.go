@@ -165,7 +165,7 @@ func processRrdpDelta(notificationModel *rrdputil.NotificationModel,
 
 	// download snapshot files
 	repoPath := conf.VariableString("rrdp::destpath") + osutil.GetPathSeparator()
-	for i, _ := range deltaModels {
+	for i := range deltaModels {
 		// save publish files and remove withdraw files
 		err = rrdputil.SaveRrdpDeltaToFiles(&deltaModels[i], repoPath)
 		if err != nil {
@@ -174,7 +174,7 @@ func processRrdpDelta(notificationModel *rrdputil.NotificationModel,
 			return err
 		}
 	}
-	for i, _ := range deltaModels {
+	for i := range deltaModels {
 		// del old cer/crl/mft/roa and update to rsynclog
 		// get dest path : /root/rpki/data/reporrdp/
 		err = db.UpdateRrdpDelta(&deltaModels[i], syncRrdpLog)

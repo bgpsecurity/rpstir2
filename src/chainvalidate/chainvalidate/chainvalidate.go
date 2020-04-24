@@ -35,9 +35,6 @@ func ChainValidateStart() (err error) {
 	}
 	belogs.Info("ChainValidateStart(): end")
 
-
-
-
 	/////////////////////
 	// will call rtr
 	go func() {

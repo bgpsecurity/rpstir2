@@ -101,7 +101,7 @@ func TryAgainFailRsyncUrls() bool {
 	if len(rpQueue.RsyncMisc.FailRsyncUrls) > 0 &&
 		rpQueue.RsyncMisc.FailRsyncUrlsTryCount <= uint64(conf.Int("rsync::failRsyncUrlsTryCount")) {
 		failRsyncUrls := make([]string, 0, len(rpQueue.RsyncMisc.FailRsyncUrls))
-		for failRsyncUrl, _ := range rpQueue.RsyncMisc.FailRsyncUrls {
+		for failRsyncUrl := range rpQueue.RsyncMisc.FailRsyncUrls {
 			failRsyncUrls = append(failRsyncUrls, failRsyncUrl)
 			// delete saved url ,so can try again
 			rpQueue.DelRsyncAddedUrl(failRsyncUrl)

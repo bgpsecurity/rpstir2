@@ -177,7 +177,7 @@ func parseValidateAndAddCerts(syncLogFileModels []parsevalidatemodel.SyncLogFile
 	belogs.Debug("parseValidateAndAddCerts(): len(syncLogFileModels):", len(syncLogFileModels), "  fileType:", fileType)
 	var parseValidateWg sync.WaitGroup
 	parseValidateCh := make(chan int, conf.Int("parse::parseConcurrentCount"))
-	for i, _ := range syncLogFileModels {
+	for i := range syncLogFileModels {
 		parseValidateWg.Add(1)
 		parseValidateCh <- 1
 		go parseValidateCert(&syncLogFileModels[i], &parseValidateWg, parseValidateCh)

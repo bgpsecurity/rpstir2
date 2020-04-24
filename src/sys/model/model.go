@@ -1,7 +1,5 @@
 package model
 
-import ()
-
 type Results struct {
 	CerResult Result `json:"cerResult"`
 	CrlResult Result `json:"crlResult"`
