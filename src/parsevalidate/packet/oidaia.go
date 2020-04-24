@@ -44,7 +44,7 @@ func reExtractAiaOid(fileByte []byte) (authorityInfoAccess AiaModel, err error) 
 	pos0 := bytes.Index(fileByte, oidCaIssuersKeyByte)
 	var datapos uint64 = uint64(pos0)
 	var datalen uint64 = uint64(0)
-	belogs.Debug("reExtractAiaOid():enum0 pos:", datapos)
+	belogs.Debug("reExtractAiaOid():enum0 pos:", datapos, "   datalen:", datalen)
 	if datapos <= 0 {
 		return aia, errors.New("not found " + oidManifestKey)
 	}

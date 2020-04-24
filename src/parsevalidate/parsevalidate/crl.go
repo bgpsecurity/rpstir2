@@ -179,7 +179,7 @@ func ValidateCrlModel(crlModel *model.CrlModel, stateModel *model.StateModel) (e
 
 	if len(crlModel.Aki) == 0 {
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
-			Fail:   "AKI is emtpy",
+			Fail:   "AKI is empty",
 			Detail: ""}
 		stateModel.AddError(&stateMsg)
 	}

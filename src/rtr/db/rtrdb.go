@@ -64,7 +64,7 @@ func UpdateRtrFullLog(roaToRtrFullLogs []model.RoaToRtrFullLog,
 
 	//when both  len are 0, return nil
 	if len(roaToRtrFullLogs) == 0 && len(slurmToRtrFullLogs) == 0 {
-		belogs.Debug("UpdateRtrFullLog():roa and slurm all are emtpy")
+		belogs.Debug("UpdateRtrFullLog():roa and slurm all are empty")
 		return 0, nil
 	}
 

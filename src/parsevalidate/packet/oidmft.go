@@ -160,7 +160,7 @@ func reExtractMftOid(fileByte []byte, certFile string, mftModel *MftModel) (err 
 	pos0 := bytes.Index(fileByte, oidManifestKeyByte)
 	var datapos uint64 = uint64(pos0)
 	var datalen uint64 = uint64(0)
-	belogs.Debug("reExtractMftOid():enum0 pos:", datapos)
+	belogs.Debug("reExtractMftOid():enum0 pos:", datapos, "  datalen:", datalen)
 	if datapos <= 0 {
 		return errors.New("not found " + oidManifestKey)
 	}
@@ -168,13 +168,13 @@ func reExtractMftOid(fileByte []byte, certFile string, mftModel *MftModel) (err 
 	enum0 := fileByte[int(datapos)+len(oidManifestKeyByte):]
 	//logs.LogDebugBytes(("reExtractMftOid():enum0:", enum0)
 	datalen, datapos, _ = util.DecodeFiniteAndInfiniteLen(enum0)
-	belogs.Debug("reExtractMftOid():oct0 pos:", datapos)
+	belogs.Debug("reExtractMftOid():oct0 pos:", datapos, "  datalen:", datalen)
 
 	//avoid error of 0x00, 0x00, so it is not limit datalen, and will include all data
 	oct0 := enum0[datapos:]
 	//logs.LogDebugBytes(("reExtractMftOid():oct0:", oct0)
 	datalen, datapos, _ = util.DecodeFiniteAndInfiniteLen(oct0)
-	belogs.Debug("reExtractMftOid():seq0 pos:", datapos)
+	belogs.Debug("reExtractMftOid():seq0 pos:", datapos, "  datalen:", datalen)
 
 	//avoid error of 0x00, 0x00, so it is not limit datalen, and will include all data
 	seq0 := oct0[datapos:]

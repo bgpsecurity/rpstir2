@@ -51,6 +51,9 @@ func DelRoas(delSyncLogFileModels []parsevalidatemodel.SyncLogFileModel, updateS
 	}()
 	start := time.Now()
 	session, err := xormdb.NewSession()
+	if err != nil {
+		return err
+	}
 	defer session.Close()
 
 	syncLogFileModels := append(delSyncLogFileModels, updateSyncLogFileModels...)

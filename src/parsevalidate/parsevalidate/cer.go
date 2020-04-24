@@ -84,7 +84,7 @@ func parseCerModel(certFile string, cerModel *model.CerModel, stateModel *model.
 	belogs.Debug("parseCerModel(): GetResultsByOpensslX509 len(results):", len(results))
 
 	// IP
-	noCerIpAddress := false
+	var noCerIpAddress bool
 	cerModel.CerIpAddressModel, noCerIpAddress, err = openssl.ParseCerIpAddressModelByOpensslResults(results)
 	if err != nil {
 		belogs.Error("parseCerModel(): ParseCerIpAddressModelByOpensslResults: err: ", err, ": "+certFile)
@@ -97,7 +97,7 @@ func parseCerModel(certFile string, cerModel *model.CerModel, stateModel *model.
 	}
 
 	// AS
-	noAsn := false
+	var noAsn bool
 	cerModel.AsnModel, noAsn, err = openssl.ParseAsnModelByOpensslResults(results)
 	if err != nil {
 		belogs.Error("parseCerModel(): ParseAsnModelByOpensslResults: err: ", err, ": "+certFile)
@@ -304,7 +304,7 @@ func ValidateCerlModel(cerModel *model.CerModel, stateModel *model.StateModel) (
 	now := time.Now()
 	if cerModel.NotBefore.IsZero() {
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
-			Fail:   "NotBefore is emtpy",
+			Fail:   "NotBefore is empty",
 			Detail: ""}
 		stateModel.AddError(&stateMsg)
 	}
@@ -443,7 +443,7 @@ func ValidateCerlModel(cerModel *model.CerModel, stateModel *model.StateModel) (
 	if !cerModel.IsRoot {
 		if len(cerModel.Aki) == 0 {
 			stateMsg := model.StateMsg{Stage: "parsevalidate",
-				Fail:   "AKI is emtpy",
+				Fail:   "AKI is empty",
 				Detail: ""}
 			stateModel.AddError(&stateMsg)
 		}
@@ -464,7 +464,7 @@ func ValidateCerlModel(cerModel *model.CerModel, stateModel *model.StateModel) (
 	}
 	if cerModel.KeyUsageModel.KeyUsage == 0 {
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
-			Fail:   "Key Usage is emtpy",
+			Fail:   "Key Usage is empty",
 			Detail: ""}
 		stateModel.AddError(&stateMsg)
 	}
@@ -497,7 +497,7 @@ func ValidateCerlModel(cerModel *model.CerModel, stateModel *model.StateModel) (
 	if !cerModel.IsRoot {
 		if len(cerModel.CrldpModel.Crldps) == 0 {
 			stateMsg := model.StateMsg{Stage: "parsevalidate",
-				Fail:   "CRL Distribution Points are emtpy",
+				Fail:   "CRL Distribution Points are empty",
 				Detail: ""}
 			stateModel.AddError(&stateMsg)
 		}
@@ -543,7 +543,7 @@ func ValidateCerlModel(cerModel *model.CerModel, stateModel *model.StateModel) (
 	if !cerModel.IsRoot {
 		if len(cerModel.AiaModel.CaIssuers) == 0 {
 			stateMsg := model.StateMsg{Stage: "parsevalidate",
-				Fail:   "AIA is emtpy",
+				Fail:   "AIA is empty",
 				Detail: ""}
 			stateModel.AddError(&stateMsg)
 		} else {

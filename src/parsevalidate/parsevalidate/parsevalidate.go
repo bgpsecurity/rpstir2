@@ -294,7 +294,6 @@ func ParseValidateFile(certFile string) (certType string, certModel interface{},
 func ParseValidateFileRepo(certFile string) (caRepository string, err error) {
 	if strings.HasSuffix(certFile, ".cer") {
 		return ParseValidateCerRepo(certFile)
-	} else {
-		return "", errors.New("unknown file type")
 	}
+	return "", errors.New("unknown file type")
 }

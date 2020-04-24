@@ -236,7 +236,7 @@ func ValidateRoaModel(roaModel *model.RoaModel, stateModel *model.StateModel) (e
 	}
 	if len(roaModel.Aki) == 0 {
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
-			Fail:   "AKI is emtpy",
+			Fail:   "AKI is empty",
 			Detail: ""}
 		stateModel.AddError(&stateMsg)
 	}

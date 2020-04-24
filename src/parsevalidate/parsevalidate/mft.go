@@ -267,7 +267,7 @@ func ValidateMftModel(mftModel *model.MftModel, stateModel *model.StateModel) (e
 			stateModel.AddError(&stateMsg)
 		}
 	}
-	// check  dupicate file name
+	// check duplicate file name
 	for i1 := 0; i1 < len(mftModel.FileHashModels); i1++ {
 		duplicate := false
 		fileHash1 := mftModel.FileHashModels[i1]
@@ -358,7 +358,7 @@ func ValidateMftModel(mftModel *model.MftModel, stateModel *model.StateModel) (e
 	}
 	if len(mftModel.Aki) == 0 {
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
-			Fail:   "AKI is emtpy",
+			Fail:   "AKI is empty",
 			Detail: ""}
 		stateModel.AddError(&stateMsg)
 	}

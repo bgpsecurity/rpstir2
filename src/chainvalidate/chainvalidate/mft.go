@@ -290,7 +290,7 @@ func validateMft(chains *chainmodel.Chains, mftId uint64, wg *sync.WaitGroup, ch
 
 				} else {
 					stateMsg := model.StateMsg{Stage: "chainvalidate",
-						Fail: "There are multiple Manifestes under a specific AKI, and this Manifest has not the largest Manifest Number",
+						Fail: "There are multiple Manifests under a specific AKI, and this Manifest has not the largest Manifest Number",
 						Detail: "the smaller files are " + jsonutil.MarshalJson(smallerFiles) +
 							", the bigge files are " + jsonutil.MarshalJson(biggerFiles)}
 					chainMft.StateModel.AddError(&stateMsg)

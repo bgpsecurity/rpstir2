@@ -89,7 +89,7 @@ CREATE TABLE lab_rpki_cer_sia (
 	cerId int(10) unsigned not null,
 	rpkiManifest  varchar(512)  COMMENT 'mft sync url',
 	rpkiNotify  varchar(512) ,
-	caRepository  varchar(512)  COMMENT 'ca repository url(direcotry)',
+	caRepository  varchar(512)  COMMENT 'ca repository url(directory)',
 	signedObject  varchar(512) ,
 	FOREIGN key (cerid) REFERENCES lab_rpki_cer(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin comment='cer sia'
@@ -643,6 +643,9 @@ var resetSqls []string = []string{
 // when isInit is true, then init all db. otherwise will reset all db
 func InitResetDb(isInit bool) error {
 	session, err := xormdb.NewSession()
+	if err != nil {
+		return err
+	}
 	defer session.Close()
 
 	//truncate all table
@@ -659,19 +662,19 @@ func InitResetDb(isInit bool) error {
 	return nil
 }
 
-// need to init sessionId when it is emtpy
+// need to init sessionId when it is empty
 func initResetDb(session *xorm.Session, isInit bool) error {
 	defer func(session1 *xorm.Session) {
 		sql := `set foreign_key_checks=1;`
 		if _, err := session1.Exec(sql); err != nil {
-			belogs.Error("initResetDb(): SET FOREING_KEY_CHECKS=1 fail", err)
+			belogs.Error("initResetDb(): SET foreign_key_checks=1 fail", err)
 
 		}
 	}(session)
 
 	sql := `set foreign_key_checks=0;`
 	if _, err := session.Exec(sql); err != nil {
-		belogs.Error("initResetDb(): SET FOREING_KEY_CHECKS=0 fail", err)
+		belogs.Error("initResetDb(): SET foreign_key_checks=0 fail", err)
 		return err
 	}
 

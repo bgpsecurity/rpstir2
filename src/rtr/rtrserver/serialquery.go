@@ -69,21 +69,18 @@ func ProcessSerialQuery(rtrPduModel rtrmodel.RtrPduModel) (serialResponses []rtr
 			return serialResponses, err
 		}
 		return rtrPduModels, nil
-	} else {
-		rtrIncrementals, sessionId, serialNumber, err := db.GetRtrIncrementalAndSessionIdAndSerialNumber(clientSerialNumId)
-		if err != nil {
-			belogs.Error("ProcessSerialQuery(): GetRtrIncrementalAndSessionIdAndSerialNumber fail: ", err)
-			return serialResponses, err
-		}
-		rtrPduModels, err := assembleSerialResponses(&rtrIncrementals, rtrSerialQueryModel.GetProtocolVersion(), sessionId, serialNumber)
-		if err != nil {
-			belogs.Error("ProcessSerialQuery(): assembleSerialResponses fail: ", err)
-			return serialResponses, err
-		}
-		return rtrPduModels, nil
 	}
-
-	return serialResponses, nil
+	rtrIncrementals, sessionId, serialNumber, err := db.GetRtrIncrementalAndSessionIdAndSerialNumber(clientSerialNumId)
+	if err != nil {
+		belogs.Error("ProcessSerialQuery(): GetRtrIncrementalAndSessionIdAndSerialNumber fail: ", err)
+		return serialResponses, err
+	}
+	rtrPduModels, err := assembleSerialResponses(&rtrIncrementals, rtrSerialQueryModel.GetProtocolVersion(), sessionId, serialNumber)
+	if err != nil {
+		belogs.Error("ProcessSerialQuery(): assembleSerialResponses fail: ", err)
+		return serialResponses, err
+	}
+	return rtrPduModels, nil
 }
 
 // 1: check error;  2. check needReset; 3 use clientSerialNumId

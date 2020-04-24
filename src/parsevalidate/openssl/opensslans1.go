@@ -76,6 +76,7 @@ func ParseMftModelByOpensslResults(results []string, mftModel *MftModel) (err er
 
 			if !strings.Contains(results[i+1], keyword) {
 				foundAllMftHex = true
+				belogs.Debug("ParseMftModelByOpensslResults(): foundAllMftHex:", foundAllMftHex)
 				break
 			}
 			// one [HEX DUMP] length is 10000, so some mft have many ip, will have many [HEX DUMP],
@@ -198,6 +199,7 @@ func ParseRoaModelByOpensslResults(results []string, roaModel *RoaModel) (err er
 
 			if !strings.Contains(results[i+1], keyword) {
 				foundAllRoaHex = true
+				belogs.Debug("ParseRoaModelByOpensslResults(): foundAllRoaHex:", foundAllRoaHex)
 				break
 			}
 			// one [HEX DUMP] length is 10000, so some roa have many ip, will have many [HEX DUMP],

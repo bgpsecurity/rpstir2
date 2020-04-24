@@ -66,13 +66,13 @@ func ValidateEeCertModel(stateModel *StateModel, eeCertModel *EeCertModel) error
 	now := time.Now()
 	if eeCertModel.NotBefore.IsZero() {
 		stateMsg := StateMsg{Stage: "parsevalidate",
-			Fail:   "NotBefore of EE is emtpy",
+			Fail:   "NotBefore of EE is empty",
 			Detail: ""}
 		stateModel.AddError(&stateMsg)
 	}
 	if eeCertModel.NotAfter.IsZero() {
 		stateMsg := StateMsg{Stage: "parsevalidate",
-			Fail:   "NotAfter of EE is empy",
+			Fail:   "NotAfter of EE is empty",
 			Detail: ""}
 		stateModel.AddError(&stateMsg)
 	}

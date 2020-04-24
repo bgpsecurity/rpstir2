@@ -18,9 +18,8 @@ type StateMsg struct {
 func (s *StateMsg) Equal(n *StateMsg) bool {
 	if s.Fail == n.Fail && s.Detail == n.Detail && s.Stage == n.Stage {
 		return true
-	} else {
-		return false
 	}
+	return false
 }
 
 type StateModel struct {
@@ -35,13 +34,13 @@ type StateModel struct {
 func GetStateModelAndResetStage(state string, clearStage string) (stateModel StateModel) {
 	if len(state) == 0 {
 		return NewStateModel()
-	} else {
-		jsonutil.UnmarshalJson(state, &stateModel)
-		if len(clearStage) > 0 {
-			stateModel.ClearStage(clearStage)
-		}
-		return stateModel
 	}
+
+	jsonutil.UnmarshalJson(state, &stateModel)
+	if len(clearStage) > 0 {
+		stateModel.ClearStage(clearStage)
+	}
+	return stateModel
 }
 func NewStateModel() StateModel {
 	st := StateModel{}

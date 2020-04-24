@@ -188,7 +188,7 @@ func reExtractRoaOid(fileByte []byte, certFile string, roaModel *RoaModel) (err 
 	pos0 := bytes.Index(fileByte, oidRoaKeyByte)
 	var datapos uint64 = uint64(pos0)
 	var datalen uint64 = uint64(0)
-	belogs.Debug("reExtractRoaOid():enum0 pos:", datapos)
+	belogs.Debug("reExtractRoaOid():enum0 pos:", datapos, "  datalen:", datalen)
 	if datapos <= 0 {
 		return errors.New("not found " + oidManifestKey)
 	}
@@ -196,13 +196,13 @@ func reExtractRoaOid(fileByte []byte, certFile string, roaModel *RoaModel) (err 
 	enum0 := fileByte[int(datapos)+len(oidRoaKeyByte):]
 	//logs.LogDebugBytes(("reExtractRoaOid():enum0:", enum0)
 	datalen, datapos, _ = util.DecodeFiniteAndInfiniteLen(enum0)
-	belogs.Debug("reExtractRoaOid():enum0 pos:", datapos)
+	belogs.Debug("reExtractRoaOid():enum0 pos:", datapos, "  datalen:", datalen)
 
 	//avoid error of 0x00, 0x00, so it is not limit datalen, and will include all data
 	oct0 := enum0[datapos:]
 	//logs.LogDebugBytes(("reExtractRoaOid():oct0:", oct0)
 	datalen, datapos, _ = util.DecodeFiniteAndInfiniteLen(oct0)
-	belogs.Debug("reExtractRoaOid():oct0 pos:", datapos)
+	belogs.Debug("reExtractRoaOid():oct0 pos:", datapos, "  datalen:", datalen)
 
 	//avoid error of 0x00, 0x00, so it is not limit datalen, and will include all data
 	oct1 := oct0[datapos:]

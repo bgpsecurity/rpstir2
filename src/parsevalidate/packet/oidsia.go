@@ -109,7 +109,7 @@ func reExtractSiaSubOid(oidKeyByte []byte, fileByte []byte) (sub string, err err
 
 	var datapos uint64 = uint64(pos0)
 	var datalen uint64 = uint64(0)
-	belogs.Debug("reExtractSiaSubOid():datapos:", datapos)
+	belogs.Debug("reExtractSiaSubOid():datapos, datalen:", datapos, datalen)
 
 	//avoid error of 0x00, 0x00, so it is not limit datalen, and will include all data
 	sub0 := fileByte[int(datapos)+len(oidKeyByte):]

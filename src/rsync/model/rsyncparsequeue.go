@@ -102,9 +102,8 @@ func (r *RsyncParseQueue) PreCheckRsyncUrl(url string) (ok bool) {
 		if strings.Contains(url, e.Value.(RsyncModelChan).Url) {
 			belogs.Debug("PreCheckRsyncUrl():have existed:", url, " in ", e.Value.(RsyncModelChan).Url)
 			return false
-		} else {
-			e = e.Next()
 		}
+		e = e.Next()
 	}
 	return true
 }
@@ -144,9 +143,8 @@ func (r *RsyncParseQueue) AddRsyncUrl(url string, dest string) {
 			atomic.AddInt64(&r.RsyncingParsingCount, -1)
 			belogs.Debug("AddRsyncUrl():have existed, after RsyncingParsingCount-1:", atomic.LoadInt64(&r.RsyncingParsingCount))
 			return
-		} else {
-			e = e.Next()
 		}
+		e = e.Next()
 	}
 
 	rsyncModelChan := RsyncModelChan{Url: url, Dest: dest}

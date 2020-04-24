@@ -62,7 +62,7 @@ func diffFiles(filesFromDb, filesFromDisk map[string]rsyncmodel.RsyncFileHash) (
 		return filesFromDisk, nil, nil, nil, nil
 	}
 
-	// if disk is emtpy, so all filesFromDb is del
+	// if disk is empty, so all filesFromDb is del
 	if len(filesFromDisk) == 0 {
 		return nil, filesFromDb, nil, nil, nil
 	}

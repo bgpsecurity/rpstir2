@@ -84,10 +84,9 @@ func WaitForRsyncParseEnd() bool {
 			belogs.Debug("WaitForRsyncParseEnd(): return false:   rpQueue.RsyncingParsingCount:",
 				atomic.LoadInt64(&rpQueue.RsyncingParsingCount))
 			return false
-		} else {
-			//will check again
-			time.Sleep(time.Duration(10) * time.Millisecond)
 		}
+		//will check again
+		time.Sleep(time.Duration(10) * time.Millisecond)
 	}
 	belogs.Debug("WaitForRsyncParseEnd(): return true, will end ")
 	return true
