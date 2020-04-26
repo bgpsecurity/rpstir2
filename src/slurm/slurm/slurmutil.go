@@ -109,7 +109,7 @@ func CheckPrefixAsnAndGetPrefixLength(prefix string, asn model.SlurmAsnModel,
 	}
 	prefixAndAsn := PrefixAndAsn{}
 	var (
-		errMsg string = ""
+		errMsg = ""
 	)
 
 	//check prefix

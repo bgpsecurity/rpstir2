@@ -18,7 +18,7 @@ import (
 	jsonutil "github.com/cpusoft/goutil/jsonutil"
 	osutil "github.com/cpusoft/goutil/osutil"
 
-	. "model"
+	"model"
 	"parsevalidate/util"
 )
 
@@ -63,7 +63,7 @@ type FileAndHashRawParse struct {
 	Hash asn1.RawValue `json:"hash"`
 }
 
-func ParseMftModelByOpensslResults(results []string, mftModel *MftModel) (err error) {
+func ParseMftModelByOpensslResults(results []string, mftModel *model.MftModel) (err error) {
 	// get mft info
 	var mftHex string
 	foundAllMftHex := false
@@ -121,9 +121,9 @@ func ParseMftModelByOpensslResults(results []string, mftModel *MftModel) (err er
 		mftModel.FileHashAlg = mft.FileHashAlg.String()
 
 		belogs.Debug("ParseMftModelByOpensslResults():mft.FileList: ", jsonutil.MarshalJson(mft.FileList))
-		fileHashModels := make([]FileHashModel, 0)
+		fileHashModels := make([]model.FileHashModel, 0)
 		for _, one := range mft.FileList {
-			fileHashModel := FileHashModel{}
+			fileHashModel := model.FileHashModel{}
 			fileHashModel.File = one.File
 			fileHashModel.Hash = convert.Bytes2String(one.Hash.Bytes)
 			fileHashModels = append(fileHashModels, fileHashModel)
@@ -148,9 +148,9 @@ func ParseMftModelByOpensslResults(results []string, mftModel *MftModel) (err er
 	//mftModel.FileHashAlg = mftRaw.FileHashAlg.String()
 
 	belogs.Debug("ParseMftModelByOpensslResults():mftRaw.FileList: ", jsonutil.MarshalJson(mftRaw.FileList))
-	fileHashModels := make([]FileHashModel, 0)
+	fileHashModels := make([]model.FileHashModel, 0)
 	for _, one := range mftRaw.FileList {
-		fileHashModel := FileHashModel{}
+		fileHashModel := model.FileHashModel{}
 		fileHashModel.File = convert.Bytes2String(one.File.Bytes)
 		fileHashModel.Hash = convert.Bytes2String(one.Hash.Bytes)
 		fileHashModels = append(fileHashModels, fileHashModel)
@@ -178,7 +178,7 @@ type ROAIPAddress struct {
 
 type IPAddress asn1.BitString
 
-func ParseRoaModelByOpensslResults(results []string, roaModel *RoaModel) (err error) {
+func ParseRoaModelByOpensslResults(results []string, roaModel *model.RoaModel) (err error) {
 	// get roa hex
 	// the first HEX DUMP
 	/*
@@ -240,11 +240,11 @@ func ParseRoaModelByOpensslResults(results []string, roaModel *RoaModel) (err er
 	}
 
 	roaModel.Asn = int64(roa.AsID)
-	labRpkiRoaIpaddressParses := make([]RoaIpAddressModel, 0)
+	labRpkiRoaIpaddressParses := make([]model.RoaIpAddressModel, 0)
 	for _, one := range roa.IpAddrBlocks {
 
 		for _, ad := range one.Addresses {
-			roaIpAddressModel := RoaIpAddressModel{}
+			roaIpAddressModel := model.RoaIpAddressModel{}
 			roaIpAddressModel.AddressFamily = uint64(one.AddressFamily[1])
 			roaIpAddressModel.AddressPrefix = iputil.RoaFormtToIp(ad.Address.Bytes, int(one.AddressFamily[1])) + "/" + strconv.Itoa(ad.Address.BitLength)
 			roaIpAddressModel.RangeStart, roaIpAddressModel.RangeEnd, err =
@@ -305,7 +305,7 @@ func ParseRoaEContentTypeByOpensslResults(results []string) (eContentType string
 }
 
 // parse to get signerInfo
-func ParseSignerInfoModelByOpensslResults(results []string) (signerInfoModel SignerInfoModel, err error) {
+func ParseSignerInfoModelByOpensslResults(results []string) (signerInfoModel model.SignerInfoModel, err error) {
 	/*
 	   1497:d=5  hl=2 l=   1 prim: INTEGER           :03
 	   1500:d=5  hl=2 l=  20 prim: cont [ 0 ]
@@ -327,7 +327,7 @@ func ParseSignerInfoModelByOpensslResults(results []string) (signerInfoModel Sig
 	   1646:d=6  hl=2 l=   9 prim: OBJECT            :rsaEncryption
 	   1657:d=6  hl=2 l=   0 prim: NULL
 	*/
-	signerInfoModel = SignerInfoModel{}
+	signerInfoModel = model.SignerInfoModel{}
 	sigStart1 := "d=5  hl=2"
 	sigStart2 := "prim: INTEGER"
 	sigStartLine := 0
@@ -434,7 +434,7 @@ func ParseByOpensslAns1ToX509(certFile string, results []string) (cerFile *os.Fi
 	return cerFile, fileByte, cerStartIndex, cerEndIndex, nil
 }
 
-func ParseCrlModelByOpensslResults(results []string, crlModel *CrlModel) (err error) {
+func ParseCrlModelByOpensslResults(results []string, crlModel *model.CrlModel) (err error) {
 	//
 	/*
 			453:d=5  hl=2 l=   3 prim: OBJECT            :X509v3 Authority Key Identifier

@@ -16,10 +16,10 @@ func Test_IndexEndOfBytes(t *testing.T) {
 	datalen := (lastpos - 1 - 1) //the first byte is 1, is type, the second is 0x80
 	fmt.Println("lastpos:", lastpos, ", len:", len(bb), ",  datalen:", datalen)
 
-	value_data := bb[datapos : datapos+datalen]
-	fmt.Println("datapos:", datapos, ", datapos+datalen:", datapos+datalen, ", new len(vd):", len(value_data))
+	valueData := bb[datapos : datapos+datalen]
+	fmt.Println("datapos:", datapos, ", datapos+datalen:", datapos+datalen, ", new len(vd):", len(valueData))
 
-	for _, b := range value_data {
+	for _, b := range valueData {
 		fmt.Print(fmt.Sprintf("%02x ", b))
 	}
 	fmt.Println("==========")
