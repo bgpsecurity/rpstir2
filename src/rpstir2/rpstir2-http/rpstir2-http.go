@@ -61,6 +61,7 @@ func startServer() {
 	// parsevalidate
 	routes = append(routes, rest.Post("/parsevalidate/start", parsevalidatehttp.ParseValidateStart))
 	routes = append(routes, rest.Post("/parsevalidate/file", parsevalidatehttp.ParseValidateFile))
+	routes = append(routes, rest.Post("/parsevalidate/parsefile", parsevalidatehttp.ParseFile))
 	routes = append(routes, rest.Post("/parsevalidate/filerepo", parsevalidatehttp.ParseValidateFileRepo))
 
 	// chainvalidate

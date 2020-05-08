@@ -28,9 +28,9 @@ func ParseValidateMft(certFile string) (mftModel model.MftModel, stateModel mode
 	}
 	belogs.Debug("ParseValidateMft(): mftModel:", jsonutil.MarshalJson(mftModel))
 
-	err = ValidateMftModel(&mftModel, &stateModel)
+	err = validateMftModel(&mftModel, &stateModel)
 	if err != nil {
-		belogs.Error("ParseValidateMft():ValidateMftModel err:", certFile, err)
+		belogs.Error("ParseValidateMft():validateMftModel err:", certFile, err)
 		return mftModel, stateModel, nil
 	}
 	if len(stateModel.Errors) > 0 || len(stateModel.Warnings) > 0 {
@@ -197,7 +197,7 @@ func parseMftModelByPacket(certFile string, mftModel *model.MftModel) error {
 // https://datatracker.ietf.org/doc/rfc6486/?include_text=1   Manifests for the Resource Public Key Infrastructure (RPKI)  4.4.Manifest Validation;;;;;;;
 // roa_validate.c  manifestValidate()
 // TODO: sqhl.c P2036 updateManifestObjs(): check file and hash in mft to actually files
-func ValidateMftModel(mftModel *model.MftModel, stateModel *model.StateModel) (err error) {
+func validateMftModel(mftModel *model.MftModel, stateModel *model.StateModel) (err error) {
 
 	// The version of the rpkiManifest is 0
 	if mftModel.Version != 0 {
@@ -374,7 +374,7 @@ func ValidateMftModel(mftModel *model.MftModel, stateModel *model.StateModel) (e
 	err = ValidateEeCertModel(stateModel, &mftModel.EeCertModel)
 	err = ValidateSignerInfoModel(stateModel, &mftModel.SignerInfoModel)
 
-	belogs.Debug("ValidateMftModel():filePath, fileName,stateModel:",
+	belogs.Debug("validateMftModel():filePath, fileName,stateModel:",
 		mftModel.FilePath, mftModel.FileName, jsonutil.MarshalJson(stateModel))
 	return nil
 }

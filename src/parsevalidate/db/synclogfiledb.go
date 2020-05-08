@@ -1,6 +1,7 @@
 package db
 
 import (
+	"errors"
 	"time"
 
 	belogs "github.com/astaxie/beego/logs"
@@ -41,12 +42,16 @@ func GetSyncLogFileModelsBySyncLogId(labRpkiSyncLogId uint64) (syncLogFileModels
 			tableName = "lab_rpki_mft"
 		case "roa":
 			tableName = "lab_rpki_roa"
+		default:
+			belogs.Error("GetSyncLogFileModelsBySyncLogId(): dbSyncLogFileModels[i].FileType fail:", dbSyncLogFileModels[i].FileType,
+				"   filePath, fileName:", dbSyncLogFileModels[i].FilePath, dbSyncLogFileModels[i].FileName)
+			return nil, errors.New("FileType is error," + dbSyncLogFileModels[i].FileType)
 		}
 		has, err := xormdb.XormEngine.Table(tableName).Where("filePath=?", dbSyncLogFileModels[i].FilePath).
 			And("fileName=?", dbSyncLogFileModels[i].FileName).Cols("id").Get(&certId)
 		if err != nil {
 			belogs.Error("GetSyncLogFileModelsBySyncLogId(): get id fail:", tableName,
-				dbSyncLogFileModels[i].FilePath, dbSyncLogFileModels[i].FileName, err)
+				"   filePath, fileName:", dbSyncLogFileModels[i].FilePath, dbSyncLogFileModels[i].FileName, err)
 			return nil, err
 		}
 		if has {
@@ -68,11 +73,41 @@ func UpdateSyncLogFilesJsonAllAndState(session *xorm.Session, syncLogFileModels 
 	  f.jsonAll=?  where f.id=?`
 	for i := range syncLogFileModels {
 		rtrState := "notNeed"
+		jsonAll := ""
 		if syncLogFileModels[i].FileType == "roa" && syncLogFileModels[i].SyncType != "del" {
 			rtrState = "notYet"
 		}
 
-		_, err := session.Exec(sqlStr, rtrState, xormdb.SqlNullString(syncLogFileModels[i].JsonAll), syncLogFileModels[i].Id)
+		//when del or update(before del), syncLogFileModels[i].CertModel is nil
+		if syncLogFileModels[i].CertModel == nil {
+			belogs.Debug("UpdateSyncLogFilesJsonAllAndState(): del or update, CertModel is nil:",
+				jsonutil.MarshalJson(syncLogFileModels[i]))
+		} else {
+			// when add or update(after del), syncLogFileModels[i].CertModel is not nil
+			/*
+				switch syncLogFileModels[i].FileType {
+				case "cer":
+					cerModel := syncLogFileModels[i].CertModel.(model.CerModel)
+					jsonAll = jsonutil.MarshalJson(cerModel)
+				case "crl":
+					crlModel := syncLogFileModels[i].CertModel.(model.CrlModel)
+					jsonAll = jsonutil.MarshalJson(crlModel)
+				case "mft":
+					mftModel := syncLogFileModels[i].CertModel.(model.MftModel)
+					jsonAll = jsonutil.MarshalJson(mftModel)
+				case "roa":
+					roaModel := syncLogFileModels[i].CertModel.(model.RoaModel)
+					jsonAll = jsonutil.MarshalJson(roaModel)
+				default:
+					belogs.Error("UpdateSyncLogFilesJsonAllAndState(): syncLogFileModels[i].FileType fail:",
+						syncLogFileModels[i].FileType)
+					return errors.New("syncLogFileModels[i].FileType fail, " + syncLogFileModels[i].FileType)
+				}
+			*/
+			jsonAll = jsonutil.MarshalJson(syncLogFileModels[i].CertModel)
+		}
+
+		_, err := session.Exec(sqlStr, rtrState, xormdb.SqlNullString(jsonAll), syncLogFileModels[i].Id)
 		if err != nil {
 			belogs.Error("UpdateSyncLogFilesJsonAllAndState(): updateSyncLogFileJsonAllAndState fail:",
 				jsonutil.MarshalJson(syncLogFileModels[i]),

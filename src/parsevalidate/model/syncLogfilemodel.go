@@ -13,7 +13,7 @@ type SyncLogFileModel struct {
 	SyncType   string           `json:"syncType" xorm:"syncType varchar(16)"`
 	CertModel  interface{}      `json:"-"`
 	StateModel model.StateModel `json:"-"`
-	JsonAll    string           `json:"jsonAll"`
+
 	//cerId / mftId / roaId / crlId
 	CertId uint64 `json:"certId"`
 }

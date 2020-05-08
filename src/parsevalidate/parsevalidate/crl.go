@@ -25,9 +25,9 @@ func ParseValidateCrl(certFile string) (crlModel model.CrlModel, stateModel mode
 		return crlModel, stateModel, nil
 	}
 
-	err = ValidateCrlModel(&crlModel, &stateModel)
+	err = validateCrlModel(&crlModel, &stateModel)
 	if err != nil {
-		belogs.Error("ParseValidateCrl():ValidateCrlModel err:", certFile, err)
+		belogs.Error("ParseValidateCrl():validateCrlModel err:", certFile, err)
 		return crlModel, stateModel, nil
 	}
 	if len(stateModel.Errors) > 0 || len(stateModel.Warnings) > 0 {
@@ -95,7 +95,7 @@ func parseCrlModel(certFile string, crlModel *model.CrlModel, stateModel *model.
 // rpstir:sqlh.c P3098 add_crl() ;  P4556 crl_profile_chk();
 // TODO P1727 verify_crl(), need use x508 to check crl;
 // TODO P4349 revoke_cert_by_serial() actually to revoke cer file
-func ValidateCrlModel(crlModel *model.CrlModel, stateModel *model.StateModel) (err error) {
+func validateCrlModel(crlModel *model.CrlModel, stateModel *model.StateModel) (err error) {
 
 	if crlModel.Version != 1 {
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
@@ -225,7 +225,7 @@ func ValidateCrlModel(crlModel *model.CrlModel, stateModel *model.StateModel) (e
 		}
 
 	}
-	belogs.Debug("ValidateCrlModel():filePath, fileName,stateModel:",
+	belogs.Debug("validateCrlModel():filePath, fileName,stateModel:",
 		crlModel.FilePath, crlModel.FileName, jsonutil.MarshalJson(stateModel))
 	return nil
 }

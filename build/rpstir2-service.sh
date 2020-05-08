@@ -131,6 +131,7 @@ function updateFunc()
  
   cd ${rpstir2_source_dir}
   go get -u github.com/cpusoft/goutil
+  go get -u github.com/cpusoft/go-json-rest
   git_dir="${rpstir2_source_dir}/.git"
   if [ -d ${git_dir} ];then
     git checkout .

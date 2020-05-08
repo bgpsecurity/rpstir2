@@ -215,7 +215,7 @@ func ParseCerAndGetSubCaRepositoryUrl(cerFile string) (subCaRepositoryUrl string
 
 	// call parse, not need to save body to db
 	start := time.Now()
-	belogs.Debug("ParseCerAndGetSubCaRepositoryUrl():/parsevalidate/file cerFile:", cerFile)
+	belogs.Debug("ParseCerAndGetSubCaRepositoryUrl():/parsevalidate/filerepo cerFile:", cerFile)
 	resp, body, err := httpclient.PostFile("http", conf.String("rpstir2::parsevalidateserver"), conf.Int("rpstir2::httpport"), "/parsevalidate/filerepo",
 		cerFile, "")
 	belogs.Debug("ParseCerAndGetSubCaRepositoryUrl():after /parsevalidate/filerepo cerFile:", cerFile, len(body))

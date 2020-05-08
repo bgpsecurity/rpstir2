@@ -27,9 +27,9 @@ func ParseValidateCer(certFile string) (cerModel model.CerModel, stateModel mode
 		return cerModel, stateModel, nil
 	}
 
-	err = ValidateCerlModel(&cerModel, &stateModel)
+	err = validateCerlModel(&cerModel, &stateModel)
 	if err != nil {
-		belogs.Error("ParseValidateCer():ValidateCerlModel err:", certFile, err)
+		belogs.Error("ParseValidateCer():validateCerlModel err:", certFile, err)
 		return cerModel, stateModel, nil
 	}
 	if len(stateModel.Errors) > 0 || len(stateModel.Warnings) > 0 {
@@ -185,7 +185,7 @@ func parseCerModel(certFile string, cerModel *model.CerModel, stateModel *model.
 // https://datatracker.ietf.org/doc/rfc6487/?include_text=1
 // sqlh.c P3066 add_cert(): --> add_cert_2()
 // myssl.c P3968 rescert_profile_chk
-func ValidateCerlModel(cerModel *model.CerModel, stateModel *model.StateModel) (err error) {
+func validateCerlModel(cerModel *model.CerModel, stateModel *model.StateModel) (err error) {
 
 	// myssl.c  P1892 rescert_flags_chk TODO
 
@@ -381,7 +381,7 @@ func ValidateCerlModel(cerModel *model.CerModel, stateModel *model.StateModel) (
 		foundCN := false
 		foundOther := false
 		for _, one := range split {
-			belogs.Debug("ValidateCerlModel(): IssuerAll: one:", one)
+			belogs.Debug("validateCerlModel(): IssuerAll: one:", one)
 			if strings.HasPrefix(one, "CN=") {
 				foundCN = true
 			}
@@ -648,7 +648,7 @@ func ValidateCerlModel(cerModel *model.CerModel, stateModel *model.StateModel) (
 			Fail:   "Certificate Policies are empty",
 			Detail: ""}
 		//stateModel.AddWarning(&stateMsg)
-		belogs.Debug("ValidateCerlModel(): stateMsg:", stateMsg)
+		belogs.Debug("validateCerlModel(): stateMsg:", stateMsg)
 	} else {
 		u, err := url.Parse(cerModel.CertPolicyModel.Cps)
 		if err != nil {
@@ -729,7 +729,7 @@ func ValidateCerlModel(cerModel *model.CerModel, stateModel *model.StateModel) (
 			stateModel.AddError(&stateMsg)
 		}
 	}
-	belogs.Debug("ValidateCerlModel():filePath, fileName, stateModel ", cerModel.FilePath, cerModel.FileName,
+	belogs.Debug("validateCerlModel():filePath, fileName, stateModel ", cerModel.FilePath, cerModel.FileName,
 		jsonutil.MarshalJson(stateModel))
 	return nil
 }
