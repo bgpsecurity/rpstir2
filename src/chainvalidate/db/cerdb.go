@@ -138,6 +138,9 @@ func UpdateCers(chains *chainmodel.Chains, wg *sync.WaitGroup) {
 	defer wg.Done()
 	start := time.Now()
 	session, err := xormdb.NewSession()
+	if err != nil {
+		return
+	}
 	defer session.Close()
 
 	cerIds := chains.CerIds

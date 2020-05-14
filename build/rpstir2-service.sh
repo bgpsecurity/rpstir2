@@ -73,7 +73,7 @@ function deployFunc()
   go get -u github.com/cpusoft/go-json-rest
   go get -u github.com/cpusoft/goutil
 
-  cd $rpstir2_source_dir
+  cd ${rpstir2_source_dir}
   oldgopath=$GOPATH
   CGO_ENABLED=0
   GOOS=linux
@@ -129,10 +129,17 @@ function updateFunc()
   mkdir -p ${rpstir2_data_dir}    ${rpstir2_data_dir}/rsyncrepo ${rpstir2_data_dir}/rrdprepo ${rpstir2_data_dir}/slurm  ${rpstir2_data_dir}/tal 
  
  
-  cd $rpstir2_source_dir
+  cd ${rpstir2_source_dir}
   go get -u github.com/cpusoft/goutil
-  git checkout .
-  git pull
+  go get -u github.com/cpusoft/go-json-rest
+  git_dir="${rpstir2_source_dir}/.git"
+  if [ -d ${git_dir} ];then
+    git checkout .
+    git pull
+  else
+    svn update --accept tf 
+  fi
+
 
   oldgopath=$GOPATH
   CGO_ENABLED=0

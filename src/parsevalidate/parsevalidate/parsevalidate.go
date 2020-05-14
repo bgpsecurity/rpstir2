@@ -14,6 +14,7 @@ import (
 
 	"model"
 	db "parsevalidate/db"
+	parsevalidatemodel "parsevalidate/model"
 )
 
 func ParseValidateStart() {
@@ -28,18 +29,24 @@ func ParseValidateStart() {
 	}
 	belogs.Debug("ParseValidateStart(): labRpkiSyncLogId:", labRpkiSyncLogId)
 
-	//process "del" and "update" rsyncLogFile
-	updateCerSyncLogFileModels, updateCrlSyncLogFileModels,
-		updateMftSyncLogFileModels, updateRoaSyncLogFileModels, err := DelCertByDelAndUpdate(labRpkiSyncLogId)
+	// get all need rsyncLogFile
+	syncLogFileModels, err := db.GetSyncLogFileModelsBySyncLogId(labRpkiSyncLogId)
 	if err != nil {
-		belogs.Error("ParseValidateStart():InsertRsyncLogRsyncStat fail:", err)
+		belogs.Error("ParseValidateStart():GetSyncLogFileModelsBySyncLogId fail:", labRpkiSyncLogId, err)
 		return
 	}
-	belogs.Debug("ParseValidateStart(): after del Certs, will Insert Certs, labRpkiSyncLogId:", labRpkiSyncLogId)
+	belogs.Debug("ParseValidateStart(): GetSyncLogFileModelsBySyncLogId, syncLogFileModels.SyncLogId:", labRpkiSyncLogId, syncLogFileModels.SyncLogId)
+
+	//process "del" and "update" rsyncLogFile
+	err = DelCertByDelAndUpdate(syncLogFileModels)
+	if err != nil {
+		belogs.Error("ParseValidateStart():DelCertByDelAndUpdate fail:", err)
+		return
+	}
+	belogs.Debug("ParseValidateStart(): after DelCertByDelAndUpdate, syncLogFileModels.SyncLogId:", syncLogFileModels.SyncLogId)
 
 	// process "add" and "update" rsyncLogFile
-	err = InsertCertByAddAndUpdate(labRpkiSyncLogId, updateCerSyncLogFileModels, updateCrlSyncLogFileModels,
-		updateMftSyncLogFileModels, updateRoaSyncLogFileModels)
+	err = InsertCertByAddAndUpdate(syncLogFileModels)
 	if err != nil {
 		belogs.Error("ParseValidateStart():InsertCertByInsertAndUpdate fail:", err)
 		return
@@ -61,172 +68,98 @@ func ParseValidateStart() {
 
 // get del;
 // get update, because "update" should del first
-func DelCertByDelAndUpdate(labRpkiSyncLogId uint64) (updateCerSyncLogFileModels, updateCrlSyncLogFileModels,
-	updateMftSyncLogFileModels, updateRoaSyncLogFileModels []model.SyncLogFileModel, err error) {
+func DelCertByDelAndUpdate(syncLogFileModels *parsevalidatemodel.SyncLogFileModels) (err error) {
 	start := time.Now()
 
-	belogs.Debug("DelCertByDelAndUpdate(): labRpkiSyncLogId:", labRpkiSyncLogId)
+	belogs.Debug("DelCertByDelAndUpdate(): syncLogFileModels.SyncLogId.:", syncLogFileModels.SyncLogId)
 
 	var wg sync.WaitGroup
 
 	// get "del" and "update" cer synclog files to del
-	delCerSyncLogFileModels, updateCerSyncLogFileModels, err := getDelAndUpdateSyncLogFileModels(labRpkiSyncLogId, "cer")
-	if err != nil {
-		belogs.Error("DelCertByDelAndUpdate(): getDelAndUpdateSyncLogFileModels cer fail: ", labRpkiSyncLogId, err)
-		return nil, nil, nil, nil, err
-	}
-	belogs.Debug("DelCertByDelAndUpdate(): len(delCerSyncLogFileModels):", len(delCerSyncLogFileModels),
-		"       len(updateCerSyncLogFileModels):", len(updateCerSyncLogFileModels))
-	if len(delCerSyncLogFileModels) > 0 || len(updateCerSyncLogFileModels) > 0 {
+	belogs.Debug("DelCertByDelAndUpdate(): len(syncLogFileModels.DelCerSyncLogFileModels):", len(syncLogFileModels.DelCerSyncLogFileModels),
+		"       len(syncLogFileModels.UpdateCerSyncLogFileModels):", len(syncLogFileModels.UpdateCerSyncLogFileModels))
+	if len(syncLogFileModels.DelCerSyncLogFileModels) > 0 || len(syncLogFileModels.UpdateCerSyncLogFileModels) > 0 {
 		wg.Add(1)
-		go db.DelCers(append(delCerSyncLogFileModels, updateCerSyncLogFileModels...), &wg)
+		go db.DelCers(syncLogFileModels.DelCerSyncLogFileModels, syncLogFileModels.UpdateCerSyncLogFileModels, &wg)
 	}
 
 	// get "del" and "update" crl synclog files to del
-	delCrlSyncLogFileModels, updateCrlSyncLogFileModels, err := getDelAndUpdateSyncLogFileModels(labRpkiSyncLogId, "crl")
-	if err != nil {
-		belogs.Error("DelCertByDelAndUpdate(): getDelAndUpdateSyncLogFileModels crl fail: ", labRpkiSyncLogId, err)
-		return nil, nil, nil, nil, err
-	}
-	belogs.Debug("DelCertByDelAndUpdate(): len(delCrlSyncLogFileModels):", len(delCrlSyncLogFileModels),
-		"       len(updateCrlSyncLogFileModels):", len(updateCrlSyncLogFileModels))
-	if len(delCrlSyncLogFileModels) > 0 || len(updateCrlSyncLogFileModels) > 0 {
+	belogs.Debug("DelCertByDelAndUpdate(): len(syncLogFileModels.DelCrlSyncLogFileModels):", len(syncLogFileModels.DelCrlSyncLogFileModels),
+		"       len(syncLogFileModels.UpdateCrlSyncLogFileModels):", len(syncLogFileModels.UpdateCrlSyncLogFileModels))
+	if len(syncLogFileModels.DelCrlSyncLogFileModels) > 0 || len(syncLogFileModels.UpdateCrlSyncLogFileModels) > 0 {
 		wg.Add(1)
-		go db.DelCrls(append(delCrlSyncLogFileModels, updateCrlSyncLogFileModels...), &wg)
+		go db.DelCrls(syncLogFileModels.UpdateCrlSyncLogFileModels, syncLogFileModels.UpdateCrlSyncLogFileModels, &wg)
 	}
 
-	// get del synclog files --> mft
-	delMftSyncLogFileModels, updateMftSyncLogFileModels, err := getDelAndUpdateSyncLogFileModels(labRpkiSyncLogId, "mft")
-	if err != nil {
-		belogs.Error("DelCertByDelAndUpdate(): getDelAndUpdateSyncLogFileModels mft fail: ", labRpkiSyncLogId, err)
-		return nil, nil, nil, nil, err
-	}
-	belogs.Debug("DelCertByDelAndUpdate(): len(delMftSyncLogFileModels):", len(delMftSyncLogFileModels),
-		"       len(updateMftSyncLogFileModels):", len(updateMftSyncLogFileModels))
-	if len(delMftSyncLogFileModels) > 0 || len(updateMftSyncLogFileModels) > 0 {
+	// get "del" and "update" mft synclog files to del
+	belogs.Debug("DelCertByDelAndUpdate(): len(syncLogFileModels.DelMftSyncLogFileModels):", len(syncLogFileModels.DelMftSyncLogFileModels),
+		"       len(syncLogFileModels.UpdateMftSyncLogFileModels):", len(syncLogFileModels.UpdateMftSyncLogFileModels))
+	if len(syncLogFileModels.DelMftSyncLogFileModels) > 0 || len(syncLogFileModels.UpdateMftSyncLogFileModels) > 0 {
 		wg.Add(1)
-		go db.DelMfts(append(delMftSyncLogFileModels, updateMftSyncLogFileModels...), &wg)
+		go db.DelMfts(syncLogFileModels.DelMftSyncLogFileModels, syncLogFileModels.UpdateMftSyncLogFileModels, &wg)
 	}
 
-	// get del synclog files --> roa
-	delRoaSyncLogFileModels, updateRoaSyncLogFileModels, err := getDelAndUpdateSyncLogFileModels(labRpkiSyncLogId, "roa")
-	if err != nil {
-		belogs.Error("DelCertByDelAndUpdate(): getDelAndUpdateSyncLogFileModels roa fail: ", labRpkiSyncLogId, err)
-		return nil, nil, nil, nil, err
-	}
-	belogs.Debug("DelCertByDelAndUpdate(): len(delRoaSyncLogFileModels):", len(delRoaSyncLogFileModels),
-		"       len(updateRoaSyncLogFileModels):", len(updateRoaSyncLogFileModels))
-	if len(delRoaSyncLogFileModels) > 0 || len(updateRoaSyncLogFileModels) > 0 {
+	// get "del" and "update" roa synclog files to del
+	belogs.Debug("DelCertByDelAndUpdate(): len(syncLogFileModels.DelRoaSyncLogFileModels):", len(syncLogFileModels.DelRoaSyncLogFileModels),
+		"       len(syncLogFileModels.UpdateRoaSyncLogFileModels):", len(syncLogFileModels.UpdateRoaSyncLogFileModels))
+	if len(syncLogFileModels.DelRoaSyncLogFileModels) > 0 || len(syncLogFileModels.UpdateRoaSyncLogFileModels) > 0 {
 		wg.Add(1)
-		go db.DelRoas(append(delRoaSyncLogFileModels, updateRoaSyncLogFileModels...), &wg)
+		go db.DelRoas(syncLogFileModels.DelRoaSyncLogFileModels, syncLogFileModels.UpdateRoaSyncLogFileModels, &wg)
 	}
 
-	// update "del" rsync_log_file
-	if len(delCerSyncLogFileModels) > 0 || len(delCerSyncLogFileModels) > 0 ||
-		len(delCerSyncLogFileModels) > 0 || len(delCerSyncLogFileModels) > 0 {
-
-		wg.Add(1)
-		syncLogFileModels := make([]model.SyncLogFileModel, 0,
-			len(delCerSyncLogFileModels)+len(delCrlSyncLogFileModels)+
-				len(delMftSyncLogFileModels)+len(delRoaSyncLogFileModels))
-		syncLogFileModels = append(syncLogFileModels, delCerSyncLogFileModels...)
-		syncLogFileModels = append(syncLogFileModels, delCrlSyncLogFileModels...)
-		syncLogFileModels = append(syncLogFileModels, delMftSyncLogFileModels...)
-		syncLogFileModels = append(syncLogFileModels, delRoaSyncLogFileModels...)
-		go db.UpdateSyncLogFilesJsonAllAndState(syncLogFileModels, &wg)
-
-	}
 	wg.Wait()
 	belogs.Info("DelCertByDelAndUpdate(): end,  time(s):", time.Now().Sub(start).Seconds())
-	return updateCerSyncLogFileModels, updateCrlSyncLogFileModels,
-		updateMftSyncLogFileModels, updateRoaSyncLogFileModels, nil
+	return nil
 
 }
 
 // get add;
 // use update, because "update" should add
-func InsertCertByAddAndUpdate(labRpkiSyncLogId uint64, updateCerSyncLogFileModels, updateCrlSyncLogFileModels,
-	updateMftSyncLogFileModels, updateRoaSyncLogFileModels []model.SyncLogFileModel) (err error) {
+func InsertCertByAddAndUpdate(syncLogFileModels *parsevalidatemodel.SyncLogFileModels) (err error) {
 
 	start := time.Now()
-	belogs.Debug("InsertCertByInsertAndUpdate(): labRpkiSyncLogId:", labRpkiSyncLogId)
+	belogs.Debug("InsertCertByInsertAndUpdate(): syncLogFileModels.SyncLogId:", syncLogFileModels.SyncLogId)
 
 	var wg sync.WaitGroup
 
-	// get "add" and "update" cer synclog files to add
-	addCerSyncLogFileModels, err := getAddSyncLogFileModels(labRpkiSyncLogId, "cer")
-	if err != nil {
-		belogs.Error("InsertCertByInsertAndUpdate(): getAddSyncLogFileModels cer fail: ", labRpkiSyncLogId, err)
-		return err
-	}
-	belogs.Debug("InsertCertByInsertAndUpdate(): len(addCerSyncLogFileModels):", len(addCerSyncLogFileModels),
-		"       len(updateCerSyncLogFileModels):", len(updateCerSyncLogFileModels))
-	if len(addCerSyncLogFileModels) > 0 || len(updateCerSyncLogFileModels) > 0 {
+	// add/update crl
+	belogs.Debug("InsertCertByInsertAndUpdate(): len(syncLogFileModels.AddCerSyncLogFileModels):", len(syncLogFileModels.AddCerSyncLogFileModels),
+		"       len(syncLogFileModels.UpdateCerSyncLogFileModels):", len(syncLogFileModels.UpdateCerSyncLogFileModels))
+	if len(syncLogFileModels.AddCerSyncLogFileModels) > 0 || len(syncLogFileModels.UpdateCerSyncLogFileModels) > 0 {
 		wg.Add(1)
-		go parseValidateAndAddCers(append(addCerSyncLogFileModels, updateCerSyncLogFileModels...), &wg)
+		go parseValidateAndAddCerts(
+			append(syncLogFileModels.AddCerSyncLogFileModels, syncLogFileModels.UpdateCerSyncLogFileModels...),
+			"cer", &wg)
 	}
 
-	// get "add" and "update" crl synclog files to add
-	addCrlSyncLogFileModels, err := getAddSyncLogFileModels(labRpkiSyncLogId, "crl")
-	if err != nil {
-		belogs.Error("InsertCertByInsertAndUpdate(): getAddSyncLogFileModels crl fail: ", labRpkiSyncLogId, err)
-		return err
-	}
-	belogs.Debug("InsertCertByInsertAndUpdate(): len(addCrlSyncLogFileModels):", len(addCrlSyncLogFileModels),
-		"       len(updateCrlSyncLogFileModels):", len(updateCrlSyncLogFileModels))
-	if len(addCrlSyncLogFileModels) > 0 || len(updateCrlSyncLogFileModels) > 0 {
+	// add/update crl
+	belogs.Debug("InsertCertByInsertAndUpdate(): len(syncLogFileModels.AddCrlSyncLogFileModels):", len(syncLogFileModels.AddCrlSyncLogFileModels),
+		"       len(syncLogFileModels.UpdateCrlSyncLogFileModels):", len(syncLogFileModels.UpdateCrlSyncLogFileModels))
+	if len(syncLogFileModels.AddCrlSyncLogFileModels) > 0 || len(syncLogFileModels.UpdateCrlSyncLogFileModels) > 0 {
 		wg.Add(1)
-		go parseValidateAndAddCrls(append(addCrlSyncLogFileModels, updateCrlSyncLogFileModels...), &wg)
+		go parseValidateAndAddCerts(
+			append(syncLogFileModels.AddCrlSyncLogFileModels, syncLogFileModels.UpdateCrlSyncLogFileModels...),
+			"crl", &wg)
 	}
 
-	// get "add" and "update" mft synclog files to add
-	addMftSyncLogFileModels, err := getAddSyncLogFileModels(labRpkiSyncLogId, "mft")
-	if err != nil {
-		belogs.Error("InsertCertByInsertAndUpdate(): getAddSyncLogFileModels mft fail: ", labRpkiSyncLogId, err)
-		return err
-	}
-	belogs.Debug("InsertCertByInsertAndUpdate(): len(addMftSyncLogFileModels):", len(addMftSyncLogFileModels),
-		"       len(updateMftSyncLogFileModels):", len(updateMftSyncLogFileModels))
-	if len(addMftSyncLogFileModels) > 0 || len(updateMftSyncLogFileModels) > 0 {
+	// add/update mft
+	belogs.Debug("InsertCertByInsertAndUpdate(): len(syncLogFileModels.AddMftSyncLogFileModels):", len(syncLogFileModels.AddMftSyncLogFileModels),
+		"       len(syncLogFileModels.UpdateMftSyncLogFileModels):", len(syncLogFileModels.UpdateMftSyncLogFileModels))
+	if len(syncLogFileModels.AddMftSyncLogFileModels) > 0 || len(syncLogFileModels.UpdateMftSyncLogFileModels) > 0 {
 		wg.Add(1)
-		go parseValidateAndAddMfts(append(addMftSyncLogFileModels, updateMftSyncLogFileModels...), &wg)
+		go parseValidateAndAddCerts(
+			append(syncLogFileModels.AddMftSyncLogFileModels, syncLogFileModels.UpdateMftSyncLogFileModels...),
+			"mft", &wg)
 	}
 
-	// get "add" and "update" cer synclog files to add
-	addRoaSyncLogFileModels, err := getAddSyncLogFileModels(labRpkiSyncLogId, "roa")
-	if err != nil {
-		belogs.Error("InsertCertByInsertAndUpdate(): getAddSyncLogFileModels roa fail: ", labRpkiSyncLogId, err)
-		return err
-	}
-	belogs.Debug("InsertCertByInsertAndUpdate(): len(addRoaSyncLogFileModels):", len(addCerSyncLogFileModels),
-		"       len(updateRoaSyncLogFileModels):", len(updateRoaSyncLogFileModels))
-	if len(addRoaSyncLogFileModels) > 0 || len(updateRoaSyncLogFileModels) > 0 {
+	// add/update roa
+	belogs.Debug("InsertCertByInsertAndUpdate(): len(syncLogFileModels.AddRoaSyncLogFileModels):", len(syncLogFileModels.AddCerSyncLogFileModels),
+		"       len(syncLogFileModels.UpdateRoaSyncLogFileModels):", len(syncLogFileModels.UpdateRoaSyncLogFileModels))
+	if len(syncLogFileModels.AddRoaSyncLogFileModels) > 0 || len(syncLogFileModels.UpdateRoaSyncLogFileModels) > 0 {
 		wg.Add(1)
-		go parseValidateAndAddRoas(append(addRoaSyncLogFileModels, updateRoaSyncLogFileModels...), &wg)
-	}
-
-	// update "del" rsync_log_file
-	if len(addCerSyncLogFileModels) > 0 || len(updateCerSyncLogFileModels) > 0 ||
-		len(addCrlSyncLogFileModels) > 0 || len(updateCrlSyncLogFileModels) > 0 ||
-		len(addMftSyncLogFileModels) > 0 || len(updateMftSyncLogFileModels) > 0 ||
-		len(addRoaSyncLogFileModels) > 0 || len(updateRoaSyncLogFileModels) > 0 {
-
-		wg.Add(1)
-		syncLogFileModels := make([]model.SyncLogFileModel, 0,
-			len(addCerSyncLogFileModels)+len(updateCerSyncLogFileModels)+
-				len(addCrlSyncLogFileModels)+len(updateCrlSyncLogFileModels)+
-				len(addMftSyncLogFileModels)+len(updateMftSyncLogFileModels)+
-				len(addRoaSyncLogFileModels)+len(updateRoaSyncLogFileModels))
-		syncLogFileModels = append(syncLogFileModels, addCerSyncLogFileModels...)
-		syncLogFileModels = append(syncLogFileModels, updateCerSyncLogFileModels...)
-		syncLogFileModels = append(syncLogFileModels, addCrlSyncLogFileModels...)
-		syncLogFileModels = append(syncLogFileModels, updateCrlSyncLogFileModels...)
-		syncLogFileModels = append(syncLogFileModels, addMftSyncLogFileModels...)
-		syncLogFileModels = append(syncLogFileModels, updateMftSyncLogFileModels...)
-		syncLogFileModels = append(syncLogFileModels, addRoaSyncLogFileModels...)
-		syncLogFileModels = append(syncLogFileModels, updateRoaSyncLogFileModels...)
-		go db.UpdateSyncLogFilesJsonAllAndState(syncLogFileModels, &wg)
-
+		go parseValidateAndAddCerts(
+			append(syncLogFileModels.AddRoaSyncLogFileModels, syncLogFileModels.UpdateRoaSyncLogFileModels...),
+			"roa", &wg)
 	}
 
 	wg.Wait()
@@ -234,102 +167,62 @@ func InsertCertByAddAndUpdate(labRpkiSyncLogId uint64, updateCerSyncLogFileModel
 	return nil
 }
 
-func parseValidateAndAddCers(syncLogFileModels []model.SyncLogFileModel, wg *sync.WaitGroup) {
+func parseValidateAndAddCerts(syncLogFileModels []parsevalidatemodel.SyncLogFileModel, fileType string, wg *sync.WaitGroup) {
 	defer func() {
 		wg.Done()
 	}()
 	start := time.Now()
-	parseValidateCerts(syncLogFileModels)
-	db.AddCers(syncLogFileModels)
-	belogs.Info("parseValidateAndAddCers(): len(cers):", len(syncLogFileModels), "  time(s):", time.Now().Sub(start).Seconds())
-}
-func parseValidateAndAddCrls(syncLogFileModels []model.SyncLogFileModel, wg *sync.WaitGroup) {
-	defer func() {
-		wg.Done()
-	}()
-	start := time.Now()
-	parseValidateCerts(syncLogFileModels)
-	db.AddCrls(syncLogFileModels)
-	belogs.Info("parseValidateAndAddCrls(): len(crls), ", len(syncLogFileModels), "  time(s):", time.Now().Sub(start).Seconds())
-}
-func parseValidateAndAddMfts(syncLogFileModels []model.SyncLogFileModel, wg *sync.WaitGroup) {
-	defer func() {
-		wg.Done()
-	}()
-	start := time.Now()
-	parseValidateCerts(syncLogFileModels)
-	db.AddMfts(syncLogFileModels)
-	belogs.Info("parseValidateAndAddMfts(): len(mfts), ", len(syncLogFileModels), "  time(s):", time.Now().Sub(start).Seconds())
-}
-func parseValidateAndAddRoas(syncLogFileModels []model.SyncLogFileModel, wg *sync.WaitGroup) {
-	defer func() {
-		wg.Done()
-	}()
-	start := time.Now()
-	parseValidateCerts(syncLogFileModels)
-	db.AddRoas(syncLogFileModels)
-	belogs.Info("parseValidateAndAddRoas(): len(roas), ", len(syncLogFileModels), "  time(s):", time.Now().Sub(start).Seconds())
-}
-func parseValidateCerts(syncLogFileModels []model.SyncLogFileModel) {
 
-	belogs.Debug("parseValidateCerts(): len(syncLogFileModels):", len(syncLogFileModels))
-	for i, _ := range syncLogFileModels {
-		parseFailFile, err := parseValidateCert(&syncLogFileModels[i])
-		if err != nil {
-			belogs.Error("parseValidateCerts(): parseValidateCert fail: ",
-				syncLogFileModels[i].FilePath, syncLogFileModels[i].FileName, parseFailFile, err)
-			// not return err
-			continue
-		}
+	// parsevalidate
+	belogs.Debug("parseValidateAndAddCerts(): len(syncLogFileModels):", len(syncLogFileModels), "  fileType:", fileType)
+	var parseValidateWg sync.WaitGroup
+	parseValidateCh := make(chan int, conf.Int("parse::parseConcurrentCount"))
+	for i := range syncLogFileModels {
+		parseValidateWg.Add(1)
+		parseValidateCh <- 1
+		go parseValidateCert(&syncLogFileModels[i], &parseValidateWg, parseValidateCh)
 	}
+	parseValidateWg.Wait()
+	close(parseValidateCh)
+
+	belogs.Info("parseValidateAndAddCerts():end parseValidate, len(syncLogFileModels):", len(syncLogFileModels), "  fileType:", fileType, "  fileType:", fileType, "  time(s):", time.Now().Sub(start).Seconds())
+
+	// add to db
+	switch fileType {
+	case "cer":
+		db.AddCers(syncLogFileModels)
+	case "crl":
+		db.AddCrls(syncLogFileModels)
+	case "mft":
+		db.AddMfts(syncLogFileModels)
+	case "roa":
+		db.AddRoas(syncLogFileModels)
+	}
+	belogs.Info("parseValidateAndAddCerts():end add***(), len(syncLogFileModels):", len(syncLogFileModels), "  fileType:", fileType, "  time(s):", time.Now().Sub(start).Seconds())
 }
 
-func parseValidateCert(syncLogFileModel *model.SyncLogFileModel) (parseFailFile string, err error) {
+func parseValidateCert(syncLogFileModel *parsevalidatemodel.SyncLogFileModel,
+	wg *sync.WaitGroup, parseValidateCh chan int) (parseFailFile string, err error) {
+	defer func() {
+		wg.Done()
+		<-parseValidateCh
+	}()
 
 	start := time.Now()
 	belogs.Debug("parseValidateCert(): syncLogFileModel :", jsonutil.MarshalJson(syncLogFileModel))
 	file := osutil.JoinPathFile(syncLogFileModel.FilePath, syncLogFileModel.FileName)
 	belogs.Debug("parseValidateCert(): file :", file)
-	_, certModel, stateModel, jsonAll, err := ParseValidateFile(file)
+	_, certModel, stateModel, err := ParseValidateFile(file)
 	if err != nil {
 		belogs.Error("parseValidateCer(): parseValidateFile fail: ", file, err)
 		return file, err
 	}
 	syncLogFileModel.CertModel = certModel
 	syncLogFileModel.StateModel = stateModel
-	syncLogFileModel.JsonAll = jsonAll
 	belogs.Info("parseValidateCert(): parseValidateFile file :", file,
 		"   syncType:", syncLogFileModel.SyncType, "  time(s):", time.Now().Sub(start).Seconds())
+
 	return "", nil
-
-}
-func getDelAndUpdateSyncLogFileModels(labRpkiSyncLogId uint64, fileType string) (delSyncLogFileModels, updateSyncLogFileModels []model.SyncLogFileModel,
-	err error) {
-	// get del synclog files
-	delSyncLogFileModels, err = db.GetSyncLogFileModels(labRpkiSyncLogId, "del", fileType)
-	if err != nil {
-		belogs.Error("GetDelAndUpdateSyncLogFileModels():del syncLogFileDelModels fail: ", labRpkiSyncLogId, fileType, err)
-		return nil, nil, err
-	}
-	updateSyncLogFileModels, err = db.GetSyncLogFileModels(labRpkiSyncLogId, "update", fileType)
-	if err != nil {
-		belogs.Error("GetDelAndUpdateSyncLogFileModels():update syncLogFileDelModels fail: ", labRpkiSyncLogId, fileType, err)
-		return nil, nil, err
-	}
-	return delSyncLogFileModels, updateSyncLogFileModels, err
-
-}
-
-func getAddSyncLogFileModels(labRpkiSyncLogId uint64, fileType string) (addSyncLogFileModels []model.SyncLogFileModel,
-	err error) {
-	// get del synclog files
-	addSyncLogFileModels, err = db.GetSyncLogFileModels(labRpkiSyncLogId, "add", fileType)
-	if err != nil {
-		belogs.Error("getAddSyncLogFileModels():add syncLogFileDelModels fail: ", labRpkiSyncLogId, fileType, err)
-		return nil, err
-	}
-
-	return addSyncLogFileModels, err
 
 }
 
@@ -372,27 +265,99 @@ Internet X.509 Public Key Infrastructure Certificate and Certificate Revocation 
 https://datatracker.ietf.org/doc/rfc5280/?include_text=1
 */
 // upload file to parse
-func ParseValidateFile(certFile string) (certType string, certModel interface{}, stateModel model.StateModel, jsonAll string, err error) {
+func ParseValidateFile(certFile string) (certType string, certModel interface{}, stateModel model.StateModel, err error) {
 	belogs.Debug("parseValidateFile(): parsevalidate start:", certFile)
 
 	if strings.HasSuffix(certFile, ".cer") {
 		cerModel, stateModel, err := ParseValidateCer(certFile)
 		belogs.Debug("parseValidateFile():  after ParseCer():certFile, stateModel:", certFile, stateModel, "  err:", err)
-		return "cer", cerModel, stateModel, jsonutil.MarshalJson(cerModel), err
+		return "cer", cerModel, stateModel, err
 	} else if strings.HasSuffix(certFile, ".crl") {
 		crlModel, stateModel, err := ParseValidateCrl(certFile)
 		belogs.Debug("parseValidateFile(): after ParseCrl(): certFile,stateModel:", certFile, stateModel, "  err:", err)
-		return "crl", crlModel, stateModel, jsonutil.MarshalJson(crlModel), err
+		return "crl", crlModel, stateModel, err
 	} else if strings.HasSuffix(certFile, ".mft") {
 		mftModel, stateModel, err := ParseValidateMft(certFile)
 		belogs.Debug("parseValidateFile(): after ParseMft():certFile,stateModel:", certFile, stateModel, "  err:", err)
-		return "mft", mftModel, stateModel, jsonutil.MarshalJson(mftModel), err
+		return "mft", mftModel, stateModel, err
 	} else if strings.HasSuffix(certFile, ".roa") {
 		roaModel, stateModel, err := ParseValidateRoa(certFile)
 		belogs.Debug("parseValidateFile():after ParseRoa(): certFile,stateModel:", certFile, stateModel, "  err:", err)
-		return "roa", roaModel, stateModel, jsonutil.MarshalJson(roaModel), err
+		return "roa", roaModel, stateModel, err
 	} else {
-		return "", nil, stateModel, "", errors.New("unknown file type")
+		return "", nil, stateModel, errors.New("unknown file type")
+	}
+}
+
+func ParseFile(certFile string) (certModel interface{}, err error) {
+	belogs.Debug("parseValidateFile(): parsevalidate start:", certFile)
+	var jsonAll string
+	if strings.HasSuffix(certFile, ".cer") {
+		cerModel, _, err := ParseValidateCer(certFile)
+		if err != nil {
+			belogs.Error("parseValidateFile(): ParseValidateCer:", certFile, "  err:", err)
+			return nil, err
+		}
+
+		jsonAll = jsonutil.MarshalJson(cerModel)
+		parseCerModel := parsevalidatemodel.CerModel{}
+		err = jsonutil.UnmarshalJson(jsonAll, &parseCerModel)
+		if err != nil {
+			belogs.Error("parseValidateFile(): UnmarshalJson parseCerModel:", certFile, jsonAll, parseCerModel, "  err:", err)
+			return nil, err
+		}
+		belogs.Debug("parseValidateFile(): parseCerModel:", certFile, parseCerModel)
+		return parseCerModel, nil
+	} else if strings.HasSuffix(certFile, ".crl") {
+		crlModel, _, err := ParseValidateCrl(certFile)
+		if err != nil {
+			belogs.Error("parseValidateFile(): ParseValidateCrl:", certFile, "  err:", err)
+			return nil, err
+		}
+
+		jsonAll = jsonutil.MarshalJson(crlModel)
+		parseCrlModel := parsevalidatemodel.CrlModel{}
+		err = jsonutil.UnmarshalJson(jsonAll, &parseCrlModel)
+		if err != nil {
+			belogs.Error("parseValidateFile(): UnmarshalJson parseCrlModel:", certFile, jsonAll, parseCrlModel, "  err:", err)
+			return nil, err
+		}
+		belogs.Debug("parseValidateFile(): parseCrlModel:", certFile, parseCrlModel)
+		return parseCrlModel, nil
+	} else if strings.HasSuffix(certFile, ".mft") {
+		mftModel, _, err := ParseValidateMft(certFile)
+		if err != nil {
+			belogs.Error("parseValidateFile(): ParseValidateMft:", certFile, "  err:", err)
+			return nil, err
+		}
+
+		jsonAll = jsonutil.MarshalJson(mftModel)
+		parseMftModel := parsevalidatemodel.MftModel{}
+		err = jsonutil.UnmarshalJson(jsonAll, &parseMftModel)
+		if err != nil {
+			belogs.Error("parseValidateFile(): UnmarshalJson parseMftModel:", certFile, jsonAll, parseMftModel, "  err:", err)
+			return nil, err
+		}
+		belogs.Debug("parseValidateFile(): parseMftModel:", certFile, parseMftModel)
+		return parseMftModel, nil
+	} else if strings.HasSuffix(certFile, ".roa") {
+		roaModel, _, err := ParseValidateRoa(certFile)
+		if err != nil {
+			belogs.Error("parseValidateFile(): ParseValidateRoa:", certFile, "  err:", err)
+			return nil, err
+		}
+
+		jsonAll = jsonutil.MarshalJson(roaModel)
+		parseRoaModel := parsevalidatemodel.RoaModel{}
+		err = jsonutil.UnmarshalJson(jsonAll, &parseRoaModel)
+		if err != nil {
+			belogs.Error("parseValidateFile(): UnmarshalJson parseRoaModel:", certFile, jsonAll, parseRoaModel, "  err:", err)
+			return nil, err
+		}
+		belogs.Debug("parseValidateFile(): parseRoaModel:", certFile, parseRoaModel)
+		return parseRoaModel, nil
+	} else {
+		return nil, errors.New("unknown file type")
 	}
 }
 
@@ -400,7 +365,6 @@ func ParseValidateFile(certFile string) (certType string, certModel interface{},
 func ParseValidateFileRepo(certFile string) (caRepository string, err error) {
 	if strings.HasSuffix(certFile, ".cer") {
 		return ParseValidateCerRepo(certFile)
-	} else {
-		return "", errors.New("unknown file type")
 	}
+	return "", errors.New("unknown file type")
 }

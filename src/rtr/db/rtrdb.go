@@ -64,7 +64,7 @@ func UpdateRtrFullLog(roaToRtrFullLogs []model.RoaToRtrFullLog,
 
 	//when both  len are 0, return nil
 	if len(roaToRtrFullLogs) == 0 && len(slurmToRtrFullLogs) == 0 {
-		belogs.Debug("UpdateRtrFullLog():roa and slurm all are emtpy")
+		belogs.Debug("UpdateRtrFullLog():roa and slurm all are empty")
 		return 0, nil
 	}
 
@@ -96,7 +96,7 @@ func UpdateRtrFullLog(roaToRtrFullLogs []model.RoaToRtrFullLog,
 	sourceFrom := model.LabRpkiRtrSourceFrom{
 		Source: "sync",
 	}
-	for i, _ := range roaToRtrFullLogs {
+	for i := range roaToRtrFullLogs {
 		sourceFrom.SyncLogId = roaToRtrFullLogs[i].SyncLogId
 		sourceFrom.SyncLogFileId = roaToRtrFullLogs[i].SyncLogFileId
 		sourceFromJson := jsonutil.MarshalJson(sourceFrom)
@@ -118,7 +118,7 @@ func UpdateRtrFullLog(roaToRtrFullLogs []model.RoaToRtrFullLog,
 	sourceFrom = model.LabRpkiRtrSourceFrom{
 		Source: "slurm",
 	}
-	for i, _ := range slurmToRtrFullLogs {
+	for i := range slurmToRtrFullLogs {
 		sourceFrom.SlurmId = slurmToRtrFullLogs[i].SlurmId
 		sourceFrom.SlurmFileId = slurmToRtrFullLogs[i].SlurmFileId
 		sourceFromJson := jsonutil.MarshalJson(sourceFrom)
@@ -211,7 +211,7 @@ func GetRtrFullFromRtrFullLog(serialNumber uint32) (rtrFulls map[string]model.La
 	belogs.Debug("GetRtrFullFromRtrFullLog():model.LabRpkiRtrFull,serialNumber, len(rtrFs) : ", serialNumber, len(rtrFs))
 
 	rtrFulls = make(map[string]model.LabRpkiRtrFull, len(rtrFs)+50)
-	for i, _ := range rtrFs {
+	for i := range rtrFs {
 		key := convert.ToString(rtrFs[i].Asn) + "_" + rtrFs[i].Address + "_" +
 			convert.ToString(rtrFs[i].PrefixLength) + "_" + convert.ToString(rtrFs[i].MaxLength)
 		rtrFulls[key] = rtrFs[i]
@@ -252,7 +252,7 @@ func UpdateRtrFullAndIncrementalAndRsyncLogRtrStateEnd(serialNumber uint32, rtrI
 	sql = `insert ignore into lab_rpki_rtr_incremental
 			 (serialNumber,style,asn,address,   prefixLength,maxLength, sourceFrom) values
 			 (?,?,?,?,  ?,?,?)`
-	for i, _ := range rtrIncrementals {
+	for i := range rtrIncrementals {
 		_, err = session.Exec(sql,
 			serialNumber, rtrIncrementals[i].Style, rtrIncrementals[i].Asn, rtrIncrementals[i].Address,
 			rtrIncrementals[i].PrefixLength, rtrIncrementals[i].MaxLength, rtrIncrementals[i].SourceFrom)

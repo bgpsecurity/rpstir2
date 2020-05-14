@@ -6,13 +6,13 @@ import (
 
 	belogs "github.com/astaxie/beego/logs"
 
-	. "model"
+	"model"
 	"parsevalidate/util"
 )
 
-func ExtractAiaOid(oidPackets *[]OidPacket, fileByte []byte) (authorityInfoAccess AiaModel, err error) {
+func ExtractAiaOid(oidPackets *[]OidPacket, fileByte []byte) (authorityInfoAccess model.AiaModel, err error) {
 	//oidCaIssuersKey is child of AuthorityInfoAccess
-	var aia AiaModel = AiaModel{}
+	var aia model.AiaModel = model.AiaModel{}
 
 	for _, oidPacket := range *oidPackets {
 		if oidPacket.Oid == oidCaIssuersKey {
@@ -32,19 +32,19 @@ func ExtractAiaOid(oidPackets *[]OidPacket, fileByte []byte) (authorityInfoAcces
 }
 
 // if parse failed by Packet, then use OID to parse again
-func reExtractAiaOid(fileByte []byte) (authorityInfoAccess AiaModel, err error) {
+func reExtractAiaOid(fileByte []byte) (authorityInfoAccess model.AiaModel, err error) {
 	/*
 		use OID, the parse next level
 		   SEQUENCE (2 elem)
 		     OBJECT IDENTIFIER 1.3.6.1.5.5.7.48.2 caIssuers (PKIX subject/authority info access descriptor)
 		     [6] rsync://repository.lacnic.net/rpki/lacnic/48f083bb-f603-4893-9990-0284c04ceb85/8…
 	*/
-	var aia AiaModel = AiaModel{}
+	var aia model.AiaModel = model.AiaModel{}
 	belogs.Debug("reExtractAiaOid():len(fileByte): ", len(fileByte))
 	pos0 := bytes.Index(fileByte, oidCaIssuersKeyByte)
 	var datapos uint64 = uint64(pos0)
 	var datalen uint64 = uint64(0)
-	belogs.Debug("reExtractAiaOid():enum0 pos:", datapos)
+	belogs.Debug("reExtractAiaOid():enum0 pos:", datapos, "   datalen:", datalen)
 	if datapos <= 0 {
 		return aia, errors.New("not found " + oidManifestKey)
 	}

@@ -61,6 +61,7 @@ func startServer() {
 	// parsevalidate
 	routes = append(routes, rest.Post("/parsevalidate/start", parsevalidatehttp.ParseValidateStart))
 	routes = append(routes, rest.Post("/parsevalidate/file", parsevalidatehttp.ParseValidateFile))
+	routes = append(routes, rest.Post("/parsevalidate/parsefile", parsevalidatehttp.ParseFile))
 	routes = append(routes, rest.Post("/parsevalidate/filerepo", parsevalidatehttp.ParseValidateFileRepo))
 
 	// chainvalidate
@@ -75,6 +76,7 @@ func startServer() {
 	routes = append(routes, rest.Post("/sys/detailstates", syshttp.DetailStates))
 	routes = append(routes, rest.Post("/sys/summarystates", syshttp.SummaryStates))
 	routes = append(routes, rest.Post("/sys/results", syshttp.Results))
+	routes = append(routes, rest.Post("/sys/exportroas", syshttp.ExportRoas))
 
 	// make router
 	router, err := rest.MakeRouter(

@@ -11,16 +11,20 @@ import (
 	"github.com/go-xorm/xorm"
 
 	"model"
+	parsevalidatemodel "parsevalidate/model"
 )
 
 // add
-func AddCers(syncLogFileModels []model.SyncLogFileModel) error {
+func AddCers(syncLogFileModels []parsevalidatemodel.SyncLogFileModel) error {
 	session, err := xormdb.NewSession()
+	if err != nil {
+		return err
+	}
 	defer session.Close()
 	start := time.Now()
 
 	belogs.Debug("AddCers(): len(syncLogFileModels):", len(syncLogFileModels))
-	for i, _ := range syncLogFileModels {
+	for i := range syncLogFileModels {
 		// insert new cer
 		err = insertCer(session, &syncLogFileModels[i], start)
 		if err != nil {
@@ -28,27 +32,36 @@ func AddCers(syncLogFileModels []model.SyncLogFileModel) error {
 			return xormdb.RollbackAndLogError(session, "AddCers(): insertCer fail: "+jsonutil.MarshalJson(&syncLogFileModels[i]), err)
 		}
 	}
+
+	err = UpdateSyncLogFilesJsonAllAndState(session, syncLogFileModels)
+	if err != nil {
+		belogs.Error("AddCers(): UpdateSyncLogFilesJsonAllAndState fail:", err)
+		return xormdb.RollbackAndLogError(session, "AddCers(): UpdateSyncLogFilesJsonAllAndState fail", err)
+	}
+
 	err = xormdb.CommitSession(session)
 	if err != nil {
 		belogs.Error("AddCers(): insertCer CommitSession fail :", err)
 		return err
 	}
-	belogs.Info("AddCers(): len(cers), ", len(syncLogFileModels), "  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Info("AddCers(): len(cers):", len(syncLogFileModels), "  time(s):", time.Now().Sub(start).Seconds())
 	return nil
 
 }
-func DelCers(syncLogFileModels []model.SyncLogFileModel, wg *sync.WaitGroup) (err error) {
+
+// del
+func DelCers(delSyncLogFileModels []parsevalidatemodel.SyncLogFileModel, updateSyncLogFileModels []parsevalidatemodel.SyncLogFileModel, wg *sync.WaitGroup) (err error) {
 	defer func() {
 		wg.Done()
 	}()
 
+	start := time.Now()
 	session, err := xormdb.NewSession()
 	defer session.Close()
-	start := time.Now()
 
+	syncLogFileModels := append(delSyncLogFileModels, updateSyncLogFileModels...)
 	belogs.Debug("DelCers(): len(syncLogFileModels):", len(syncLogFileModels))
-
-	for i, _ := range syncLogFileModels {
+	for i := range syncLogFileModels {
 		err = delCerById(session, syncLogFileModels[i].CertId)
 		if err != nil {
 			belogs.Error("DelCers(): DelCerById fail, cerId:", syncLogFileModels[i].CertId, err)
@@ -56,12 +69,19 @@ func DelCers(syncLogFileModels []model.SyncLogFileModel, wg *sync.WaitGroup) (er
 		}
 	}
 
+	// only update del
+	err = UpdateSyncLogFilesJsonAllAndState(session, delSyncLogFileModels)
+	if err != nil {
+		belogs.Error("DelCers(): UpdateSyncLogFilesJsonAllAndState fail:", err)
+		return xormdb.RollbackAndLogError(session, "DelCers(): UpdateSyncLogFilesJsonAllAndState fail", err)
+	}
+
 	err = xormdb.CommitSession(session)
 	if err != nil {
 		belogs.Error("DelCers(): CommitSession fail :", err)
 		return err
 	}
-	belogs.Info("DelCers(): len(cers), ", len(syncLogFileModels), "  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Info("DelCers(): len(cers):", len(syncLogFileModels), "  time(s):", time.Now().Sub(start).Seconds())
 	return nil
 }
 
@@ -132,7 +152,7 @@ func delCerById(session *xorm.Session, cerId uint64) (err error) {
 }
 
 func insertCer(session *xorm.Session,
-	syncLogFileModel *model.SyncLogFileModel, now time.Time) error {
+	syncLogFileModel *parsevalidatemodel.SyncLogFileModel, now time.Time) error {
 
 	cerModel := syncLogFileModel.CertModel.(model.CerModel)
 	notBefore := cerModel.NotBefore

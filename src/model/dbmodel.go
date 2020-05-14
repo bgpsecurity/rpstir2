@@ -247,20 +247,6 @@ type LabRpkiSyncLogFile struct {
 	State string `json:"state" xorm:"state json"`
 }
 
-type SyncLogFileModel struct {
-	Id         uint64      `json:"id" xorm:"pk autoincr"`
-	SyncLogId  uint64      `json:"syncLogId" xorm:"syncLogId int"`
-	FilePath   string      `json:"filePath" xorm:"filePath varchar(512)"`
-	FileName   string      `json:"fileName" xorm:"fileName varchar(128)"`
-	FileType   string      `json:"fileType" xorm:"fileType varchar(16)"`
-	SyncType   string      `json:"syncType" xorm:"syncType varchar(16)"`
-	CertModel  interface{} `json:"-"`
-	StateModel StateModel  `json:"-"`
-	JsonAll    string      `json:"jsonAll"`
-	//cerId / mftId / roaId / crlId
-	CertId uint64 `json:"certId"`
-}
-
 type LabRpkiSyncLogFileState struct {
 	//finished
 	Sync string `json:"sync"`

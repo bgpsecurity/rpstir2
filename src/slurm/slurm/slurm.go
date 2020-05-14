@@ -150,8 +150,8 @@ func CheckSlurm(slurm *model.Slurm) (err error) {
 	if errMsg.Len() > 0 {
 		belogs.Info("CheckSlurm(): fail:", errMsg.String())
 		return errors.New(errMsg.String())
-	} else {
-		belogs.Info("CheckSlurm():ok :")
-		return nil
 	}
+	belogs.Info("CheckSlurm():ok :")
+	return nil
+
 }

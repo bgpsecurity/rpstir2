@@ -2,6 +2,7 @@ package rsync
 
 import (
 	"strings"
+	"time"
 
 	belogs "github.com/astaxie/beego/logs"
 	conf "github.com/cpusoft/goutil/conf"
@@ -14,6 +15,7 @@ import (
 )
 
 func FoundDiffFiles(labRpkiSyncLogId uint64) {
+	start := time.Now()
 	belogs.Info("FoundDiffFiles():start:")
 	// save starttime to lab_rpki_sync_log
 	err := db.UpdateRsyncLogDiffStateStart(labRpkiSyncLogId, "diffing")
@@ -37,6 +39,8 @@ func FoundDiffFiles(labRpkiSyncLogId uint64) {
 		belogs.Error("FoundDiffFiles():diffFiles:", err)
 		return
 	}
+	belogs.Debug("diffFiles(): len(addFiles):", len(addFiles), "  len(delFiles):", len(delFiles),
+		"  len(updateFiles):", len(updateFiles), "  len(noChangeFiles):", len(noChangeFiles))
 
 	err = db.UpdateRsyncLogDiffStateEnd(labRpkiSyncLogId, "diffed", filesFromDb,
 		filesFromDisk, addFiles, delFiles, updateFiles, noChangeFiles)
@@ -44,7 +48,7 @@ func FoundDiffFiles(labRpkiSyncLogId uint64) {
 		belogs.Error("FoundDiffFiles():UpdateRsyncLogDiffState fail:", err)
 		return
 	}
-	belogs.Info("FoundDiffFiles():end , will call parsevalidate")
+	belogs.Info("FoundDiffFiles():end , will call parsevalidate,  time(s):", time.Now().Sub(start).Seconds())
 
 	// call parse validate
 	go func() {
@@ -57,12 +61,13 @@ func FoundDiffFiles(labRpkiSyncLogId uint64) {
 func diffFiles(filesFromDb, filesFromDisk map[string]rsyncmodel.RsyncFileHash) (addFiles,
 	delFiles, updateFiles, noChangeFiles map[string]rsyncmodel.RsyncFileHash, err error) {
 
+	start := time.Now()
 	// if db is empty, so all filesFromDisk is add
 	if len(filesFromDb) == 0 {
 		return filesFromDisk, nil, nil, nil, nil
 	}
 
-	// if disk is emtpy, so all filesFromDb is del
+	// if disk is empty, so all filesFromDb is del
 	if len(filesFromDisk) == 0 {
 		return nil, filesFromDb, nil, nil, nil
 	}
@@ -96,16 +101,17 @@ func diffFiles(filesFromDb, filesFromDisk map[string]rsyncmodel.RsyncFileHash) (
 		}
 	}
 	addFiles = filesFromDisk
-	belogs.Debug("diffFiles(): len(addFiles):", len(addFiles), "  len(delFiles):", len(delFiles),
-		"  len(updateFiles):", len(updateFiles), "  len(noChangeFiles):", len(noChangeFiles))
+	belogs.Info("diffFiles(): len(addFiles):", len(addFiles), "  len(delFiles):", len(delFiles),
+		"  len(updateFiles):", len(updateFiles), "  len(noChangeFiles):", len(noChangeFiles), "  time(s):", time.Now().Sub(start).Seconds())
 	return addFiles, delFiles, updateFiles, noChangeFiles, nil
 
 }
 
 func getFilesHashFromDb() (files map[string]rsyncmodel.RsyncFileHash, err error) {
+	start := time.Now()
 
 	// init cap
-	cerFileHashs := make([]rsyncmodel.RsyncFileHash, 15000)
+	cerFileHashs := make([]rsyncmodel.RsyncFileHash, 0, 25000)
 	err = xormdb.XormEngine.Table("lab_rpki_cer").
 		Select("filePath , fileName, fileHash, jsonAll as lastJsonAll, 'cer' as fileType").
 		Asc("id").Find(&cerFileHashs)
@@ -116,7 +122,7 @@ func getFilesHashFromDb() (files map[string]rsyncmodel.RsyncFileHash, err error)
 	belogs.Debug("getFilesHashFromDb(): len(cerrsyncmodel.RsyncFileHashs):", len(cerFileHashs))
 
 	// init cap
-	roaFileHashs := make([]rsyncmodel.RsyncFileHash, 25000)
+	roaFileHashs := make([]rsyncmodel.RsyncFileHash, 0, 25000)
 	err = xormdb.XormEngine.Table("lab_rpki_roa").
 		Select("filePath , fileName, fileHash, jsonAll as lastJsonAll, 'roa' as fileType").
 		Asc("id").Find(&roaFileHashs)
@@ -127,7 +133,7 @@ func getFilesHashFromDb() (files map[string]rsyncmodel.RsyncFileHash, err error)
 	belogs.Debug("getFilesHashFromDb(): len(roarsyncmodel.RsyncFileHashs):", len(roaFileHashs))
 
 	// init cap
-	crlFileHashs := make([]rsyncmodel.RsyncFileHash, 15000)
+	crlFileHashs := make([]rsyncmodel.RsyncFileHash, 0, 25000)
 	err = xormdb.XormEngine.Table("lab_rpki_crl").
 		Select("filePath,fileName,fileHash,jsonAll as 'lastJsonAll','crl' as fileType").
 		Asc("id").Find(&crlFileHashs)
@@ -138,7 +144,7 @@ func getFilesHashFromDb() (files map[string]rsyncmodel.RsyncFileHash, err error)
 	belogs.Debug("getFilesHashFromDb(): len(crlrsyncmodel.RsyncFileHashs):", len(crlFileHashs))
 
 	// init cap
-	mftFileHashs := make([]rsyncmodel.RsyncFileHash, 15000)
+	mftFileHashs := make([]rsyncmodel.RsyncFileHash, 0, 25000)
 	err = xormdb.XormEngine.Table("lab_rpki_mft").
 		Select("filePath,fileName,fileHash,jsonAll as 'lastJsonAll','mft' as fileType").
 		Asc("id").Find(&mftFileHashs)
@@ -150,23 +156,24 @@ func getFilesHashFromDb() (files map[string]rsyncmodel.RsyncFileHash, err error)
 
 	files = make(map[string]rsyncmodel.RsyncFileHash, len(cerFileHashs)+len(roaFileHashs)+
 		len(crlFileHashs)+len(mftFileHashs)+1000)
-	for i, _ := range cerFileHashs {
+	for i := range cerFileHashs {
 		files[osutil.JoinPathFile(cerFileHashs[i].FilePath, cerFileHashs[i].FileName)] = cerFileHashs[i]
 	}
-	for i, _ := range roaFileHashs {
+	for i := range roaFileHashs {
 		files[osutil.JoinPathFile(roaFileHashs[i].FilePath, roaFileHashs[i].FileName)] = roaFileHashs[i]
 	}
-	for i, _ := range crlFileHashs {
+	for i := range crlFileHashs {
 		files[osutil.JoinPathFile(crlFileHashs[i].FilePath, crlFileHashs[i].FileName)] = crlFileHashs[i]
 	}
-	for i, _ := range mftFileHashs {
+	for i := range mftFileHashs {
 		files[osutil.JoinPathFile(mftFileHashs[i].FilePath, mftFileHashs[i].FileName)] = mftFileHashs[i]
 	}
-	belogs.Debug("getFilesHashFromDb(): len(files):", len(files))
+	belogs.Info("getFilesHashFromDb(): len(files):", len(files), "  time(s):", time.Now().Sub(start).Seconds())
 	return files, nil
 }
 
 func getFilesHashFromDisk() (files map[string]rsyncmodel.RsyncFileHash, err error) {
+	start := time.Now()
 
 	m := make(map[string]string, 0)
 	m[".cer"] = ".cer"
@@ -181,7 +188,7 @@ func getFilesHashFromDisk() (files map[string]rsyncmodel.RsyncFileHash, err erro
 	}
 	belogs.Debug("getFilesHashFromDisk(): len(fileStats):", len(fileStats))
 	files = make(map[string]rsyncmodel.RsyncFileHash, len(fileStats))
-	for i, _ := range fileStats {
+	for i := range fileStats {
 		fileHash := rsyncmodel.RsyncFileHash{}
 		fileHash.FileHash = fileStats[i].Hash256
 		fileHash.FileName = fileStats[i].FileName
@@ -190,6 +197,7 @@ func getFilesHashFromDisk() (files map[string]rsyncmodel.RsyncFileHash, err erro
 		belogs.Debug("getFilesHashFromDisk(): fileHash:", fileHash)
 		files[osutil.JoinPathFile(fileStats[i].FilePath, fileStats[i].FileName)] = fileHash
 	}
+	belogs.Info("getFilesHashFromDisk(): len(files):", len(files), "  time(s):", time.Now().Sub(start).Seconds())
 	return files, nil
 
 }

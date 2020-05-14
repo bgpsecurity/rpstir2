@@ -263,7 +263,7 @@ func DecodeFiniteAndInfiniteLen(data []byte) (datalen uint64, datapos uint64, er
 	data0Len := data[1]
 	belogs.Debug("DecodeFiniteAndInfiniteLen():again seq0Len:", data0Len)
 	if data0Len == byte(0x80) {
-		datapos, datapos, _ = DecodeInfiniteLen(data)
+		datalen, datapos, _ = DecodeInfiniteLen(data)
 	} else {
 		datalen, datapos, _ = DecodeFiniteLen(data)
 	}

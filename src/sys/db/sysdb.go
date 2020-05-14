@@ -80,7 +80,7 @@ CREATE TABLE lab_rpki_cer (
   key  fileName (fileName),
   unique  cerFilePathFileName (filePath,fileName),
   unique  cerSkiFilePath (ski,filePath)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4   COLLATE=utf8mb4_bin comment='main cer table'
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4   COLLATE=utf8mb4_bin comment='main cer table'
 `,
 
 	`
@@ -89,10 +89,10 @@ CREATE TABLE lab_rpki_cer_sia (
 	cerId int(10) unsigned not null,
 	rpkiManifest  varchar(512)  COMMENT 'mft sync url',
 	rpkiNotify  varchar(512) ,
-	caRepository  varchar(512)  COMMENT 'ca repository url(direcotry)',
+	caRepository  varchar(512)  COMMENT 'ca repository url(directory)',
 	signedObject  varchar(512) ,
 	FOREIGN key (cerid) REFERENCES lab_rpki_cer(id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin comment='cer sia'
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin comment='cer sia'
 `,
 
 	`
@@ -101,7 +101,7 @@ CREATE TABLE lab_rpki_cer_aia (
 	cerId int(10) unsigned not null,
 	caIssuers  varchar(512) COMMENT 'father ca url (cer file)',
 	foreign key (cerId) references lab_rpki_cer(id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin comment='cer aia'
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin comment='cer aia'
 `,
 
 	`
@@ -110,7 +110,7 @@ CREATE TABLE lab_rpki_cer_crldp (
 	cerId int(10) unsigned not null,
 	crldp varchar(512) COMMENT 'crl sync url(file)',
 	foreign key (cerId) references lab_rpki_cer(id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4  COLLATE=utf8mb4_bin comment='cer crl'
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin comment='cer crl'
 `,
 
 	`
@@ -128,7 +128,7 @@ CREATE TABLE lab_rpki_cer_ipaddress (
 	key  rangeStart (rangeStart),
 	key  rangeEnd (rangeEnd),
 	foreign key (cerId) references lab_rpki_cer(id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin comment='cer ip address range'
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin comment='cer ip address range'
 `,
 	`
 ## because 0 of asn has special meaning, so the default of asn is -1, and is "bigint signed" in mysql
@@ -140,7 +140,7 @@ CREATE TABLE lab_rpki_cer_asn (
 	max bigint(20) signed,
 	 key  asn (asn),
 	foreign key (cerId) references lab_rpki_cer(id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin comment='cer asn range'
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin comment='cer asn range'
 `,
 
 	`
@@ -166,7 +166,7 @@ CREATE TABLE lab_rpki_crl (
   key  filePath (filePath),  
   key  fileName (fileName),
   unique  crlFilePathFileName (filePath,fileName)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4  COLLATE=utf8mb4_bin comment='crl '
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin comment='crl '
 `,
 
 	`
@@ -177,7 +177,7 @@ CREATE TABLE lab_rpki_crl_revoked_cert (
 	revocationTime datetime NOT NULL,
 	key  sn (sn),
 	foreign key (crlId) references lab_rpki_crl(id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin comment='all sn and revocationTime in crl'
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin comment='all sn and revocationTime in crl'
 `,
 
 	`
@@ -205,7 +205,7 @@ CREATE TABLE lab_rpki_mft (
   key  fileName (fileName),
   unique  mftFilePathFileName (filePath,fileName),
   unique  mftSkiFilePath (ski,filePath) 
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4  COLLATE=utf8mb4_bin comment='manifest'
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin comment='manifest'
 `,
 
 	`
@@ -217,7 +217,7 @@ CREATE TABLE lab_rpki_mft_sia (
 	caRepository  varchar(512) ,
 	signedObject  varchar(512) ,
 	FOREIGN key (mftId) REFERENCES lab_rpki_mft(id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4  COLLATE=utf8mb4_bin comment='mft sia'
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin comment='mft sia'
 `,
 
 	`
@@ -226,7 +226,7 @@ CREATE TABLE lab_rpki_mft_aia (
 	mftId int(10) unsigned not null,
 	caIssuers  varchar(512) ,
 	foreign key (mftId) references lab_rpki_mft(id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4  COLLATE=utf8mb4_bin comment='mft aia'
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin comment='mft aia'
 `,
 
 	`
@@ -236,7 +236,7 @@ CREATE TABLE lab_rpki_mft_file_hash (
 	file varchar(1024),
   hash varchar(1024),
 	foreign key (mftId) references lab_rpki_mft(id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4  COLLATE=utf8mb4_bin comment='files in manifest'
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin comment='files in manifest'
 `,
 
 	`
@@ -263,7 +263,7 @@ CREATE TABLE lab_rpki_roa (
   key  fileName (fileName),
   unique  roaFilePathFileName (filePath,fileName),
   unique  roaSkiFilePath (ski,filePath) 
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4   COLLATE=utf8mb4_bin comment='roa info'
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin comment='roa info'
 `,
 
 	`	
@@ -275,7 +275,7 @@ CREATE TABLE lab_rpki_roa_sia (
 	caRepository  varchar(512) ,
 	signedObject  varchar(512) ,
 	FOREIGN key (roaId) REFERENCES lab_rpki_roa(id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4  COLLATE=utf8mb4_bin comment='roa sia'
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin comment='roa sia'
 `,
 
 	`
@@ -284,7 +284,7 @@ CREATE TABLE lab_rpki_roa_aia (
 	roaId int(10) unsigned not null,
 	caIssuers  varchar(512) ,
 	foreign key (roaId) references lab_rpki_roa(id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4  COLLATE=utf8mb4_bin comment='roa aia'
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin comment='roa aia'
 `,
 
 	`
@@ -301,7 +301,7 @@ CREATE TABLE lab_rpki_roa_ipaddress (
 	key  rangeStart (rangeStart),
 	key  rangeEnd (rangeEnd),
 	foreign key (roaId) references lab_rpki_roa(id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin comment='roa ip prefix'
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin comment='roa ip prefix'
 `,
 
 	`
@@ -319,7 +319,7 @@ CREATE TABLE lab_rpki_roa_ee_ipaddress (
 	key  rangeStart (rangeStart),
 	key  rangeEnd (rangeEnd),
 	foreign key (roaId) references lab_rpki_roa(id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin comment='roa ee ip prefix'
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin comment='roa ee ip prefix'
 `,
 
 	`
@@ -336,7 +336,7 @@ CREATE TABLE lab_rpki_sync_log (
   rtrState json,
   state varchar(16) not null COMMENT 'rsyncing/rsynced ddrping/ddrped  diffing/diffed   parsevalidating/parsevalidated   rtring/rtred idle',
   syncStyle varchar(16) not null COMMENT 'rsync/rrdp' 
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin comment='recored every sync log'
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin comment='recored every sync log'
 `,
 
 	`
@@ -364,7 +364,7 @@ CREATE TABLE lab_rpki_sync_log_file (
   key  fileName (fileName),
   unique  synclogfileFilePathFileName (filePath,fileName,syncLogId),
   foreign key (syncLogId) references lab_rpki_sync_log(id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4  COLLATE=utf8mb4_bin comment='recored sync log for cer/roa/mft/crl'
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin comment='recored sync log for cer/roa/mft/crl'
 `,
 
 	`
@@ -378,7 +378,7 @@ CREATE TABLE lab_rpki_sync_rrdp_log (
   rrdpTime datetime NOT NULL   COMMENT 'rrdp time',
   rrdpType varchar(16) NOT NULL COMMENT 'snapshot/delta' ,
   foreign key (syncLogId) references lab_rpki_sync_log(id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin comment='recored notification.xml update log'
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin comment='recored notification.xml update log'
 `,
 
 	`
@@ -388,7 +388,7 @@ CREATE TABLE lab_rpki_sync_rrdp_log (
 CREATE TABLE lab_rpki_rtr_session (
   sessionId int(10) unsigned not null primary key   COMMENT 'sessionId, after init will not change',
   createTime datetime NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4  COLLATE=utf8mb4_bin comment='rtr session'
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin comment='rtr session'
 `,
 
 	`
@@ -402,7 +402,7 @@ CREATE TABLE lab_rpki_rtr_serial_number (
   id bigint(20) unsigned not null primary key auto_increment,
   serialNumber bigint(20) unsigned not null ,
   createTime datetime NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4  COLLATE=utf8mb4_bin comment='after every sync repo, serial num  will generate new serialnumber'
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin comment='after every sync repo, serial num  will generate new serialnumber'
 `,
 
 	`
@@ -416,7 +416,7 @@ CREATE TABLE lab_rpki_rtr_full (
   maxLength int(10) unsigned not null,
   sourceFrom  json not null comment 'come from : {souce:sync/slurm/transfer,syncLogId/syncLogFileId/slurmId/slurmFileId/transferLogId}',
   unique  rtrFullSerialNumberAsnAddressPrefixLengthMaxLength (serialNumber , asn,address,prefixLength,maxLength)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4  COLLATE=utf8mb4_bin comment='after every sync repo, will insert all full'
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin comment='after every sync repo, will insert all full'
 `,
 
 	`
@@ -428,7 +428,7 @@ CREATE TABLE lab_rpki_rtr_full_log (
   prefixLength  int(10) unsigned not null,
   maxLength int(10) unsigned not null,
   sourceFrom  json not null comment 'come from : {souce:sync/slurm/transfer,syncLogId/syncLogFileId/slurmId/slurmFileId/transferLogId}'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4  COLLATE=utf8mb4_bin comment='full rtr log history'
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin comment='full rtr log history'
 `,
 
 	`
@@ -442,7 +442,7 @@ CREATE TABLE lab_rpki_rtr_incremental (
   maxLength int(10) unsigned not null,
   sourceFrom  json not null comment 'come from : {souce:sync/slurm/transfer,syncLogId/syncLogFileId/slurmId/slurmFileId/transferLogId}',
   unique  rtrIncrementalSerialNumberAsnAddrPrefixMaxStyle (serialNumber , asn,address,prefixLength,maxLength,style)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4  COLLATE=utf8mb4_bin comment='after every sync repo, will insert all full'
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin comment='after every sync repo, will insert all full'
 `,
 
 	`
@@ -463,7 +463,7 @@ CREATE TABLE lab_rpki_slurm (
   priority int(10) unsigned not null default 5  COMMENT '0-10, 0 is highest level, 10 is  lowest. default 5. the higher level users slurm will conver lower ',
   state json not null COMMENT '[rtr:notYet/finished]',
   unique  slurmAsnAddressPrefix_maxLength (asn,addressPrefix,maxLength)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4   COLLATE=utf8mb4_bin comment='support different zone slurm file'
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin comment='support different zone slurm file'
 `,
 
 	`
@@ -473,7 +473,7 @@ CREATE TABLE lab_rpki_slurm_file (
   uploadTime  datetime NOT NULL,
   fileName varchar(128) NOT NULL ,
   priority int(10) unsigned not null default 5  COMMENT '0-10, 0 is highest level, 10 is  lowest. default 5. the higher level users slurm will conver lower '
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4   COLLATE=utf8mb4_bin comment='support different user upload different zone slurm file'
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin comment='support different user upload different zone slurm file'
 `,
 
 	`
@@ -488,7 +488,7 @@ CREATE TABLE lab_rpki_slurm_file (
 ##	roaId int(10) unsigned not null  COMMENT 'REFERENCES lab_rpki_roa(id)',
 ##	htmlResult  mediumtext ,
 ##	jsonResult  json 
-##) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4   COLLATE=utf8mb4_bin comment='roa competation result'
+##) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin comment='roa competation result'
 `,
 
 	`
@@ -503,7 +503,7 @@ CREATE TABLE lab_rpki_transfer_target (
   targetType   varchar(64) NOT NULL COMMENT 'vc/rp',
   createTime datetime NOT NULL COMMENT 'create time',
   state varchar(16) NOT NULL DEFAULT 'valid'  COMMENT 'valid/invalid'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin comment='linked server, as target. so every server(rp/vc) may have different targets'
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin comment='linked server, as target. so every server(rp/vc) may have different targets'
 `,
 
 	`
@@ -517,7 +517,7 @@ CREATE TABLE lab_rpki_transfer_log (
   transferType varchar(64) NOT NULL COMMENT 'send/receive',
   result   varchar(64) COMMENT 'ok/fail',
   errMsg   varchar(256) COMMENT 'fail message'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin comment='log distribute'
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin comment='log distribute'
 `,
 
 	`
@@ -533,7 +533,7 @@ CREATE TABLE lab_rpki_statistic (
   roaFileCount json NOT NULL COMMENT 'roa Count',
   repos json NOT NULL COMMENT 'repos, big json',
   sync json  NOT NULL COMMENT 'sync info'  
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin comment='statis, update after every sync'
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin comment='statis, update after every sync'
 `,
 
 	`
@@ -547,18 +547,32 @@ CREATE TABLE lab_rpki_conf (
   parameterValue varchar(256) NOT NULL COMMENT 'parameter value',
   parameterDefaultValue varchar(256) NOT NULL COMMENT 'parameter default value',
   updateTime datetime NOT NULL COMMENT 'update time'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin comment='configuration of rpstir2'
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin comment='configuration of rpstir2'
 `,
 
 	`
 #########################
 ## create view
 #########################
-CREATE VIEW lab_rpki_roa_ipaddress_view AS 
-select r.id AS id,r.asn AS asn,i.addressPrefix AS addressPrefix,i.maxLength AS maxLength, 
-    r.syncLogId AS syncLogId,r.syncLogFileId AS syncLogFileId  
-from (lab_rpki_roa r join lab_rpki_roa_ipaddress i)  
-where ((i.roaId = r.id) and (json_extract(r.state,'$.state') = 'valid')) order by i.id
+CREATE VIEW lab_rpki_roa_ipaddress_view AS  
+select r.id AS id, 
+  r.asn AS asn, 
+  i.addressPrefix AS addressPrefix, 
+  i.maxLength AS maxLength,  
+  r.syncLogId AS syncLogId, 
+  r.syncLogFileId AS syncLogFileId, 
+  r.origin->>'$.rir' as rir, 
+  r.origin->>'$.repo' as repo   
+from  lab_rpki_roa r join lab_rpki_roa_ipaddress i   
+where i.roaId = r.id and  
+  r.state->>'$.state' in ('valid','warning')  
+order by  
+  r.origin->>'$.rir', 
+  r.origin->>'$.repo', 
+  i.addressPrefix, 
+  i.maxLength, 
+  r.asn, 
+  r.id    
 `}
 
 var resetSqls []string = []string{
@@ -629,6 +643,9 @@ var resetSqls []string = []string{
 // when isInit is true, then init all db. otherwise will reset all db
 func InitResetDb(isInit bool) error {
 	session, err := xormdb.NewSession()
+	if err != nil {
+		return err
+	}
 	defer session.Close()
 
 	//truncate all table
@@ -645,19 +662,19 @@ func InitResetDb(isInit bool) error {
 	return nil
 }
 
-// need to init sessionId when it is emtpy
+// need to init sessionId when it is empty
 func initResetDb(session *xorm.Session, isInit bool) error {
 	defer func(session1 *xorm.Session) {
 		sql := `set foreign_key_checks=1;`
 		if _, err := session1.Exec(sql); err != nil {
-			belogs.Error("initResetDb(): SET FOREING_KEY_CHECKS=1 fail", err)
+			belogs.Error("initResetDb(): SET foreign_key_checks=1 fail", err)
 
 		}
 	}(session)
 
 	sql := `set foreign_key_checks=0;`
 	if _, err := session.Exec(sql); err != nil {
-		belogs.Error("initResetDb(): SET FOREING_KEY_CHECKS=0 fail", err)
+		belogs.Error("initResetDb(): SET foreign_key_checks=0 fail", err)
 		return err
 	}
 
@@ -747,4 +764,19 @@ func result(table, fileType string) (result sysmodel.Result, err error) {
 	}
 	belogs.Debug("result():result :", jsonutil.MarshalJson(result))
 	return result, nil
+}
+
+func ExportRoas() (exportRoas []sysmodel.ExportRoa, err error) {
+	sql :=
+		`select asn, addressPrefix, maxLength, rir, repo 
+		from lab_rpki_roa_ipaddress_view v
+		order by rir, repo,addressPrefix,maxLength,asn`
+	err = xormdb.XormEngine.Sql(sql).Find(&exportRoas)
+	if err != nil {
+		belogs.Error("ExportRoas():Find, fail:", err)
+		return nil, err
+	}
+
+	belogs.Debug("ExportRoas():len(exportRoas):", len(exportRoas))
+	return exportRoas, nil
 }

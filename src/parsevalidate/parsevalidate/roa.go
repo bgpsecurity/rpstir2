@@ -25,9 +25,9 @@ func ParseValidateRoa(certFile string) (roaModel model.RoaModel, stateModel mode
 		return roaModel, stateModel, nil
 	}
 
-	err = ValidateRoaModel(&roaModel, &stateModel)
+	err = validateRoaModel(&roaModel, &stateModel)
 	if err != nil {
-		belogs.Error("ParseValidateRoa():ValidateRoaModel err:", certFile, err)
+		belogs.Error("ParseValidateRoa():validateRoaModel err:", certFile, err)
 		return roaModel, stateModel, nil
 	}
 	if len(stateModel.Errors) > 0 || len(stateModel.Warnings) > 0 {
@@ -191,7 +191,7 @@ func parseRoaModelByPacket(certFile string, roaModel *model.RoaModel) error {
 // https://datatracker.ietf.org/doc/rfc6488/?include_text=1
 // shqhl.c P1955 verify_roa() -->  roa_validate.c  roaValidate() and roaValidate2() ,
 // TODO but roaValidate2 is too strange, not understand yet
-func ValidateRoaModel(roaModel *model.RoaModel, stateModel *model.StateModel) (err error) {
+func validateRoaModel(roaModel *model.RoaModel, stateModel *model.StateModel) (err error) {
 
 	if roaModel.Version != 0 {
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
@@ -236,7 +236,7 @@ func ValidateRoaModel(roaModel *model.RoaModel, stateModel *model.StateModel) (e
 	}
 	if len(roaModel.Aki) == 0 {
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
-			Fail:   "AKI is emtpy",
+			Fail:   "AKI is empty",
 			Detail: ""}
 		stateModel.AddError(&stateMsg)
 	}
@@ -360,7 +360,7 @@ func ValidateRoaModel(roaModel *model.RoaModel, stateModel *model.StateModel) (e
 	ValidateEeCertModel(stateModel, &roaModel.EeCertModel)
 	ValidateSignerInfoModel(stateModel, &roaModel.SignerInfoModel)
 
-	belogs.Debug("ValidateRoaModel():filePath, fileName,stateModel:",
+	belogs.Debug("validateRoaModel():filePath, fileName,stateModel:",
 		roaModel.FilePath, roaModel.FileName, jsonutil.MarshalJson(stateModel))
 
 	return nil

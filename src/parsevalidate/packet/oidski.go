@@ -40,7 +40,7 @@ func reExtractSkiOid(fileByte []byte) (ski string, err error) {
 	pos0 := bytes.Index(fileByte, oidSkiKeyByte)
 	var datapos uint64 = uint64(pos0)
 	var datalen uint64 = uint64(0)
-	belogs.Debug("reExtractSkiOid():enum0 pos:", datapos)
+	belogs.Debug("reExtractSkiOid():enum0 pos:", datapos, "   datalen:", datalen)
 	if datapos <= 0 {
 		return "", errors.New("not found " + oidManifestKey)
 	}

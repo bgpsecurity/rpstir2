@@ -18,9 +18,8 @@ type StateMsg struct {
 func (s *StateMsg) Equal(n *StateMsg) bool {
 	if s.Fail == n.Fail && s.Detail == n.Detail && s.Stage == n.Stage {
 		return true
-	} else {
-		return false
 	}
+	return false
 }
 
 type StateModel struct {
@@ -35,13 +34,13 @@ type StateModel struct {
 func GetStateModelAndResetStage(state string, clearStage string) (stateModel StateModel) {
 	if len(state) == 0 {
 		return NewStateModel()
-	} else {
-		jsonutil.UnmarshalJson(state, &stateModel)
-		if len(clearStage) > 0 {
-			stateModel.ClearStage(clearStage)
-		}
-		return stateModel
 	}
+
+	jsonutil.UnmarshalJson(state, &stateModel)
+	if len(clearStage) > 0 {
+		stateModel.ClearStage(clearStage)
+	}
+	return stateModel
 }
 func NewStateModel() StateModel {
 	st := StateModel{}
@@ -69,12 +68,12 @@ func (s *StateModel) ClearStage(stage string) {
 	}
 	newErrors := make([]StateMsg, 0)
 	newWarnings := make([]StateMsg, 0)
-	for i, _ := range s.Errors {
+	for i := range s.Errors {
 		if s.Errors[i].Stage != stage {
 			newErrors = append(newErrors, s.Errors[i])
 		}
 	}
-	for i, _ := range s.Warnings {
+	for i := range s.Warnings {
 		if s.Warnings[i].Stage != stage {
 			newWarnings = append(newWarnings, s.Warnings[i])
 		}
@@ -83,7 +82,7 @@ func (s *StateModel) ClearStage(stage string) {
 	s.Warnings = newWarnings
 }
 func (s *StateModel) AddError(stateMsg *StateMsg) {
-	for i, _ := range s.Errors {
+	for i := range s.Errors {
 		if s.Errors[i].Equal(stateMsg) {
 			return
 		}
@@ -91,7 +90,7 @@ func (s *StateModel) AddError(stateMsg *StateMsg) {
 	s.Errors = append(s.Errors, *stateMsg)
 }
 func (s *StateModel) AddWarning(stateMsg *StateMsg) {
-	for i, _ := range s.Warnings {
+	for i := range s.Warnings {
 		if s.Warnings[i].Equal(stateMsg) {
 			return
 		}

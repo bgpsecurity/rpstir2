@@ -9,11 +9,11 @@ import (
 	iputil "github.com/cpusoft/goutil/iputil"
 	jsonutil "github.com/cpusoft/goutil/jsonutil"
 
-	. "model"
+	"model"
 	"parsevalidate/util"
 )
 
-func ExtractRoaOid(oidPackets *[]OidPacket, certFile string, fileByte []byte, roaModel *RoaModel) (err error) {
+func ExtractRoaOid(oidPackets *[]OidPacket, certFile string, fileByte []byte, roaModel *model.RoaModel) (err error) {
 	belogs.Debug("ExtractRoaOid(): oidPackets.len :%d", len(*oidPackets))
 	found := false
 	for _, oidPacket := range *oidPackets {
@@ -70,7 +70,7 @@ func ExtractRoaOid(oidPackets *[]OidPacket, certFile string, fileByte []byte, ro
 }
 
 // if decode packet fail ,so try again using OID to decode
-func extractRoaOidImpl(secPacketSeq *Packet, certFile string, roaModel *RoaModel) (err error) {
+func extractRoaOidImpl(secPacketSeq *Packet, certFile string, roaModel *model.RoaModel) (err error) {
 	belogs.Debug("extractRoaOidImpl():secPacketSeq:")
 
 	asId := secPacketSeq.Children[0]
@@ -84,7 +84,7 @@ func extractRoaOidImpl(secPacketSeq *Packet, certFile string, roaModel *RoaModel
 	if len(ipAddrBlocks.Children) > 0 {
 		var ipType int
 
-		roaIpAddressModels := make([]RoaIpAddressModel, 0)
+		roaIpAddressModels := make([]model.RoaIpAddressModel, 0)
 		for _, roaIPAddressFamilyPack := range ipAddrBlocks.Children {
 			PrintPacketString("roaIPAddressFamilyPack", roaIPAddressFamilyPack, true, false)
 			if len(roaIPAddressFamilyPack.Children) > 1 {
@@ -111,7 +111,7 @@ func extractRoaOidImpl(secPacketSeq *Packet, certFile string, roaModel *RoaModel
 
 				//roaIPAddresses := make([]RoaIPAddress, 0)
 				for _, roaIPAddressBlock := range roaIPAddressFamilyPack.Children[1].Children {
-					roaIpAddressModel := RoaIpAddressModel{}
+					roaIpAddressModel := model.RoaIpAddressModel{}
 					roaIpAddressModel.AddressFamily = uint64(ipType)
 
 					PrintPacketString("roaIPAddressBlock", roaIPAddressBlock, true, false)
@@ -162,7 +162,7 @@ func extractRoaOidImpl(secPacketSeq *Packet, certFile string, roaModel *RoaModel
 }
 
 // if decode packet fail ,so try again using OID to decode
-func reExtractRoaOid(fileByte []byte, certFile string, roaModel *RoaModel) (err error) {
+func reExtractRoaOid(fileByte []byte, certFile string, roaModel *model.RoaModel) (err error) {
 
 	/*
 		may be more one level
@@ -188,7 +188,7 @@ func reExtractRoaOid(fileByte []byte, certFile string, roaModel *RoaModel) (err 
 	pos0 := bytes.Index(fileByte, oidRoaKeyByte)
 	var datapos uint64 = uint64(pos0)
 	var datalen uint64 = uint64(0)
-	belogs.Debug("reExtractRoaOid():enum0 pos:", datapos)
+	belogs.Debug("reExtractRoaOid():enum0 pos:", datapos, "  datalen:", datalen)
 	if datapos <= 0 {
 		return errors.New("not found " + oidManifestKey)
 	}
@@ -196,19 +196,19 @@ func reExtractRoaOid(fileByte []byte, certFile string, roaModel *RoaModel) (err 
 	enum0 := fileByte[int(datapos)+len(oidRoaKeyByte):]
 	//logs.LogDebugBytes(("reExtractRoaOid():enum0:", enum0)
 	datalen, datapos, _ = util.DecodeFiniteAndInfiniteLen(enum0)
-	belogs.Debug("reExtractRoaOid():enum0 pos:", datapos)
+	belogs.Debug("reExtractRoaOid():enum0 pos:", datapos, "  datalen:", datalen)
 
 	//avoid error of 0x00, 0x00, so it is not limit datalen, and will include all data
 	oct0 := enum0[datapos:]
 	//logs.LogDebugBytes(("reExtractRoaOid():oct0:", oct0)
 	datalen, datapos, _ = util.DecodeFiniteAndInfiniteLen(oct0)
-	belogs.Debug("reExtractRoaOid():oct0 pos:", datapos)
+	belogs.Debug("reExtractRoaOid():oct0 pos:", datapos, "  datalen:", datalen)
 
 	//avoid error of 0x00, 0x00, so it is not limit datalen, and will include all data
 	oct1 := oct0[datapos:]
 	//logs.LogDebugBytes(("reExtractRoaOid():oct1:", oct1)
 	datalen, datapos, _ = util.DecodeFiniteAndInfiniteLen(oct1)
-	belogs.Debug("reExtractRoaOid():oct1 pos:", datapos)
+	belogs.Debug("reExtractRoaOid():oct1 pos:", datapos, "   datalen:", datalen)
 
 	//avoid error of 0x00, 0x00, so it is not limit datalen, and will include all data
 	seq0 := oct1[datapos:]

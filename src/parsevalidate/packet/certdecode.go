@@ -86,15 +86,15 @@ func decodePacketImpl(data []byte, hierarchyFor00 int, topHierarchyFor00 int) (*
 			return nil, nil, nil // errors.New("data is less than datapos+datalen")
 		}
 	}
-	value_data := data[datapos : datapos+datalen]
-	value_data_tmp := util.TrimNull(value_data)
-	//logs.LogDebugBytes(("value_data_tmp", value_data_tmp)
-	if len(value_data_tmp) == 0 {
+	valueData := data[datapos : datapos+datalen]
+	valueDataTmp := util.TrimNull(valueData)
+	//logs.LogDebugBytes(("valueDataTmp", valueDataTmp)
+	if len(valueDataTmp) == 0 {
 		return nil, nil, nil
 	}
 
-	belogs.Debug("decodePacketImpl():  [datapos : datapos+datalen], len(value_data) : ", datapos, datalen, len(value_data))
-	//logs.LogDebugBytes("decodePacketImpl value_data bytes:", value_data)
+	belogs.Debug("decodePacketImpl():  [datapos : datapos+datalen], len(valueData) : ", datapos, datalen, len(valueData))
+	//logs.LogDebugBytes("decodePacketImpl valueData bytes:", valueData)
 
 	p.Data = new(bytes.Buffer)
 	p.Children = make([]*Packet, 0, 2)
@@ -112,11 +112,11 @@ func decodePacketImpl(data []byte, hierarchyFor00 int, topHierarchyFor00 int) (*
 
 	if p.TagType == TypeConstructed {
 
-		belogs.Debug("after p.TagType == TypeConstructed, len(value_data): ", len(value_data))
-		for len(value_data) != 0 {
+		belogs.Debug("after p.TagType == TypeConstructed, len(valueData): ", len(valueData))
+		for len(valueData) != 0 {
 			var child *Packet
 			var err error
-			child, value_data, err = decodePacketImpl(value_data, hierarchyFor00+1, topHierarchyFor00)
+			child, valueData, err = decodePacketImpl(valueData, hierarchyFor00+1, topHierarchyFor00)
 			if err != nil {
 				belogs.Debug("decodePacketImpl error:", err)
 				return nil, nil, nil // nil, nil, err //no return error
@@ -133,26 +133,26 @@ func decodePacketImpl(data []byte, hierarchyFor00 int, topHierarchyFor00 int) (*
 		switch p.Tag {
 		case TagEOC:
 		case TagBoolean:
-			val := util.DecodeInteger(value_data)
+			val := util.DecodeInteger(valueData)
 			p.Value = val != 0
 		case TagInteger:
-			p.Value = util.DecodeInteger(value_data)
+			p.Value = util.DecodeInteger(valueData)
 		case TagBitString:
-			p.Value = (value_data)
+			p.Value = (valueData)
 		case TagOctetString:
-			//p.Value = DecodeString(value_data)
+			//p.Value = DecodeString(valueData)
 			// OctetString may have children, should get the first bit of child
 			haveChild := false
-			if len(value_data) > 0 {
-				//value_data_saved := data[datapos : datapos+datalen]
-				childTagType := value_data[0] & TypeBitmask
-				belogs.Debug("decodePacketImpl: childTagType %d, (%d);   value_date[0]=%d, (%d)\n", childTagType, TypeConstructed, value_data[0], TagBitmask)
-				//logs.LogDebugBytes(("before childTagType is TypeConstructed:", value_data)
+			if len(valueData) > 0 {
+				//valueDataSaved := data[datapos : datapos+datalen]
+				childTagType := valueData[0] & TypeBitmask
+				belogs.Debug("decodePacketImpl: childTagType %d, (%d);   value_date[0]=%d, (%d)\n", childTagType, TypeConstructed, valueData[0], TagBitmask)
+				//logs.LogDebugBytes(("before childTagType is TypeConstructed:", valueData)
 				if int(childTagType) == TypeConstructed {
 					//var child *Packet
-					//logs.LogDebugBytes(("TagOctetString before:", value_data)
-					child, _, err := decodePacketImpl(value_data, hierarchyFor00+1, topHierarchyFor00)
-					//logs.LogDebugBytes(("TagOctetString before err==nil :", value_data_saved)
+					//logs.LogDebugBytes(("TagOctetString before:", valueData)
+					child, _, err := decodePacketImpl(valueData, hierarchyFor00+1, topHierarchyFor00)
+					//logs.LogDebugBytes(("TagOctetString before err==nil :", valueDataSaved)
 					// if here has error, it means it is not child, it is just string. So, it is not return error, just return string
 					if err == nil && child != nil {
 						//return nil, nil, err
@@ -170,7 +170,7 @@ func decodePacketImpl(data []byte, hierarchyFor00 int, topHierarchyFor00 int) (*
 			}
 			//if there is no children, will set bytes
 			if !haveChild {
-				p.Value = value_data
+				p.Value = valueData
 				/*
 					var buf bytes.Buffer
 					enc := gob.NewEncoder(&buf)
@@ -181,30 +181,30 @@ func decodePacketImpl(data []byte, hierarchyFor00 int, topHierarchyFor00 int) (*
 		case TagNULL:
 			p.Value = nil
 		case TagObjectIdentifier:
-			p.Value = util.DecodeOid(value_data)
+			p.Value = util.DecodeOid(valueData)
 			//fmt.Println(p.Value.(string))
 		case TagObjectDescriptor:
 		case TagExternal:
 		case TagRealFloat:
 		case TagEnumerated:
-			p.Value = util.DecodeInteger(value_data)
+			p.Value = util.DecodeInteger(valueData)
 		case TagEmbeddedPDV:
 		case TagUTF8String:
-			p.Value = util.DecodeUTF8String(value_data)
+			p.Value = util.DecodeUTF8String(valueData)
 		case TagRelativeOID:
 		case TagSequence:
 		case TagSet:
 		case TagNumericString:
 		case TagPrintableString:
-			p.Value = util.DecodeString(value_data)
+			p.Value = util.DecodeString(valueData)
 		case TagT61String:
 		case TagVideotexString:
 		case TagIA5String:
-			p.Value = util.DecodeIA5String(value_data)
+			p.Value = util.DecodeIA5String(valueData)
 		case TagUTCTime:
-			p.Value, err = util.DecodeUTCTime(value_data)
+			p.Value, err = util.DecodeUTCTime(valueData)
 		case TagGeneralizedTime:
-			p.Value, err = util.DecodeGeneralizedTime(value_data)
+			p.Value, err = util.DecodeGeneralizedTime(valueData)
 		case TagGraphicString:
 		case TagVisibleString:
 		case TagGeneralString:
@@ -213,9 +213,9 @@ func decodePacketImpl(data []byte, hierarchyFor00 int, topHierarchyFor00 int) (*
 		case TagBMPString:
 		//private
 		case TagAsNum:
-			p.Value = value_data
+			p.Value = valueData
 		case TagRdi:
-			p.Value = value_data
+			p.Value = valueData
 		}
 	} else {
 		p.Data.Write(data[datapos : datapos+datalen])
@@ -231,12 +231,12 @@ func (p *Packet) DataLength() uint64 {
 func (p *Packet) Bytes() []byte {
 	var out bytes.Buffer
 	out.Write([]byte{p.ClassType | p.TagType | p.Tag})
-	packet_length := util.EncodeInteger(p.DataLength())
-	if p.DataLength() > 127 || len(packet_length) > 1 {
-		out.Write([]byte{byte(len(packet_length) | 128)})
-		out.Write(packet_length)
+	packetLength := util.EncodeInteger(p.DataLength())
+	if p.DataLength() > 127 || len(packetLength) > 1 {
+		out.Write([]byte{byte(len(packetLength) | 128)})
+		out.Write(packetLength)
 	} else {
-		out.Write(packet_length)
+		out.Write(packetLength)
 	}
 	out.Write(p.Data.Bytes())
 	return out.Bytes()
@@ -255,7 +255,7 @@ func (p *Packet) AppendChild(child *Packet) {
 
 func TransformPacket(p *Packet, oidPackets *[]OidPacket) {
 
-	for i, _ := range p.Children {
+	for i := range p.Children {
 
 		p.Children[i].Parent = p
 		//fmt.Println(p.Children[i].Tag, TagObjectIdentifier)
@@ -283,7 +283,7 @@ func decodeAddressPrefix(addressPrefixPacket *Packet, ipType int) error {
 	//logs.LogDebugBytes(("decodeAddressPrefix():oidPacket:", addressPrefix)
 	if len(addressPrefix) < 4 {
 		belogs.Error("decodeAddressPrefix():len(addressPrefix)<3", addressPrefix)
-		return errors.New(fmt.Sprintf("addressPrefix length is error: %d", len(addressPrefix)))
+		return fmt.Errorf("addressPrefix length is error: %d", len(addressPrefix))
 	}
 	addressShouldLen, _ := strconv.Atoi(fmt.Sprintf("%d", addressPrefix[1]))
 	unusedBitLen, _ := strconv.Atoi(fmt.Sprintf("%d", addressPrefix[2]))
@@ -338,12 +338,12 @@ func decodeAddressPrefix(addressPrefixPacket *Packet, ipType int) error {
 
 func PrintPacketString(name string, p *Packet, printBytes bool, printChild bool) {
 
-	class_str := ClassMap[p.ClassType]
-	tagtype_str := TypeMap[p.TagType]
-	tag_str := fmt.Sprintf("0x%02X", p.Tag)
+	classStr := ClassMap[p.ClassType]
+	tagtypeStr := TypeMap[p.TagType]
+	tagStr := fmt.Sprintf("0x%02X", p.Tag)
 
 	if p.ClassType == ClassUniversal {
-		tag_str = TagMap[p.Tag]
+		tagStr = TagMap[p.Tag]
 	}
 
 	value := fmt.Sprint(p.Value)
@@ -352,7 +352,7 @@ func PrintPacketString(name string, p *Packet, printBytes bool, printChild bool)
 		description = p.Description + ": "
 	}
 
-	belogs.Debug("PrintPacketString():%s  %s(%s, %s, %s) Len=%v %q", name, description, class_str, tagtype_str, tag_str, p.Data.Len(), value)
+	belogs.Debug("PrintPacketString():%s  %s(%s, %s, %s) Len=%v %q", name, description, classStr, tagtypeStr, tagStr, p.Data.Len(), value)
 
 	if printBytes {
 		//logs.LogDebugBytes(("", p.Bytes())

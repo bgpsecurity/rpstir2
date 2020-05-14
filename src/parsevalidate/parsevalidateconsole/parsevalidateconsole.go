@@ -89,7 +89,7 @@ func ParseCert(fileList *list.List) (cerModelList *list.List, crlModelList *list
 	mftModelList = list.New()
 	roaModelList = list.New()
 	errList = list.New()
-	var allDuartionTime float64 = 0
+	allDuartionTime := float64(0)
 
 	var wg sync.WaitGroup
 	var cerlock sync.Mutex
@@ -176,7 +176,7 @@ func ParseCert(fileList *list.List) (cerModelList *list.List, crlModelList *list
 	wg.Wait()
 	close(ch)
 
-	belogs.Notice("ParseCert(): parse files: cerModelList.Len:", cerModelList.Len(),
+	belogs.Info("ParseCert(): parse files: cerModelList.Len:", cerModelList.Len(),
 		"	crlModelList.Len:", crlModelList.Len(),
 		"	mftModelList.Len:", mftModelList.Len(),
 		"	roaModelList.Len:", roaModelList.Len(),

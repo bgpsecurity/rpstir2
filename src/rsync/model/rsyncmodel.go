@@ -1,7 +1,5 @@
 package model
 
-import ()
-
 // rsync channel
 type RsyncModelChan struct {
 	Url  string `json:"url"`

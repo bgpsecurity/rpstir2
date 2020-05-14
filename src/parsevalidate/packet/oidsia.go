@@ -5,13 +5,13 @@ import (
 
 	belogs "github.com/astaxie/beego/logs"
 
-	. "model"
+	"model"
 	"parsevalidate/util"
 )
 
-func ExtractSiaOid(oidPackets *[]OidPacket, fileByte []byte) (subjectInfoAccess SiaModel, err error) {
+func ExtractSiaOid(oidPackets *[]OidPacket, fileByte []byte) (subjectInfoAccess model.SiaModel, err error) {
 	//oidRpkiManifestKey,oidRpkiNotifyKey,oidCaRepositoryKey,oidSignedObjectKey is children of SubjectInfoAccess
-	var sia SiaModel = SiaModel{}
+	var sia model.SiaModel = model.SiaModel{}
 
 	for _, oidPacket := range *oidPackets {
 		if oidPacket.Oid == oidRpkiManifestKey {
@@ -77,13 +77,13 @@ func ExtractSiaOid(oidPackets *[]OidPacket, fileByte []byte) (subjectInfoAccess 
 }
 
 // if decode packet fail ,so try again using OID to decode
-func reExtractSiaOid(fileByte []byte) (subjectInfoAccess SiaModel, err error) {
+func reExtractSiaOid(fileByte []byte) (subjectInfoAccess model.SiaModel, err error) {
 	/*
 		SEQUENCE (2 elem)
 		     OBJECT IDENTIFIER 1.3.6.1.5.5.7.48.11 signedObject (PKIX subject/authority info access descriptor)
 		     [6] rsync://rpki.ripe.net/repository/DEFAULT/be/c37497-6376-461e-93c6-9778674edc97/1…
 	*/
-	var sia SiaModel = SiaModel{}
+	var sia model.SiaModel = model.SiaModel{}
 	sia.RpkiManifest, _ = reExtractSiaSubOid(oidRpkiManifestKeyByte, fileByte)
 	sia.RpkiNotify, _ = reExtractSiaSubOid(oidRpkiNotifyKeyByte, fileByte)
 	sia.CaRepository, _ = reExtractSiaSubOid(oidCaRepositoryKeyByte, fileByte)
@@ -109,7 +109,7 @@ func reExtractSiaSubOid(oidKeyByte []byte, fileByte []byte) (sub string, err err
 
 	var datapos uint64 = uint64(pos0)
 	var datalen uint64 = uint64(0)
-	belogs.Debug("reExtractSiaSubOid():datapos:", datapos)
+	belogs.Debug("reExtractSiaSubOid():datapos, datalen:", datapos, datalen)
 
 	//avoid error of 0x00, 0x00, so it is not limit datalen, and will include all data
 	sub0 := fileByte[int(datapos)+len(oidKeyByte):]

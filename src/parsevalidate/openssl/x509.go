@@ -10,11 +10,11 @@ import (
 	convert "github.com/cpusoft/goutil/convert"
 	jsonutil "github.com/cpusoft/goutil/jsonutil"
 
-	. "model"
+	"model"
 	"parsevalidate/util"
 )
 
-func ParseCerModelByX509(fileByte []byte, cerModel *CerModel) (err error) {
+func ParseCerModelByX509(fileByte []byte, cerModel *model.CerModel) (err error) {
 	// cert , use x509 to get value
 	cer, err := x509.ParseCertificate(fileByte)
 	if err != nil {
@@ -62,13 +62,13 @@ func ParseCerModelByX509(fileByte []byte, cerModel *CerModel) (err error) {
 	//AIA
 	//cerModel.Aia = cert.IssuingCertificateURL
 
-	cerModel.ExtensionModels = make([]ExtensionModel, 0)
+	cerModel.ExtensionModels = make([]model.ExtensionModel, 0)
 	for _, ext := range cer.Extensions {
-		extensionModel := ExtensionModel{
+		extensionModel := model.ExtensionModel{
 			Oid:      ext.Id.String(),
 			Critical: ext.Critical,
 		}
-		if name, ok := CerExtensionOids[ext.Id.String()]; ok {
+		if name, ok := model.CerExtensionOids[ext.Id.String()]; ok {
 			extensionModel.Name = name
 		}
 		cerModel.ExtensionModels = append(cerModel.ExtensionModels, extensionModel)
@@ -78,7 +78,7 @@ func ParseCerModelByX509(fileByte []byte, cerModel *CerModel) (err error) {
 	return nil
 }
 
-func ParseEeCertModelByX509(fileByte []byte, eeCertModel *EeCertModel) (err error) {
+func ParseEeCertModelByX509(fileByte []byte, eeCertModel *model.EeCertModel) (err error) {
 	// cert
 	belogs.Debug("ParseEeCertModelByX509():len(fileByte):", len(fileByte))
 	//logs.LogDebugBytes("ParseEeCertModelByX509():(fileByte):", (fileByte))
@@ -101,7 +101,7 @@ func ParseEeCertModelByX509(fileByte []byte, eeCertModel *EeCertModel) (err erro
 	return nil
 }
 
-func ParseCrlModelByX509(fileByte []byte, crlModel *CrlModel) (err error) {
+func ParseCrlModelByX509(fileByte []byte, crlModel *model.CrlModel) (err error) {
 
 	crl, err := x509.ParseCRL(fileByte)
 	if err != nil {
@@ -117,10 +117,10 @@ func ParseCrlModelByX509(fileByte []byte, crlModel *CrlModel) (err error) {
 	crlModel.NextUpdate = tbsCertList.NextUpdate.Local()
 	crlModel.HasExpired = strconv.FormatBool(crl.HasExpired(time.Now()))
 	//exts := tbsCertList.Extensions
-	crlModel.RevokedCertModels = make([]RevokedCertModel, 0)
+	crlModel.RevokedCertModels = make([]model.RevokedCertModel, 0)
 	revokedCerts := tbsCertList.RevokedCertificates
 	for _, revokedCert := range revokedCerts {
-		revokedCertModel := RevokedCertModel{}
+		revokedCertModel := model.RevokedCertModel{}
 		revokedCertModel.Sn = fmt.Sprintf("%x", revokedCert.SerialNumber)
 		revokedCertModel.RevocationTime = revokedCert.RevocationTime.Local()
 		crlModel.RevokedCertModels = append(crlModel.RevokedCertModels, revokedCertModel)

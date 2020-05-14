@@ -7,13 +7,13 @@ import (
 	belogs "github.com/astaxie/beego/logs"
 	jsonutil "github.com/cpusoft/goutil/jsonutil"
 
-	. "model"
+	"model"
 	"parsevalidate/openssl"
 )
 
 //Try to store the error in statemode instead of returning err
-func ParseEeCertModel(certFile string, fileByte []byte, start int, end int) (eeCertModel EeCertModel, err error) {
-	eeCertModel = EeCertModel{}
+func ParseEeCertModel(certFile string, fileByte []byte, start int, end int) (eeCertModel model.EeCertModel, err error) {
+
 	eeCertModel.EeCertStartByte = uint64(start)
 	eeCertModel.EeCertEndByte = uint64(end)
 	err = openssl.ParseEeCertModelByX509(fileByte, &eeCertModel)
@@ -50,47 +50,47 @@ func ParseEeCertModel(certFile string, fileByte []byte, start int, end int) (eeC
 
 // https://datatracker.ietf.org/doc/rfc6488/?include_text=1  Signed Object Template for the Resource Public Key Infrastructure (RPKI)
 // roa_validate.c P509
-func ValidateEeCertModel(stateModel *StateModel, eeCertModel *EeCertModel) error {
+func ValidateEeCertModel(stateModel *model.StateModel, eeCertModel *model.EeCertModel) error {
 	if eeCertModel.Version != 3 {
-		stateMsg := StateMsg{Stage: "parsevalidate",
+		stateMsg := model.StateMsg{Stage: "parsevalidate",
 			Fail:   "Wrong Version number",
 			Detail: ""}
 		stateModel.AddError(&stateMsg)
 	}
 	if eeCertModel.DigestAlgorithm != "SHA256-RSA" {
-		stateMsg := StateMsg{Stage: "parsevalidate",
+		stateMsg := model.StateMsg{Stage: "parsevalidate",
 			Fail:   "Digest Algorithm of EE is not sha256WithRSAEncryption",
 			Detail: "Digest algorithm is" + eeCertModel.DigestAlgorithm}
 		stateModel.AddError(&stateMsg)
 	}
 	now := time.Now()
 	if eeCertModel.NotBefore.IsZero() {
-		stateMsg := StateMsg{Stage: "parsevalidate",
-			Fail:   "NotBefore of EE is emtpy",
+		stateMsg := model.StateMsg{Stage: "parsevalidate",
+			Fail:   "NotBefore of EE is empty",
 			Detail: ""}
 		stateModel.AddError(&stateMsg)
 	}
 	if eeCertModel.NotAfter.IsZero() {
-		stateMsg := StateMsg{Stage: "parsevalidate",
-			Fail:   "NotAfter of EE is empy",
+		stateMsg := model.StateMsg{Stage: "parsevalidate",
+			Fail:   "NotAfter of EE is empty",
 			Detail: ""}
 		stateModel.AddError(&stateMsg)
 	}
 	//thisUpdate precedes nextUpdate.
 	if eeCertModel.NotBefore.After(now) {
-		stateMsg := StateMsg{Stage: "parsevalidate",
+		stateMsg := model.StateMsg{Stage: "parsevalidate",
 			Fail:   "NotBefore of EE is later than the current time",
 			Detail: ""}
 		stateModel.AddError(&stateMsg)
 	}
 	if eeCertModel.NotAfter.Before(now) {
-		stateMsg := StateMsg{Stage: "parsevalidate",
+		stateMsg := model.StateMsg{Stage: "parsevalidate",
 			Fail:   "NotAfter of EE is earlier than the current time",
 			Detail: ""}
 		stateModel.AddWarning(&stateMsg)
 	}
 	if eeCertModel.NotAfter.Before(eeCertModel.NotBefore) {
-		stateMsg := StateMsg{Stage: "parsevalidate",
+		stateMsg := model.StateMsg{Stage: "parsevalidate",
 			Fail:   "NotAfter of EE is earlier than NotBefore of EE",
 			Detail: ""}
 		stateModel.AddError(&stateMsg)
@@ -99,13 +99,13 @@ func ValidateEeCertModel(stateModel *StateModel, eeCertModel *EeCertModel) error
 	// check basic_constraints    myssl.c P2100
 	//Basic constraints in EE cert"
 	if eeCertModel.IsCa {
-		stateMsg := StateMsg{Stage: "parsevalidate",
+		stateMsg := model.StateMsg{Stage: "parsevalidate",
 			Fail:   "IsCA of EE is not true",
 			Detail: ""}
 		stateModel.AddError(&stateMsg)
 	}
 	if eeCertModel.BasicConstraintsValid {
-		stateMsg := StateMsg{Stage: "parsevalidate",
+		stateMsg := model.StateMsg{Stage: "parsevalidate",
 			Fail:   "BasicConstraintsValid of EE is not true",
 			Detail: ""}
 		stateModel.AddError(&stateMsg)
@@ -115,7 +115,7 @@ func ValidateEeCertModel(stateModel *StateModel, eeCertModel *EeCertModel) error
 
 	// rfc6487#section-4.8.5   rescert_extended_key_usage_chk, myssl.c P2427
 	if len(eeCertModel.ExtKeyUsages) > 0 {
-		stateMsg := StateMsg{Stage: "parsevalidate",
+		stateMsg := model.StateMsg{Stage: "parsevalidate",
 			Fail:   "ExKeyUsage of EE is not empty",
 			Detail: ""}
 		stateModel.AddError(&stateMsg)
@@ -124,39 +124,39 @@ func ValidateEeCertModel(stateModel *StateModel, eeCertModel *EeCertModel) error
 	// check sia
 	// rescert_sia_chk myssl.c P2813    RFC6487 4.8.8.2. SIA for EE Certificates
 	if eeCertModel.SiaModel.Critical {
-		stateMsg := StateMsg{Stage: "parsevalidate",
+		stateMsg := model.StateMsg{Stage: "parsevalidate",
 			Fail:   "SIA of EE is critical",
 			Detail: ""}
 		stateModel.AddError(&stateMsg)
 	}
 	if len(eeCertModel.SiaModel.SignedObject) == 0 {
-		stateMsg := StateMsg{Stage: "parsevalidate",
+		stateMsg := model.StateMsg{Stage: "parsevalidate",
 			Fail:   "SignedObject of EE is empty",
 			Detail: ""}
 		stateModel.AddError(&stateMsg)
 	} else {
 		u, err := url.Parse(eeCertModel.SiaModel.SignedObject)
 		if err != nil {
-			stateMsg := StateMsg{Stage: "parsevalidate",
+			stateMsg := model.StateMsg{Stage: "parsevalidate",
 				Fail:   "SignedObject of EE is not a legal URL address",
 				Detail: err.Error()}
 			stateModel.AddError(&stateMsg)
 		}
 		if u.Scheme != "rsync" {
-			stateMsg := StateMsg{Stage: "parsevalidate",
+			stateMsg := model.StateMsg{Stage: "parsevalidate",
 				Fail:   "SignedObject of EE is not an Rsync protocol",
 				Detail: ""}
 			stateModel.AddError(&stateMsg)
 		}
 	}
 	if len(eeCertModel.SiaModel.CaRepository) > 0 {
-		stateMsg := StateMsg{Stage: "parsevalidate",
+		stateMsg := model.StateMsg{Stage: "parsevalidate",
 			Fail:   "CA Repository of EE is not empty",
 			Detail: ""}
 		stateModel.AddError(&stateMsg)
 	}
 	if len(eeCertModel.SiaModel.RpkiManifest) > 0 {
-		stateMsg := StateMsg{Stage: "parsevalidate",
+		stateMsg := model.StateMsg{Stage: "parsevalidate",
 			Fail:   "RpkiMainfest of EE is not empty",
 			Detail: ""}
 		stateModel.AddError(&stateMsg)
@@ -165,23 +165,23 @@ func ValidateEeCertModel(stateModel *StateModel, eeCertModel *EeCertModel) error
 }
 
 // https://datatracker.ietf.org/doc/rfc6488/?include_text=1  Signed Object Template for the Resource Public Key Infrastructure (RPKI)
-func ValidateSignerInfoModel(stateModel *StateModel, signerInfoModel *SignerInfoModel) error {
+func ValidateSignerInfoModel(stateModel *model.StateModel, signerInfoModel *model.SignerInfoModel) error {
 
 	if signerInfoModel.DigestAlgorithm != "sha256" {
-		stateMsg := StateMsg{Stage: "parsevalidate",
+		stateMsg := model.StateMsg{Stage: "parsevalidate",
 			Fail:   "Digest Algorithm of SignerInfo is not sha256",
 			Detail: "Digest Algorithm of SignerInfo is " + signerInfoModel.DigestAlgorithm}
 		stateModel.AddError(&stateMsg)
 	}
 	now := time.Now()
 	if signerInfoModel.SiningTime.IsZero() {
-		stateMsg := StateMsg{Stage: "parsevalidate",
+		stateMsg := model.StateMsg{Stage: "parsevalidate",
 			Fail:   "SiningTime of SignerInfo is empty",
 			Detail: ""}
 		stateModel.AddError(&stateMsg)
 	}
 	if signerInfoModel.SiningTime.After(now) {
-		stateMsg := StateMsg{Stage: "parsevalidate",
+		stateMsg := model.StateMsg{Stage: "parsevalidate",
 			Fail:   "SiningTime of SignerInfo is later than the current time",
 			Detail: ""}
 		stateModel.AddError(&stateMsg)

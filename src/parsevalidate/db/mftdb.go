@@ -10,41 +10,56 @@ import (
 	"github.com/go-xorm/xorm"
 
 	"model"
+	parsevalidatemodel "parsevalidate/model"
 )
 
 // add
-func AddMfts(syncLogFileModels []model.SyncLogFileModel) error {
+func AddMfts(syncLogFileModels []parsevalidatemodel.SyncLogFileModel) error {
 	session, err := xormdb.NewSession()
+	if err != nil {
+		return err
+	}
 	defer session.Close()
 	start := time.Now()
 
 	belogs.Debug("AddMfts(): len(syncLogFileModels):", len(syncLogFileModels))
 	// insert new mft
-	for i, _ := range syncLogFileModels {
+	for i := range syncLogFileModels {
 		err = insertMft(session, &syncLogFileModels[i], start)
 		if err != nil {
 			belogs.Error("AddMfts(): insertMft fail:", jsonutil.MarshalJson(syncLogFileModels[i]), err)
 			return xormdb.RollbackAndLogError(session, "AddMfts(): insertMft fail: "+jsonutil.MarshalJson(syncLogFileModels[i]), err)
 		}
 	}
+
+	err = UpdateSyncLogFilesJsonAllAndState(session, syncLogFileModels)
+	if err != nil {
+		belogs.Error("AddMfts(): UpdateSyncLogFilesJsonAllAndState fail:", err)
+		return xormdb.RollbackAndLogError(session, "AddMfts(): UpdateSyncLogFilesJsonAllAndState fail", err)
+	}
+
 	err = xormdb.CommitSession(session)
 	if err != nil {
 		belogs.Error("AddMfts(): insertMft CommitSession fail :", err)
 		return err
 	}
-	belogs.Info("AddMfts(): len(mfts), ", len(syncLogFileModels), "  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Info("AddMfts(): len(mfts):", len(syncLogFileModels), "  time(s):", time.Now().Sub(start).Seconds())
 	return nil
 }
-func DelMfts(syncLogFileModels []model.SyncLogFileModel, wg *sync.WaitGroup) (err error) {
+
+// del
+func DelMfts(delSyncLogFileModels []parsevalidatemodel.SyncLogFileModel, updateSyncLogFileModels []parsevalidatemodel.SyncLogFileModel, wg *sync.WaitGroup) (err error) {
 	defer func() {
 		wg.Done()
 	}()
+
+	start := time.Now()
 	session, err := xormdb.NewSession()
 	defer session.Close()
-	start := time.Now()
 
+	syncLogFileModels := append(delSyncLogFileModels, updateSyncLogFileModels...)
 	belogs.Debug("DelMfts(): len(syncLogFileModels):", len(syncLogFileModels))
-	for i, _ := range syncLogFileModels {
+	for i := range syncLogFileModels {
 		err = delMftById(session, syncLogFileModels[i].CertId)
 		if err != nil {
 			belogs.Error("DelMfts(): DelMftByFile fail, cerId:", syncLogFileModels[i].CertId, err)
@@ -52,12 +67,19 @@ func DelMfts(syncLogFileModels []model.SyncLogFileModel, wg *sync.WaitGroup) (er
 		}
 	}
 
+	// only update del
+	err = UpdateSyncLogFilesJsonAllAndState(session, delSyncLogFileModels)
+	if err != nil {
+		belogs.Error("DelMfts(): UpdateSyncLogFilesJsonAllAndState fail:", err)
+		return xormdb.RollbackAndLogError(session, "DelMfts(): UpdateSyncLogFilesJsonAllAndState fail", err)
+	}
+
 	err = xormdb.CommitSession(session)
 	if err != nil {
 		belogs.Error("DelMfts(): CommitSession fail :", err)
 		return err
 	}
-	belogs.Info("DelMfts(): len(mfts), ", len(syncLogFileModels), "  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Info("DelMfts(): len(mfts):", len(syncLogFileModels), "  time(s):", time.Now().Sub(start).Seconds())
 	return nil
 }
 func DelMftByFile(session *xorm.Session, filePath, fileName string) (err error) {
@@ -115,7 +137,7 @@ func delMftById(session *xorm.Session, mftId uint64) (err error) {
 }
 
 func insertMft(session *xorm.Session,
-	syncLogFileModel *model.SyncLogFileModel, now time.Time) error {
+	syncLogFileModel *parsevalidatemodel.SyncLogFileModel, now time.Time) error {
 
 	mftModel := syncLogFileModel.CertModel.(model.MftModel)
 	thisUpdate := mftModel.ThisUpdate

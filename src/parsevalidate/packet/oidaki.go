@@ -47,7 +47,7 @@ func reExtractAkiOid(fileByte []byte) (aki string, err error) {
 	pos0 := bytes.Index(fileByte, oidAkiKeyByte)
 	var datapos uint64 = uint64(pos0)
 	var datalen uint64 = uint64(0)
-	belogs.Debug("reExtractAkiOid():enum0 pos:", datapos)
+	belogs.Debug("reExtractAkiOid():enum0 pos:", datapos, "  datalen:", datalen)
 	if datapos <= 0 {
 		return "", errors.New("not found " + oidManifestKey)
 	}
@@ -55,7 +55,7 @@ func reExtractAkiOid(fileByte []byte) (aki string, err error) {
 	oct0 := fileByte[int(datapos)+len(oidAkiKeyByte):]
 	//logs.LogDebugBytes(("reExtractAkiOid():oct0:", oct0)
 	datalen, datapos, _ = util.DecodeFiniteAndInfiniteLen(oct0)
-	belogs.Debug("reExtractMftOid():seq0 pos:", datapos)
+	belogs.Debug("reExtractMftOid():seq0 datalen:", datalen, " datapos:", datapos)
 
 	//avoid error of 0x00, 0x00, so it is not limit datalen, and will include all data
 	seq0 := oct0[datapos:]

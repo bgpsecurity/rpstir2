@@ -84,10 +84,9 @@ func WaitForRsyncParseEnd() bool {
 			belogs.Debug("WaitForRsyncParseEnd(): return false:   rpQueue.RsyncingParsingCount:",
 				atomic.LoadInt64(&rpQueue.RsyncingParsingCount))
 			return false
-		} else {
-			//will check again
-			time.Sleep(time.Duration(10) * time.Millisecond)
 		}
+		//will check again
+		time.Sleep(time.Duration(10) * time.Millisecond)
 	}
 	belogs.Debug("WaitForRsyncParseEnd(): return true, will end ")
 	return true
@@ -101,7 +100,7 @@ func TryAgainFailRsyncUrls() bool {
 	if len(rpQueue.RsyncMisc.FailRsyncUrls) > 0 &&
 		rpQueue.RsyncMisc.FailRsyncUrlsTryCount <= uint64(conf.Int("rsync::failRsyncUrlsTryCount")) {
 		failRsyncUrls := make([]string, 0, len(rpQueue.RsyncMisc.FailRsyncUrls))
-		for failRsyncUrl, _ := range rpQueue.RsyncMisc.FailRsyncUrls {
+		for failRsyncUrl := range rpQueue.RsyncMisc.FailRsyncUrls {
 			failRsyncUrls = append(failRsyncUrls, failRsyncUrl)
 			// delete saved url ,so can try again
 			rpQueue.DelRsyncAddedUrl(failRsyncUrl)

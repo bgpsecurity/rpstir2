@@ -16,7 +16,7 @@ func NewChainDbRoaModel(chainRoa *ChainRoa) *ChainDbRoaModel {
 	chainDbRoaModel.Id = chainRoa.Id
 
 	chainDbRoaModel.ParentChainCers = make([]ChainDbCerModel, 0, len(chainRoa.ParentChainCerAlones))
-	for i, _ := range chainRoa.ParentChainCerAlones {
+	for i := range chainRoa.ParentChainCerAlones {
 		// only save id
 		chainDbCerModel := ChainDbCerModel{}
 		chainDbCerModel.Id = chainRoa.ParentChainCerAlones[i].Id
@@ -42,7 +42,7 @@ func NewChainDbCerModel(chainCer *ChainCer) *ChainDbCerModel {
 	chainDbCerModel.Id = chainCer.Id
 
 	chainDbCerModel.ChildChainCrls = make([]ChainDbCrlModel, 0, len(chainCer.ChildChainCrls))
-	for i, _ := range chainCer.ChildChainCrls {
+	for i := range chainCer.ChildChainCrls {
 		chainDbCrlModel := NewChainDbCrlModel(&chainCer.ChildChainCrls[i])
 		chainDbCerModel.ChildChainCrls = append(chainDbCerModel.ChildChainCrls, *chainDbCrlModel)
 	}
@@ -51,7 +51,7 @@ func NewChainDbCerModel(chainCer *ChainCer) *ChainDbCerModel {
 		"     len(chainDbCerModel.ChildChainCrls):", len(chainDbCerModel.ChildChainCrls))
 
 	chainDbCerModel.ChildChainMfts = make([]ChainDbMftModel, 0, len(chainCer.ChildChainMfts))
-	for i, _ := range chainCer.ChildChainMfts {
+	for i := range chainCer.ChildChainMfts {
 		chainDbMftModel := NewChainDbMftModel(&chainCer.ChildChainMfts[i])
 		chainDbCerModel.ChildChainMfts = append(chainDbCerModel.ChildChainMfts, *chainDbMftModel)
 	}
@@ -60,7 +60,7 @@ func NewChainDbCerModel(chainCer *ChainCer) *ChainDbCerModel {
 		"     len(chainDbCerModel.ChildChainMfts):", len(chainDbCerModel.ChildChainMfts))
 
 	chainDbCerModel.ChildChainCers = make([]ChainDbCerModel, 0, len(chainCer.ChildChainCerAlones))
-	for i, _ := range chainCer.ChildChainCerAlones {
+	for i := range chainCer.ChildChainCerAlones {
 		chainDbCerModelTmp := ChainDbCerModel{Id: chainCer.ChildChainCerAlones[i].Id}
 		chainDbCerModel.ChildChainCers = append(chainDbCerModel.ChildChainCers, chainDbCerModelTmp)
 	}
@@ -69,7 +69,7 @@ func NewChainDbCerModel(chainCer *ChainCer) *ChainDbCerModel {
 		"     len(chainDbCerModel.ChildChainCers):", len(chainDbCerModel.ChildChainCers))
 
 	chainDbCerModel.ChildChainRoas = make([]ChainDbRoaModel, 0, len(chainCer.ChildChainRoas))
-	for i, _ := range chainCer.ChildChainRoas {
+	for i := range chainCer.ChildChainRoas {
 		chainDbRoaModel := ChainDbRoaModel{Id: chainCer.ChildChainRoas[i].Id}
 		chainDbCerModel.ChildChainRoas = append(chainDbCerModel.ChildChainRoas, chainDbRoaModel)
 	}
@@ -78,7 +78,7 @@ func NewChainDbCerModel(chainCer *ChainCer) *ChainDbCerModel {
 		"     len(chainDbCerModel.ChildChainRoas):", len(chainDbCerModel.ChildChainRoas))
 
 	chainDbCerModel.ParentChainCers = make([]ChainDbCerModel, 0)
-	for i, _ := range chainCer.ParentChainCerAlones {
+	for i := range chainCer.ParentChainCerAlones {
 		chainDbCerModelTmp := ChainDbCerModel{Id: chainCer.ParentChainCerAlones[i].Id}
 		belogs.Debug("NewChainDbCerModel():i chainDbCerModel:", i, jsonutil.MarshalJson(chainDbCerModelTmp))
 		chainDbCerModel.ParentChainCers = append(chainDbCerModel.ParentChainCers, chainDbCerModelTmp)
@@ -100,7 +100,7 @@ func NewChainDbCrlModel(chainCrl *ChainCrl) *ChainDbCrlModel {
 	chainDbCrlModel.Id = chainCrl.Id
 
 	chainDbCrlModel.ParentChainCers = make([]ChainDbCerModel, 0, len(chainCrl.ParentChainCerAlones))
-	for i, _ := range chainCrl.ParentChainCerAlones {
+	for i := range chainCrl.ParentChainCerAlones {
 		// only save id
 		chainDbCerModel := ChainDbCerModel{}
 		chainDbCerModel.Id = chainCrl.ParentChainCerAlones[i].Id
@@ -119,7 +119,7 @@ func NewChainDbMftModel(chainMft *ChainMft) *ChainDbMftModel {
 	chainDbMftModel.Id = chainMft.Id
 
 	chainDbMftModel.ParentChainCers = make([]ChainDbCerModel, 0, len(chainMft.ParentChainCerAlones))
-	for i, _ := range chainMft.ParentChainCerAlones {
+	for i := range chainMft.ParentChainCerAlones {
 		// only save id
 		chainDbCerModel := ChainDbCerModel{}
 		chainDbCerModel.Id = chainMft.ParentChainCerAlones[i].Id
