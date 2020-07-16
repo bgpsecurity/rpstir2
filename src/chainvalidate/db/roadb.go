@@ -14,95 +14,21 @@ import (
 	"model"
 )
 
-func GetChainRoaIds() (roaIds []uint64, err error) {
+func GetChainRoaSqls() (chainCertSqls []chainmodel.ChainCertSql, err error) {
 	start := time.Now()
-	err = xormdb.XormEngine.Table("lab_rpki_roa").Cols("id").Find(&roaIds)
+	chainCertSqls = make([]chainmodel.ChainCertSql, 0, 50000)
+	// if add "order by ***", the sort_mem may not enough
+	sql := `select c.id, c.jsonAll, c.state, v.fileName as crlFileName, v.revocationTime 
+			from lab_rpki_roa c 
+			left join lab_rpki_crl_revoked_cert_view v on v.sn = c.jsonAll->>'$.eeCertModel.sn' and c.aki = v.aki   
+			group by c.id, c.jsonAll, c.state, v.fileName, v.revocationTime  `
+	err = xormdb.XormEngine.SQL(sql).Find(&chainCertSqls)
 	if err != nil {
-		belogs.Error("GetChainRoaIds(): lab_rpki_roa id fail:", err)
+		belogs.Error("GetChainRoaSqls(): lab_rpki_roa id fail:", err)
 		return nil, err
 	}
-	belogs.Debug("GetChainRoaIds(): len(roaIds):", len(roaIds), "  time(s):", time.Now().Sub(start).Seconds())
-	return roaIds, nil
-}
-
-func GetChainRoa(roaId uint64) (chainRoa chainmodel.ChainRoa, err error) {
-	start := time.Now()
-
-	chainRoaSql := chainmodel.ChainRoaSql{}
-	has, err := xormdb.XormEngine.Table("lab_rpki_roa").
-		Select("id,asn,ski,aki,filePath,fileName,state,jsonAll->'$.eeCertModel.eeCertStart' as eeCertStart,jsonAll->'$.eeCertModel.eeCertEnd' as eeCertEnd").
-		Where("id=?", roaId).Get(&chainRoaSql)
-	if err != nil {
-		belogs.Error("GetChainRoa(): lab_rpki_roa fail:", err)
-		return chainRoa, err
-	}
-	belogs.Debug("GetChainRoa(): roaId:", roaId, "  has:", has)
-	chainRoa = chainRoaSql.ToChainRoa()
-	belogs.Debug("GetChainRoa(): roaId:", roaId, "  chainRoa.Id:", chainRoa.Id)
-
-	// get current stateModel
-	chainRoa.StateModel = model.GetStateModelAndResetStage(chainRoa.State, "chainvalidate")
-	belogs.Debug("GetChainRoa():stateModel:", chainRoa.StateModel)
-
-	//lab_rpki_roa_ipaddress
-	belogs.Debug("GetChainRoa():certChainCert.id:", chainRoa.Id)
-	chainRoa.ChainIpAddresses, chainRoa.ChainEeIpAddresses, err = getChainRoaIpAddresses(chainRoa.Id)
-	if err != nil {
-		belogs.Error("GetChainRoa(): getChainIpAddresses fail, chainRoa.Id:", chainRoa.Id, err)
-		return chainRoa, err
-	}
-
-	// get sn in crl
-	chainRoa.ChainSnInCrlRevoked, err = getRoaEeSnInCrlRevoked(roaId)
-	if err != nil {
-		belogs.Error("GetChainRoa(): getRoaEeSnInCrlRevoked fail, chainRoa.Id:", chainRoa.Id, err)
-		return chainRoa, err
-	}
-
-	belogs.Debug("GetChainRoa(): roaId:", roaId, "   chainRoa.Id:", chainRoa.Id, "  time(s):", time.Now().Sub(start).Seconds())
-	return chainRoa, nil
-}
-
-func getChainRoaIpAddresses(roaId uint64) (chainIpAddresses, chainEeIpAddress []chainmodel.ChainIpAddress, err error) {
-	start := time.Now()
-
-	err = xormdb.XormEngine.Table("lab_rpki_roa_ipaddress").
-		Cols("id,addressFamily,addressPrefix,maxLength,rangeStart,rangeEnd").
-		Where("roaId=?", roaId).
-		OrderBy("id").Find(&chainIpAddresses)
-	if err != nil {
-		belogs.Error("getChainIpAddresses(): lab_rpki_roa_ipaddress fail:", err)
-		return nil, nil, err
-	}
-	err = xormdb.XormEngine.Table("lab_rpki_roa_ee_ipaddress").
-		Cols("id,addressFamily,addressPrefix,min,max,rangeStart,rangeEnd,addressPrefixRange").
-		Where("roaId=?", roaId).
-		OrderBy("id").Find(&chainEeIpAddress)
-	if err != nil {
-		belogs.Error("getChainIpAddresses(): lab_rpki_roa_ipaddress fail:", err)
-		return nil, nil, err
-	}
-
-	belogs.Debug("getChainIpAddresses():roaId, len(chainIpAddresses),len(chainEeIpAddress):",
-		roaId, len(chainIpAddresses), len(chainEeIpAddress))
-	belogs.Debug("getChainIpAddresses(): roaId:", roaId, "  time(s):", time.Now().Sub(start).Seconds())
-	return chainIpAddresses, chainEeIpAddress, nil
-}
-
-func getRoaEeSnInCrlRevoked(roaId uint64) (chainSnInCrlRevoked chainmodel.ChainSnInCrlRevoked, err error) {
-	start := time.Now()
-	sql := `select l.fileName, r.revocationTime from lab_rpki_roa c, lab_rpki_crl l, lab_rpki_crl_revoked_cert r
-	 where  c.jsonAll->'$.eeCertModel.sn' = r.sn and r.crlId = l.id and c.aki = l.aki and c.id=` + convert.ToString(roaId)
-	belogs.Debug("getRoaEeSnInCrlRevoked(): roaId:", roaId, "   sql:", sql)
-	_, err = xormdb.XormEngine.
-		Sql(sql).Get(&chainSnInCrlRevoked)
-	if err != nil {
-		belogs.Error("getRoaEeSnInCrlRevoked(): select fail:", roaId, err)
-		return chainSnInCrlRevoked, err
-	}
-	belogs.Debug("getRoaEeSnInCrlRevoked(): roaId:", roaId, "  time(s):", time.Now().Sub(start).Seconds())
-	return chainSnInCrlRevoked, nil
-
+	belogs.Info("GetChainRoaSqls(): len(chainCertSqls):", len(chainCertSqls), "  time(s):", time.Now().Sub(start).Seconds())
+	return chainCertSqls, nil
 }
 
 func UpdateRoas(chains *chainmodel.Chains, wg *sync.WaitGroup) {

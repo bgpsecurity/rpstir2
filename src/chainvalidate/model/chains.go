@@ -46,6 +46,11 @@ type Chains struct {
 
 func NewChains(count uint64) *Chains {
 	chains := &Chains{}
+	chains.CerIds = make([]uint64, 0)
+	chains.CrlIds = make([]uint64, 0)
+	chains.MftIds = make([]uint64, 0)
+	chains.RoaIds = make([]uint64, 0)
+
 	chains.FileTypeIdToCer = make(map[string]ChainCer, count)
 	chains.FileTypeIdToCrl = make(map[string]ChainCrl, count)
 	chains.FileTypeIdToMft = make(map[string]ChainMft, count)

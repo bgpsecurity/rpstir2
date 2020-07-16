@@ -16,7 +16,7 @@ import (
 	"parsevalidate/parsevalidatehttp"
 	"rrdp/rrdphttp"
 	"rsync/rsynchttp"
-	"rtr/rtrhttp"
+	"slurm/slurmhttp"
 	"sys/syshttp"
 )
 
@@ -41,7 +41,8 @@ func main() {
 
 func startPprof() {
 	go func() {
-		belogs.Info(http.ListenAndServe("localhost:8084", nil))
+		pprofport := conf.String("pprof::pprofport")
+		belogs.Info(http.ListenAndServe("localhost:"+pprofport, nil))
 	}()
 }
 
@@ -67,9 +68,6 @@ func startServer() {
 	// chainvalidate
 	routes = append(routes, rest.Post("/chainvalidate/start", chainvalidatehttp.ChainValidateStart))
 
-	// rtr
-	routes = append(routes, rest.Post("/rtr/update", rtrhttp.RtrUpdate))
-
 	// sys
 	routes = append(routes, rest.Post("/sys/init", syshttp.Init))
 	routes = append(routes, rest.Post("/sys/reset", syshttp.Reset))
@@ -78,6 +76,8 @@ func startServer() {
 	routes = append(routes, rest.Post("/sys/results", syshttp.Results))
 	routes = append(routes, rest.Post("/sys/exportroas", syshttp.ExportRoas))
 
+	// slurm
+	routes = append(routes, rest.Post("/slurm/upload", slurmhttp.SlurmUpload))
 	// make router
 	router, err := rest.MakeRouter(
 		routes...,

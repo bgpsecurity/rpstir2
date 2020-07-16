@@ -98,6 +98,12 @@ func ParseEeCertModelByX509(fileByte []byte, eeCertModel *model.EeCertModel) (er
 	eeCertModel.IssuerAll, _ = util.GetDNFromName(cer.Issuer, ",")
 	eeCertModel.KeyUsageModel.KeyUsage = int(cer.KeyUsage)
 	eeCertModel.ExtKeyUsages = util.ExtKeyUsagesToInts(cer.ExtKeyUsage)
+
+	//CRLDPS
+	eeCertModel.CrldpModel.Crldps = make([]string, 0)
+	for _, crldp := range cer.CRLDistributionPoints {
+		eeCertModel.CrldpModel.Crldps = append(eeCertModel.CrldpModel.Crldps, crldp)
+	}
 	return nil
 }
 

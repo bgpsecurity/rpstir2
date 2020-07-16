@@ -10,13 +10,9 @@ import (
 )
 
 func TestRtrPdu(t *testing.T) {
-	rtrSN := NewRtrSerialNotify()
-	rtrSN.Length = 111
-	rtrSN.SerialNumber = 123
-	jsonutil.MarshalJson(rtrSN)
-	fmt.Println(rtrSN)
-	fmt.Println(rtrSN.Bytes())
-	fmt.Println(hex.Dump(rtrSN.Bytes()))
-	fmt.Println(convert.PrintBytes(rtrSN.Bytes(), 8))
+	erm := NewRtrErrorReportModel(0, 1, nil, nil)
+	fmt.Println(jsonutil.MarshalJson(erm))
+	fmt.Println(hex.Dump(erm.Bytes()))
+	fmt.Println(convert.PrintBytes(erm.Bytes(), 8))
 
 }

@@ -13,7 +13,7 @@ import (
 )
 
 func ChainValidateStart() (err error) {
-	belogs.Info("ChainValidateStart(): start")
+	belogs.Debug("ChainValidateStart(): start")
 	// save chain validate starttime to lab_rpki_sync_log
 	labRpkiSyncLogId, err := db.UpdateRsyncLogChainValidateStateStart("chainvalidating")
 	if err != nil {
@@ -38,11 +38,9 @@ func ChainValidateStart() (err error) {
 	/////////////////////
 	// will call rtr
 	go func() {
-		httpclient.Post("http", conf.String("rpstir2::rtrserver"), conf.Int("rpstir2::httpport"),
+		httpclient.Post("http", conf.String("rtr::httpserver"), conf.Int("rtr::httpport"),
 			"/rtr/update", "")
 	}()
-
-
 	return nil
 
 }

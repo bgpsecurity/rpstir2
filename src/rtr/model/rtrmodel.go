@@ -26,6 +26,7 @@ const (
 	// min pdu type length is reset query
 	PDU_TYPE_MIN_LEN = 8
 
+	// error code
 	PDU_TYPE_ERROR_CODE_CORRUPT_DATA                    = 0
 	PDU_TYPE_ERROR_CODE_INTERNAL_ERROR                  = 1
 	PDU_TYPE_ERROR_CODE_NO_DATA_AVAILABLE               = 2
@@ -175,10 +176,11 @@ type RtrCacheResponseModel struct {
 	Length          uint32 `json:"length"`
 }
 
-func NewRtrCacheResponseModel(protocolVersion uint8) *RtrCacheResponseModel {
+func NewRtrCacheResponseModel(protocolVersion uint8, sessionId uint16) *RtrCacheResponseModel {
 	return &RtrCacheResponseModel{
 		ProtocolVersion: protocolVersion,
 		PduType:         PDU_TYPE_CACHE_RESPONSE,
+		SessionId:       sessionId,
 		Length:          8,
 	}
 }
@@ -482,10 +484,17 @@ func NewRtrErrorReportModel(protocolVersion uint8, errorCode uint16,
 	erm.ErroneousPdu = erroneousPdu
 	erm.LengthOfErrorText = uint32(len(errorDiagnosticMessage))
 	erm.ErrorDiagnosticMessage = errorDiagnosticMessage
-	// (protocolversion+pdutype+errorCode+length) + lengthofencapsulatedpdu + ErroneousPDU + LengthOfErrorText + errorDiagnosticMessage
-	erm.Length = 8 + 2 + uint32(len(erroneousPdu)) + 2 + uint32(len(errorDiagnosticMessage))
+	// (protocolversion+pdutype+errorCode)+length + lengthofencapsulatedpdu + ErroneousPDU + LengthOfErrorText + errorDiagnosticMessage
+	erm.Length = 4 + 4 + 4 + uint32(len(erroneousPdu)) + 4 + uint32(len(errorDiagnosticMessage))
 
 	return erm
+}
+
+// erroneousPdu and errorDiagnosticMessage can be nil
+func NewRtrErrorReportModelByRtrError(rtrError *RtrError) *RtrErrorReportModel {
+
+	return NewRtrErrorReportModel(rtrError.ProtocolVersion, rtrError.ErrorCode,
+		rtrError.ErroneousPdu, rtrError.ErrorDiagnosticMessage)
 }
 
 func (p *RtrErrorReportModel) Bytes() []byte {
@@ -495,9 +504,13 @@ func (p *RtrErrorReportModel) Bytes() []byte {
 	binary.Write(wr, binary.BigEndian, p.ErrorCode)
 	binary.Write(wr, binary.BigEndian, p.Length)
 	binary.Write(wr, binary.BigEndian, p.LengthOfEncapsulated)
-	binary.Write(wr, binary.BigEndian, p.ErroneousPdu)
+	if len(p.ErroneousPdu) > 0 {
+		binary.Write(wr, binary.BigEndian, p.ErroneousPdu)
+	}
 	binary.Write(wr, binary.BigEndian, p.LengthOfErrorText)
-	binary.Write(wr, binary.BigEndian, p.ErrorDiagnosticMessage)
+	if len(p.ErrorDiagnosticMessage) > 0 {
+		binary.Write(wr, binary.BigEndian, p.ErrorDiagnosticMessage)
+	}
 	return wr.Bytes()
 }
 
@@ -520,4 +533,45 @@ func GetIpPrefixModelFlags(style string) uint8 {
 		return 1
 	}
 	return 0
+}
+
+type RtrError struct {
+	Err error `json:"err"`
+	// if get error pdu ,do not send response
+	NeedSendResponse bool `json:"needSendResponse"`
+
+	ProtocolVersion        uint8  `json:"protocolVersion"`
+	ErrorCode              uint16 `json:"errorCode"`
+	ErroneousPdu           []byte `json:"erroneousPdu"`
+	ErrorDiagnosticMessage []byte `json:"errorDiagnosticMessage"`
+}
+
+func NewRtrError(err error, needSendResponse bool, protocolVersion uint8, errorCode uint16,
+	buf *bytes.Reader, errorDiagnosticMessage string) *RtrError {
+	var erroneousPdu []byte
+	if buf != nil {
+		buf.Seek(0, 0)
+		erroneousPdu = make([]byte, buf.Size())
+		buf.Read(erroneousPdu)
+	} else {
+		erroneousPdu = nil
+	}
+
+	rtrError := &RtrError{
+		Err:                    err,
+		NeedSendResponse:       needSendResponse,
+		ProtocolVersion:        protocolVersion,
+		ErrorCode:              errorCode,
+		ErroneousPdu:           erroneousPdu,
+		ErrorDiagnosticMessage: []byte(errorDiagnosticMessage),
+	}
+
+	return rtrError
+}
+
+func (p *RtrError) Error() string {
+	return p.Err.Error()
+}
+func (p *RtrError) Unwrap() error {
+	return p.Err
 }

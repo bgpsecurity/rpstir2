@@ -421,8 +421,9 @@ func ParseByOpensslAns1ToX509(certFile string, results []string) (cerFile *os.Fi
 	}
 	fileByte = fileDecodeBase64Byte[cerStartIndex:cerEndIndex]
 	belogs.Debug("parseMftByOpenssl():len(fileByte):", len(fileByte))
-	fileByte, cerEndIndex = util.TrimSuffix00(fileByte, cerEndIndex)
-	belogs.Debug("parseMftByOpenssl():TrimSuffix00 len(fileByte):", len(fileByte))
+	//not trim end 0x000x00
+	//fileByte, cerEndIndex = util.TrimSuffix00(fileByte, cerEndIndex)
+	//belogs.Debug("parseMftByOpenssl():TrimSuffix00 len(fileByte):", len(fileByte))
 
 	cerFile, err = ioutil.TempFile("", certType) // temp file
 	if err != nil {

@@ -1,4 +1,4 @@
-package rtrserver
+package rtrtcp
 
 import (
 	"bytes"
@@ -14,27 +14,42 @@ import (
 	rtrmodel "rtr/model"
 )
 
-func ParseToResetQuery(buf *bytes.Reader, protocolVersion uint8) (rtrmodel.RtrPduModel, error) {
+func ParseToResetQuery(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel rtrmodel.RtrPduModel, err error) {
 	var zero16 uint16
 	var length uint32
-	err := binary.Read(buf, binary.BigEndian, &zero16)
+
+	// get zero16
+	err = binary.Read(buf, binary.BigEndian, &zero16)
 	if err != nil {
-		belogs.Error("ParseToResetQuery(): PDU_TYPE_RESET_QUERY get zero fail: ", err)
-		return rtrmodel.NewRtrErrorReportModel(protocolVersion, rtrmodel.PDU_TYPE_ERROR_CODE_CORRUPT_DATA, nil, nil), err
+		belogs.Error("ParseToResetQuery(): PDU_TYPE_RESET_QUERY get zero fail: ", buf, err)
+		rtrError := rtrmodel.NewRtrError(
+			err,
+			true, protocolVersion, rtrmodel.PDU_TYPE_ERROR_CODE_CORRUPT_DATA,
+			buf, "Fail to get zero")
+		return rtrPduModel, rtrError
 	}
 
+	// get length
 	err = binary.Read(buf, binary.BigEndian, &length)
 	if err != nil {
-		belogs.Error("ParseToResetQuery(): PDU_TYPE_RESET_QUERY get length fail: ", err)
-		return rtrmodel.NewRtrErrorReportModel(protocolVersion, rtrmodel.PDU_TYPE_ERROR_CODE_CORRUPT_DATA, nil, nil), err
+		belogs.Error("ParseToResetQuery(): PDU_TYPE_RESET_QUERY get length fail: ", buf, err)
+		rtrError := rtrmodel.NewRtrError(
+			err,
+			true, protocolVersion, rtrmodel.PDU_TYPE_ERROR_CODE_CORRUPT_DATA,
+			buf, "Fail to get length")
+		return rtrPduModel, rtrError
 	}
 	if length != 8 {
-		belogs.Error("ParseToResetQuery():PDU_TYPE_RESET_QUERY,  length must be 8 ", length)
-		return rtrmodel.NewRtrErrorReportModel(protocolVersion, rtrmodel.PDU_TYPE_ERROR_CODE_CORRUPT_DATA, nil, nil),
-			errors.New("pduType is SERIAL QUERY,  length must be 8")
+		belogs.Error("ParseToResetQuery():PDU_TYPE_RESET_QUERY,  length must be 8 ", buf, length)
+		rtrError := rtrmodel.NewRtrError(
+			errors.New("pduType is SERIAL QUERY, length must be 8"),
+			true, protocolVersion, rtrmodel.PDU_TYPE_ERROR_CODE_CORRUPT_DATA,
+			buf, "Fail to get length")
+		return rtrPduModel, rtrError
 	}
+
 	rq := rtrmodel.NewRtrResetQueryModel(protocolVersion)
-	belogs.Debug("ParseToResetQuery():get PDU_TYPE_RESET_QUERY ", jsonutil.MarshalJson(rq))
+	belogs.Debug("ParseToResetQuery():get PDU_TYPE_RESET_QUERY ", buf, jsonutil.MarshalJson(rq))
 	return rq, nil
 }
 
@@ -45,7 +60,7 @@ func ProcessResetQuery(rtrPduModel rtrmodel.RtrPduModel) (resetResponses []rtrmo
 		return resetResponses, err
 	}
 	belogs.Debug("ProcessResetQuery(): rtrFulls, sessionId, serialNumber: ", len(rtrFulls), sessionId, serialNumber)
-	rtrPduModels, err := assembleResetResponses(&rtrFulls, rtrPduModel.GetProtocolVersion(), sessionId, serialNumber)
+	rtrPduModels, err := assembleResetResponses(rtrFulls, rtrPduModel.GetProtocolVersion(), sessionId, serialNumber)
 	if err != nil {
 		belogs.Error("ProcessResetQuery(): GetRtrFullAndSerialNumAndSessionId fail: ", err)
 		return resetResponses, err
@@ -53,18 +68,21 @@ func ProcessResetQuery(rtrPduModel rtrmodel.RtrPduModel) (resetResponses []rtrmo
 	return rtrPduModels, nil
 }
 
-func assembleResetResponses(rtrFulls *[]model.LabRpkiRtrFull, protocolVersion uint8, sessionId uint16,
+// when len(rtrFull)==0, it is an error with no_data_available
+func assembleResetResponses(rtrFulls []model.LabRpkiRtrFull, protocolVersion uint8, sessionId uint16,
 	serialNumber uint32) (rtrPduModels []rtrmodel.RtrPduModel, err error) {
 	rtrPduModels = make([]rtrmodel.RtrPduModel, 0)
 
-	if len(*rtrFulls) > 0 {
+	if len(rtrFulls) > 0 {
+		belogs.Debug("assembleResetResponses(): will send will send Cache Response of all rtr,",
+			",  protocolVersion:", protocolVersion, ",   sessionId:", sessionId, ",  serialNumber:", serialNumber, ", len(rtr): ", len(rtrFulls))
 
-		cacheResponseModel := rtrmodel.NewRtrCacheResponseModel(protocolVersion)
+		cacheResponseModel := rtrmodel.NewRtrCacheResponseModel(protocolVersion, sessionId)
 		belogs.Debug("assembleResetResponses(): cacheResponseModel : ", jsonutil.MarshalJson(cacheResponseModel))
 
 		rtrPduModels = append(rtrPduModels, cacheResponseModel)
-		for _, one := range *rtrFulls {
-			rtrPduModel, err := convertRtrFullToRtrPduModel(&one, protocolVersion)
+		for i, _ := range rtrFulls {
+			rtrPduModel, err := convertRtrFullToRtrPduModel(&rtrFulls[i], protocolVersion)
 			if err != nil {
 				belogs.Error("assembleResetResponses(): convertRtrFullToRtrPduModel fail: ", err)
 				return rtrPduModels, err
@@ -74,17 +92,23 @@ func assembleResetResponses(rtrFulls *[]model.LabRpkiRtrFull, protocolVersion ui
 			rtrPduModels = append(rtrPduModels, rtrPduModel)
 		}
 
-		endOfDataModel := rtrmodel.NewRtrEndOfDataModel(protocolVersion, sessionId,
-			serialNumber, rtrmodel.PDU_TYPE_END_OF_DATA_REFRESH_INTERVAL_RECOMMENDED,
-			rtrmodel.PDU_TYPE_END_OF_DATA_RETRY_INTERVAL_RECOMMENDED, rtrmodel.PDU_TYPE_END_OF_DATA_EXPIRE_INTERVAL_RECOMMENDED)
+		endOfDataModel := assembleEndOfDataResponse(protocolVersion, sessionId, serialNumber)
 		belogs.Debug("assembleResetResponses(): endOfDataModel : ", jsonutil.MarshalJson(endOfDataModel))
 
 		rtrPduModels = append(rtrPduModels, endOfDataModel)
+		belogs.Info("assembleResetResponses(): will send will send Cache Response of all rtr,",
+			",  protocolVersion:", protocolVersion, ",   sessionId:", sessionId, ",  serialNumber:", serialNumber,
+			", len(rtr): ", len(rtrFulls), ",  len(rtrPduModels):", len(rtrPduModels))
+
 	} else {
+		belogs.Debug("assembleResetResponses(): there is no rtr this time,  will send errorReport with not_data_available, ",
+			",  protocolVersion:", protocolVersion, ",   sessionId:", sessionId, ",  serialNumber:", serialNumber)
 		errorReportModel := rtrmodel.NewRtrErrorReportModel(protocolVersion, rtrmodel.PDU_TYPE_ERROR_CODE_NO_DATA_AVAILABLE, nil, nil)
-		belogs.Debug("assembleResetResponses(): errorReportModel : ", jsonutil.MarshalJson(errorReportModel))
 
 		rtrPduModels = append(rtrPduModels, errorReportModel)
+		belogs.Info("assembleResetResponses(): there is no rtr this time,  will send errorReport with not_data_available, ",
+			",  protocolVersion:", protocolVersion, ",   sessionId:", sessionId, ",  serialNumber:", serialNumber, ",  rtrPduModels:", jsonutil.MarshalJson(rtrPduModels))
+
 	}
 	return rtrPduModels, nil
 

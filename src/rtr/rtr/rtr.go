@@ -1,7 +1,11 @@
 package rtr
 
 import (
+	"time"
+
 	belogs "github.com/astaxie/beego/logs"
+	conf "github.com/cpusoft/goutil/conf"
+	httpclient "github.com/cpusoft/goutil/httpclient"
 	jsonutil "github.com/cpusoft/goutil/jsonutil"
 
 	"model"
@@ -11,7 +15,9 @@ import (
 // 1. get all slurm (including had published to rtr)
 // 2. get all new roa ( no to rtr)
 // 3. start tx: save new roa to db; filter by all slurm; commit tx
+// 4. send rtr notify to router
 func RtrUpdate() {
+	start := time.Now()
 	belogs.Info("RtrUpdate(): start")
 	// save chain validate starttime to lab_rpki_sync_log
 	labRpkiSyncLogId, err := db.UpdateRsyncLogRtrStateStart("rtring")
@@ -61,25 +67,33 @@ func RtrUpdate() {
 	}
 	belogs.Info("RtrUpdate(): len(rtrFullLasts), serialNumber-1:", len(rtrFullLasts), serialNumber-1)
 
-	rtrIncrementals, err := DiffRtrFullToRtrIncremental(rtrFullCurs, rtrFullLasts, serialNumber)
+	// get rtr incrementals
+	rtrIncrementals, err := diffRtrFullToRtrIncremental(rtrFullCurs, rtrFullLasts, serialNumber)
 	if err != nil {
 		belogs.Error("RtrUpdate():GetRtrFull rtrFullLast fail: serialNumber-1:", serialNumber-1, err)
 		return
 	}
 	belogs.Info("RtrUpdate(): len(rtrIncrementals), serialNumber:", len(rtrIncrementals), serialNumber)
 
+	// update db
 	err = db.UpdateRtrFullAndIncrementalAndRsyncLogRtrStateEnd(serialNumber, rtrIncrementals, labRpkiSyncLogId, "rtred")
 	if err != nil {
 		belogs.Error("RtrUpdate():UpdateRtrFullAndIncremental fail:", err)
 		return
 	}
 
-	belogs.Info("RtrUpdate(): end")
+	// call serial notify to rtr client
+	go func() {
+		httpclient.Post("http", conf.String("rtr::httpserver"), conf.Int("rtr::httpport"),
+			"/rtr/server/sendserialnotify", "")
+	}()
+
+	belogs.Info("RtrUpdate(): end   time(s):", time.Now().Sub(start).Seconds())
 }
 
-func DiffRtrFullToRtrIncremental(rtrFullCurs, rtrFullLasts map[string]model.LabRpkiRtrFull,
+func diffRtrFullToRtrIncremental(rtrFullCurs, rtrFullLasts map[string]model.LabRpkiRtrFull,
 	serialNumber uint32) (rtrIncrementals []model.LabRpkiRtrIncremental, err error) {
-	belogs.Debug("DiffRtrFullToRtrIncremental(): len(rtrFullsCurs):", len(rtrFullCurs),
+	belogs.Debug("diffRtrFullToRtrIncremental(): len(rtrFullsCurs):", len(rtrFullCurs),
 		"   len(rtrFullLasts):", len(rtrFullLasts), "   serialNumber:", serialNumber)
 
 	rtrIncrementals = make([]model.LabRpkiRtrIncremental, 0, len(rtrFullCurs))
@@ -101,12 +115,12 @@ func DiffRtrFullToRtrIncremental(rtrFullCurs, rtrFullLasts map[string]model.LabR
 				SerialNumber: uint64(serialNumber),
 				SourceFrom:   valueCur.SourceFrom,
 			}
-			belogs.Debug("DiffRtrFullToRtrIncremental(): announce incremental:",
+			belogs.Debug("diffRtrFullToRtrIncremental(): announce incremental:",
 				jsonutil.MarshalJson(rtrIncremental))
 			rtrIncrementals = append(rtrIncrementals, rtrIncremental)
 		}
 	}
-	belogs.Debug("DiffRtrFullToRtrIncremental(): after announce, remain len(rtrFullLasts) :",
+	belogs.Debug("diffRtrFullToRtrIncremental(): after announce, remain len(rtrFullLasts) :",
 		len(rtrFullLasts))
 	// remain in last, is not show in cur, so this is withdraw
 	for _, valueLast := range rtrFullLasts {
@@ -119,10 +133,10 @@ func DiffRtrFullToRtrIncremental(rtrFullCurs, rtrFullLasts map[string]model.LabR
 			SerialNumber: uint64(serialNumber),
 			SourceFrom:   valueLast.SourceFrom,
 		}
-		belogs.Debug("DiffRtrFullToRtrIncremental(): withdraw incremental:",
+		belogs.Debug("diffRtrFullToRtrIncremental(): withdraw incremental:",
 			jsonutil.MarshalJson(rtrIncremental))
 		rtrIncrementals = append(rtrIncrementals, rtrIncremental)
 	}
-	belogs.Debug("DiffRtrFullToRtrIncremental(): serialNumber,len(rtrIncrementals):", serialNumber, len(rtrIncrementals))
+	belogs.Debug("diffRtrFullToRtrIncremental(): serialNumber,len(rtrIncrementals):", serialNumber, len(rtrIncrementals))
 	return rtrIncrementals, nil
 }

@@ -23,26 +23,21 @@ func GetChainCers(chains *chainmodel.Chains, wg *sync.WaitGroup) {
 	start := time.Now()
 	belogs.Debug("GetChainCers(): start:")
 
-	// get all cer
-	cerIds, err := db.GetChainCerIds()
+	chainCerSqls, err := db.GetChainCerSqls()
 	if err != nil {
-		belogs.Error("GetChainCers(): GetChainCerIds:", err)
+		belogs.Error("GetChainCers(): db.GetChainCerSqls:", err)
 		return
 	}
-	chains.CerIds = cerIds
-	belogs.Debug("GetChainCers(): len(cerIds):", len(cerIds))
+	belogs.Debug("GetChainCers(): GetChainCers, len(chainCerSqls):", len(chainCerSqls))
 
-	var cerWg sync.WaitGroup
-	chainCerCh := make(chan int, conf.Int("chain::chainConcurrentCount"))
-	for _, cerId := range cerIds {
-		cerWg.Add(1)
-		chainCerCh <- 1
-		go getChainCer(chains, cerId, &cerWg, chainCerCh)
-
+	for i := range chainCerSqls {
+		chainCer := chainCerSqls[i].ToChainCer()
+		belogs.Debug("GetChainCers():i, chainCer:", i, jsonutil.MarshalJson(chainCer))
+		chains.CerIds = append(chains.CerIds, chainCerSqls[i].Id)
+		chains.AddCer(&chainCer)
 	}
-	cerWg.Wait()
-	close(chainCerCh)
-	belogs.Debug("GetChainCers(): end, len(cerIds):", len(cerIds), "  time(s):", time.Now().Sub(start).Seconds())
+
+	belogs.Debug("GetChainCers(): end, len(chainCerSqls):", len(chainCerSqls), ",   len(chains.CerIds):", len(chains.CerIds), ",  time(s):", time.Now().Sub(start).Seconds())
 	return
 }
 
@@ -66,24 +61,6 @@ func ValidateCers(chains *chainmodel.Chains, wg *sync.WaitGroup) {
 	belogs.Info("ValidateCers():end len(cerIds):", len(cerIds), "  time(s):", time.Now().Sub(start).Seconds())
 }
 
-func getChainCer(chains *chainmodel.Chains, cerId uint64,
-	wg *sync.WaitGroup, chainCerCh chan int) {
-	defer func() {
-		wg.Done()
-		<-chainCerCh
-	}()
-
-	start := time.Now()
-	chainCer, err := db.GetChainCer(cerId)
-	if err != nil {
-		belogs.Error("getChainCer(): getChainCer fail:", cerId, err)
-		return
-	}
-
-	chains.AddCer(&chainCer)
-	belogs.Debug("getChainCer():cerId:", cerId, "  time(s):", time.Now().Sub(start).Seconds())
-
-}
 func validateCer(chains *chainmodel.Chains, cerId uint64, wg *sync.WaitGroup, chainCerCh chan int) {
 	defer func() {
 		wg.Done()
@@ -323,8 +300,6 @@ func ipAddressesIncludeInParent(parents []chainmodel.ChainIpAddress, self []chai
 	for _, s := range self {
 		include := false
 		for _, p := range parents {
-			belogs.Debug("ipAddressesIncludeInParent():compare: parent:[", p.RangeStart, p.RangeEnd,
-				"],  self:[", s.RangeStart, s.RangeEnd, "]")
 			include = iputil.IpRangeIncludeInParentRange(p.RangeStart, p.RangeEnd, s.RangeStart, s.RangeEnd)
 			if include {
 				belogs.Debug("ipAddressesIncludeInParent():is include: parent:[", p.RangeStart, p.RangeEnd,

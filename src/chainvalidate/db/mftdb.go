@@ -14,112 +14,41 @@ import (
 	"model"
 )
 
-func GetChainMftIds() (mftIds []uint64, err error) {
+func GetChainMftSqls() (chainCertSqls []chainmodel.ChainCertSql, err error) {
 	start := time.Now()
-	err = xormdb.XormEngine.Table("lab_rpki_mft").Cols("id").Find(&mftIds)
+	chainCertSqls = make([]chainmodel.ChainCertSql, 0, 50000)
+	// if add "order by ***", the sort_mem may not enough
+	sql := `select c.id, c.jsonAll, c.state, v.fileName as crlFileName, v.revocationTime 
+			from lab_rpki_mft c 
+			left join lab_rpki_crl_revoked_cert_view v on v.sn = c.jsonAll->>'$.eeCertModel.sn' and c.aki = v.aki   
+			group by c.id, c.jsonAll, c.state, v.fileName, v.revocationTime `
+	err = xormdb.XormEngine.SQL(sql).Find(&chainCertSqls)
 	if err != nil {
-		belogs.Error("GetChainCrlIds(): lab_rpki_mft id fail:", err)
+		belogs.Error("GetChainMftSqls(): lab_rpki_mft id fail:", err)
 		return nil, err
 	}
-	belogs.Debug("GetChainMftIds(): len(mftIds):", len(mftIds), "  time(s):", time.Now().Sub(start).Seconds())
-	return mftIds, nil
+	belogs.Info("GetChainMftSqls(): len(chainCertSqls):", len(chainCertSqls), "  time(s):", time.Now().Sub(start).Seconds())
+	return chainCertSqls, nil
 }
 
-func GetChainMft(mftId uint64) (chainMft chainmodel.ChainMft, err error) {
+func GetChainFileHashs(mftId uint64) (chainFileHashs []chainmodel.ChainFileHash, err error) {
 	start := time.Now()
-	chainMftSql := chainmodel.ChainMftSql{}
-	belogs.Debug("GetChainMft(): mftId:", mftId)
-	has, err := xormdb.XormEngine.Table("lab_rpki_mft").
-		Select("id,ski,aki,filePath,fileName,mftNumber,state,jsonAll->'$.eeCertModel.eeCertStart' as eeCertStart,jsonAll->'$.eeCertModel.eeCertEnd' as eeCertEnd").
-		Where("id=?", mftId).Get(&chainMftSql)
-	if err != nil {
-		belogs.Error("GetChainMft(): lab_rpki_mft fail:", mftId, err)
-		return chainMft, err
-	}
-	belogs.Debug("GetChainMft(): mftId:", mftId, "  has:", has)
-	chainMft = chainMftSql.ToChainMft()
-	belogs.Debug("GetChainMft(): mftId:", mftId, "    chainMft.Id:", chainMft.Id)
-
-	// get current stateModel
-	chainMft.StateModel = model.GetStateModelAndResetStage(chainMft.State, "chainvalidate")
-
-	// get filehash
-	chainMft.ChainFileHashs, err = getChainFileHashs(chainMft.Id, chainMft.Aki)
-	if err != nil {
-		belogs.Error("GetChainMft(): getChainFileHashs fail, chainMft.Id:", chainMft.Id, err)
-		return chainMft, err
-	}
-
-	// get sn in crl
-	chainMft.ChainSnInCrlRevoked, err = getMftEeSnInCrlRevoked(mftId)
-	if err != nil {
-		belogs.Error("GetChainMft(): getMftEeSnInCrlRevoked fail, chainMft.Id:", chainMft.Id, err)
-		return chainMft, err
-	}
-	belogs.Debug("GetChainMft(): mftId:", mftId, "    chainMft.Id:", chainMft.Id, "  time(s):", time.Now().Sub(start).Seconds())
-	return chainMft, nil
-}
-
-func getChainFileHashs(mftId uint64, aki string) (chainFileHashs []chainmodel.ChainFileHash, err error) {
-	start := time.Now()
-	err = xormdb.XormEngine.Table("lab_rpki_mft_file_hash").
-		Cols("file,hash").
-		Where("mftId=?", mftId).
-		OrderBy("id").Find(&chainFileHashs)
+	sql := `select  v.file as file, v.hash as hash,CONCAT(IFNULL(cer.filePath,''),IFNULL(crl.filePath,''),IFNULL(roa.filePath,'')) as path 
+			from lab_rpki_mft_file_hash_view v 
+				left join lab_rpki_cer cer on cer.aki=v.aki and cer.fileName=v.file 
+				left join lab_rpki_crl crl on crl.aki=v.aki and crl.fileName=v.file 
+				left join lab_rpki_roa roa on roa.aki=v.aki and roa.fileName=v.file 
+			where v.mftId=?  
+			order by v.mftFileHashId `
+	err = xormdb.XormEngine.SQL(sql, mftId).Find(&chainFileHashs)
 	if err != nil {
 		belogs.Error("getChainFileHashs(): lab_rpki_mft_file_hash fail:", err)
 		return chainFileHashs, err
 	}
 
-	for i := range chainFileHashs {
-		filePath, err := getPath(chainFileHashs[i].File, aki)
-		if err != nil {
-			belogs.Error("getChainFileHashs(): getPath fail:", chainFileHashs[i].File, aki)
-			return chainFileHashs, err
-		}
-		chainFileHashs[i].Path = filePath
-	}
-
-	belogs.Debug("getChainFileHashs():mftId:",
+	belogs.Info("GetChainFileHashs():mftId:",
 		mftId, "    len(chainFileHashs)", len(chainFileHashs), "  time(s):", time.Now().Sub(start).Seconds())
 	return chainFileHashs, nil
-}
-
-func getPath(fileName, aki string) (filePath string, err error) {
-	start := time.Now()
-
-	sqls := " select filePath from lab_rpki_cer where fileName='" + fileName + "' and aki='" + aki + "' " +
-		" union " +
-		" select filePath from lab_rpki_crl where fileName='" + fileName + "' and aki='" + aki + "' " +
-		" union " +
-		" select filePath from lab_rpki_mft where fileName='" + fileName + "' and aki='" + aki + "' " +
-		" union " +
-		" select filePath from lab_rpki_roa where fileName='" + fileName + "' and aki='" + aki + "' "
-	belogs.Debug("GetFileHash(): select fileName and aki:", fileName, aki)
-
-	_, err = xormdb.XormEngine.SQL(sqls).Get(&filePath)
-	if err != nil {
-		belogs.Error("getPath(): select fileName and aki fail :", sqls, err)
-		return "", err
-	}
-	belogs.Debug("getPath(): fileName, aki:", fileName, aki, "  time(s):", time.Now().Sub(start).Seconds())
-	return filePath, nil
-}
-
-func getMftEeSnInCrlRevoked(mftId uint64) (chainSnInCrlRevoked chainmodel.ChainSnInCrlRevoked, err error) {
-	start := time.Now()
-	sql := `select l.fileName, r.revocationTime from lab_rpki_mft c, lab_rpki_crl l, lab_rpki_crl_revoked_cert r
-	 where  c.jsonAll->'$.eeCertModel.sn' = r.sn and r.crlId = l.id and c.aki = l.aki and c.id=` + convert.ToString(mftId)
-	belogs.Debug("getMftEeSnInCrlRevoked(): mftId:", mftId, "   sql:", sql)
-	_, err = xormdb.XormEngine.
-		Sql(sql).Get(&chainSnInCrlRevoked)
-	if err != nil {
-		belogs.Error("getMftEeSnInCrlRevoked(): select fail:", mftId, err)
-		return chainSnInCrlRevoked, err
-	}
-	belogs.Debug("getMftEeSnInCrlRevoked(): mftId:", mftId, "  time(s):", time.Now().Sub(start).Seconds())
-	return chainSnInCrlRevoked, nil
-
 }
 
 func UpdateMfts(chains *chainmodel.Chains, wg *sync.WaitGroup) {

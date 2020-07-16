@@ -50,7 +50,10 @@ var intiSqls []string = []string{
 	`DROP TABLE IF EXISTS	lab_rpki_statistic`,
 	`DROP TABLE IF EXISTS	lab_rpki_conf`,
 	`DROP VIEW  IF EXISTS	lab_rpki_roa_ipaddress_view`,
+	`DROP VIEW  IF EXISTS	lab_rpki_crl_revoked_cert_view`,
+	`DROP VIEW  IF EXISTS	lab_rpki_mft_file_hash_view`,
 	`SET FOREIGN_KEY_CHECKS = 1`,
+
 	`
 #################################
 ## main table for cer/crl/roa/mft
@@ -552,7 +555,7 @@ CREATE TABLE lab_rpki_conf (
 
 	`
 #########################
-## create view
+## create view roa ipaddress 
 #########################
 CREATE VIEW lab_rpki_roa_ipaddress_view AS  
 select r.id AS id, 
@@ -573,7 +576,29 @@ order by
   i.maxLength, 
   r.asn, 
   r.id    
-`}
+`,
+
+	`
+#########################
+## create view crl revoked sn
+#########################
+CREATE VIEW lab_rpki_crl_revoked_cert_view AS   
+select l.id,  l.fileName, l.aki , r.revocationTime, r.sn
+from lab_rpki_crl l,  lab_rpki_crl_revoked_cert r 
+where l.id = r.crlId order by l.id
+`,
+
+	`
+#########################
+## create view mft file hash
+#########################
+CREATE VIEW lab_rpki_mft_file_hash_view AS   
+SELECT	m.id as mftId,	m.aki as aki,	fh.id as mftFileHashId,	fh.file as file, fh.hash as hash 
+FROM  lab_rpki_mft m , lab_rpki_mft_file_hash fh 
+WHERE m.id = fh.mftId 
+ORDER BY m.id, fh.id
+`,
+}
 
 var resetSqls []string = []string{
 	`truncate  table  lab_rpki_cer  `,

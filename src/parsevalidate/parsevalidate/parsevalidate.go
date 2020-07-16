@@ -219,7 +219,7 @@ func parseValidateCert(syncLogFileModel *parsevalidatemodel.SyncLogFileModel,
 	}
 	syncLogFileModel.CertModel = certModel
 	syncLogFileModel.StateModel = stateModel
-	belogs.Info("parseValidateCert(): parseValidateFile file :", file,
+	belogs.Debug("parseValidateCert(): parseValidateFile file :", file,
 		"   syncType:", syncLogFileModel.SyncType, "  time(s):", time.Now().Sub(start).Seconds())
 
 	return "", nil
@@ -291,71 +291,46 @@ func ParseValidateFile(certFile string) (certType string, certModel interface{},
 
 func ParseFile(certFile string) (certModel interface{}, err error) {
 	belogs.Debug("parseValidateFile(): parsevalidate start:", certFile)
-	var jsonAll string
 	if strings.HasSuffix(certFile, ".cer") {
 		cerModel, _, err := ParseValidateCer(certFile)
 		if err != nil {
 			belogs.Error("parseValidateFile(): ParseValidateCer:", certFile, "  err:", err)
 			return nil, err
 		}
+		cerModel.FilePath = ""
+		belogs.Debug("parseValidateFile(): certFile,cerModel:", certFile, cerModel)
+		return cerModel, nil
 
-		jsonAll = jsonutil.MarshalJson(cerModel)
-		parseCerModel := parsevalidatemodel.CerModel{}
-		err = jsonutil.UnmarshalJson(jsonAll, &parseCerModel)
-		if err != nil {
-			belogs.Error("parseValidateFile(): UnmarshalJson parseCerModel:", certFile, jsonAll, parseCerModel, "  err:", err)
-			return nil, err
-		}
-		belogs.Debug("parseValidateFile(): parseCerModel:", certFile, parseCerModel)
-		return parseCerModel, nil
 	} else if strings.HasSuffix(certFile, ".crl") {
 		crlModel, _, err := ParseValidateCrl(certFile)
 		if err != nil {
 			belogs.Error("parseValidateFile(): ParseValidateCrl:", certFile, "  err:", err)
 			return nil, err
 		}
+		crlModel.FilePath = ""
+		belogs.Debug("parseValidateFile(): certFile, crlModel:", certFile, crlModel)
+		return crlModel, nil
 
-		jsonAll = jsonutil.MarshalJson(crlModel)
-		parseCrlModel := parsevalidatemodel.CrlModel{}
-		err = jsonutil.UnmarshalJson(jsonAll, &parseCrlModel)
-		if err != nil {
-			belogs.Error("parseValidateFile(): UnmarshalJson parseCrlModel:", certFile, jsonAll, parseCrlModel, "  err:", err)
-			return nil, err
-		}
-		belogs.Debug("parseValidateFile(): parseCrlModel:", certFile, parseCrlModel)
-		return parseCrlModel, nil
 	} else if strings.HasSuffix(certFile, ".mft") {
 		mftModel, _, err := ParseValidateMft(certFile)
 		if err != nil {
 			belogs.Error("parseValidateFile(): ParseValidateMft:", certFile, "  err:", err)
 			return nil, err
 		}
+		mftModel.FilePath = ""
+		belogs.Debug("parseValidateFile(): certFile, mftModel:", certFile, mftModel)
+		return mftModel, nil
 
-		jsonAll = jsonutil.MarshalJson(mftModel)
-		parseMftModel := parsevalidatemodel.MftModel{}
-		err = jsonutil.UnmarshalJson(jsonAll, &parseMftModel)
-		if err != nil {
-			belogs.Error("parseValidateFile(): UnmarshalJson parseMftModel:", certFile, jsonAll, parseMftModel, "  err:", err)
-			return nil, err
-		}
-		belogs.Debug("parseValidateFile(): parseMftModel:", certFile, parseMftModel)
-		return parseMftModel, nil
 	} else if strings.HasSuffix(certFile, ".roa") {
 		roaModel, _, err := ParseValidateRoa(certFile)
 		if err != nil {
 			belogs.Error("parseValidateFile(): ParseValidateRoa:", certFile, "  err:", err)
 			return nil, err
 		}
+		roaModel.FilePath = ""
+		belogs.Debug("parseValidateFile(): certFile, roaModel:", certFile, roaModel)
+		return roaModel, nil
 
-		jsonAll = jsonutil.MarshalJson(roaModel)
-		parseRoaModel := parsevalidatemodel.RoaModel{}
-		err = jsonutil.UnmarshalJson(jsonAll, &parseRoaModel)
-		if err != nil {
-			belogs.Error("parseValidateFile(): UnmarshalJson parseRoaModel:", certFile, jsonAll, parseRoaModel, "  err:", err)
-			return nil, err
-		}
-		belogs.Debug("parseValidateFile(): parseRoaModel:", certFile, parseRoaModel)
-		return parseRoaModel, nil
 	} else {
 		return nil, errors.New("unknown file type")
 	}
