@@ -88,7 +88,7 @@ func DelCertByDelAndUpdate(syncLogFileModels *parsevalidatemodel.SyncLogFileMode
 		"       len(syncLogFileModels.UpdateCrlSyncLogFileModels):", len(syncLogFileModels.UpdateCrlSyncLogFileModels))
 	if len(syncLogFileModels.DelCrlSyncLogFileModels) > 0 || len(syncLogFileModels.UpdateCrlSyncLogFileModels) > 0 {
 		wg.Add(1)
-		go db.DelCrls(syncLogFileModels.UpdateCrlSyncLogFileModels, syncLogFileModels.UpdateCrlSyncLogFileModels, &wg)
+		go db.DelCrls(syncLogFileModels.DelCrlSyncLogFileModels, syncLogFileModels.UpdateCrlSyncLogFileModels, &wg)
 	}
 
 	// get "del" and "update" mft synclog files to del
