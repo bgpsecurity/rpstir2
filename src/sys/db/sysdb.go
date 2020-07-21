@@ -547,8 +547,8 @@ CREATE TABLE lab_rpki_conf (
   id int(10) unsigned NOT NULL primary key auto_increment,
   systemName varchar(256) NOT NULL  COMMENT 'system name',
   parameterName varchar(256) NOT NULL  COMMENT 'parameter name',
-  parameterValue varchar(256) NOT NULL COMMENT 'parameter value',
-  parameterDefaultValue varchar(256) NOT NULL COMMENT 'parameter default value',
+  parameterValue json COMMENT 'parameter value',
+  parameterDefaultValue json COMMENT 'parameter default value',
   updateTime datetime NOT NULL COMMENT 'update time'
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin comment='configuration of rpstir2'
 `,

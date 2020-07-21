@@ -132,23 +132,25 @@ func validateCer(chains *chainmodel.Chains, cerId uint64, wg *sync.WaitGroup, ch
 			}
 
 			// verify ipaddress prefix,if one parent is not found ,found the upper
+			// rfc8360: Validation Reconsidered, set warning
 			invalidIps := IpAddressesIncludeInParents(chainCer.ParentChainCerAlones, chainCer.ChainIpAddresses)
 			if len(invalidIps) > 0 {
 				belogs.Debug("validateCer(): cer ipaddress is overclaimed, fail, cerId:", chainCer.Id, jsonutil.MarshalJson(invalidIps), err)
 				stateMsg := model.StateMsg{Stage: "chainvalidate",
 					Fail:   "Certificate has overclaimed IP address not contained on the issuing certificate",
 					Detail: "invalid ip are " + jsonutil.MarshalJson(invalidIps)}
-				chainCer.StateModel.AddError(&stateMsg)
+				chainCer.StateModel.AddWarning(&stateMsg)
 			}
 
 			// verify ipaddress prefix,if one parent is not found ,found the upper
+			// rfc8360: Validation Reconsidered, set warning
 			invalidAsns := AsnsIncludeInParents(chainCer.ParentChainCerAlones, chainCer.ChainAsns)
 			if len(invalidAsns) > 0 {
 				belogs.Debug("validateCer(): cer asn is overclaimed, fail, cerId:", chainCer.Id, jsonutil.MarshalJson(invalidAsns), err)
 				stateMsg := model.StateMsg{Stage: "chainvalidate",
 					Fail:   "Certificate has overclaimed ASN not contained on the issuing certificate",
 					Detail: "invalid asns are " + jsonutil.MarshalJson(invalidAsns)}
-				chainCer.StateModel.AddError(&stateMsg)
+				chainCer.StateModel.AddWarning(&stateMsg)
 			}
 
 		} else {

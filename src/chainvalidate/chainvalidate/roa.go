@@ -106,6 +106,7 @@ func validateRoa(chains *chainmodel.Chains, roaId uint64, wg *sync.WaitGroup, ch
 		}
 
 		// verify ipaddress prefix,if one parent is not found ,found the upper
+		// rfc8360: Validation Reconsidered, set error
 		invalidIps := IpAddressesIncludeInParents(chainRoa.ParentChainCerAlones, chainRoa.ChainIpAddresses)
 		if len(invalidIps) > 0 {
 			belogs.Debug("validateRoa(): cer ipaddress is overclaimed, fail, roaId:", chainRoa.Id, jsonutil.MarshalJson(invalidIps))
@@ -116,6 +117,7 @@ func validateRoa(chains *chainmodel.Chains, roaId uint64, wg *sync.WaitGroup, ch
 		}
 
 		// verify ipaddress prefix,if one parent is not found ,found the upper
+		// rfc8360: Validation Reconsidered, set error
 		self := make([]chainmodel.ChainAsn, 0)
 		asn := chainmodel.ChainAsn{Asn: chainRoa.Asn}
 		self = append(self, asn)
