@@ -23,25 +23,26 @@ func GetChainMfts(chains *chainmodel.Chains, wg *sync.WaitGroup) {
 	start := time.Now()
 	belogs.Debug("GetChainMfts(): start:")
 
-	// get all mft
-	mftIds, err := db.GetChainMftIds()
+	chainMftSqls, err := db.GetChainMftSqls()
 	if err != nil {
-		belogs.Error("GetChainMfts(): GetChainMftIds fail:", err)
+		belogs.Error("GetChainMfts(): db.GetChainMftSqls:", err)
 		return
 	}
-	chains.MftIds = mftIds
-	belogs.Debug("GetChainMfts(): len(mftIds):", len(mftIds))
+	belogs.Debug("GetChainMfts(): GetChainMftSqls, len(chainMftSqls):", len(chainMftSqls))
 
-	var mftWg sync.WaitGroup
-	chainMftCh := make(chan int, conf.Int("chain::chainConcurrentCount"))
-	for _, mftId := range mftIds {
-		mftWg.Add(1)
-		chainMftCh <- 1
-		go getChainMft(chains, mftId, &mftWg, chainMftCh)
+	for i := range chainMftSqls {
+		chainMft := chainMftSqls[i].ToChainMft()
+		chainMft.ChainFileHashs, err = db.GetChainFileHashs(chainMft.Id)
+		belogs.Debug("GetChainMfts():i, chainMft:", i, jsonutil.MarshalJson(chainMft))
+		if err != nil {
+			belogs.Error("GetChainCers(): db.GetChainFileHashs fail:", chainMft.Id, err)
+			return
+		}
+		chains.MftIds = append(chains.MftIds, chainMftSqls[i].Id)
+		chains.AddMft(&chainMft)
 	}
-	mftWg.Wait()
-	close(chainMftCh)
-	belogs.Debug("GetChainMfts():end len(mftIds):", len(mftIds), "  time(s):", time.Now().Sub(start).Seconds())
+
+	belogs.Debug("GetChainMfts(): end len(chainMftSqls):", len(chainMftSqls), ",   len(chains.MftIds):", len(chains.MftIds), "  time(s):", time.Now().Sub(start).Seconds())
 	return
 }
 
@@ -64,25 +65,6 @@ func ValidateMfts(chains *chainmodel.Chains, wg *sync.WaitGroup) {
 	close(chainMftCh)
 
 	belogs.Info("ValidateMfts(): end, len(mftIds):", len(mftIds), "  time(s):", time.Now().Sub(start).Seconds())
-
-}
-
-func getChainMft(chains *chainmodel.Chains, mftId uint64,
-	wg *sync.WaitGroup, chainMftCh chan int) {
-	defer func() {
-		wg.Done()
-		<-chainMftCh
-	}()
-
-	start := time.Now()
-	chainMft, err := db.GetChainMft(mftId)
-	if err != nil {
-		belogs.Error("getChainMft(): GetChainMft fail:", mftId, err)
-		return
-	}
-
-	chains.AddMft(&chainMft)
-	belogs.Debug("getChainMft():chainMft mftId:", mftId, "  time(s):", time.Now().Sub(start).Seconds())
 
 }
 

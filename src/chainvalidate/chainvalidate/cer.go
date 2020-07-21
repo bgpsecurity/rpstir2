@@ -23,26 +23,21 @@ func GetChainCers(chains *chainmodel.Chains, wg *sync.WaitGroup) {
 	start := time.Now()
 	belogs.Debug("GetChainCers(): start:")
 
-	// get all cer
-	cerIds, err := db.GetChainCerIds()
+	chainCerSqls, err := db.GetChainCerSqls()
 	if err != nil {
-		belogs.Error("GetChainCers(): GetChainCerIds:", err)
+		belogs.Error("GetChainCers(): db.GetChainCerSqls:", err)
 		return
 	}
-	chains.CerIds = cerIds
-	belogs.Debug("GetChainCers(): len(cerIds):", len(cerIds))
+	belogs.Debug("GetChainCers(): GetChainCers, len(chainCerSqls):", len(chainCerSqls))
 
-	var cerWg sync.WaitGroup
-	chainCerCh := make(chan int, conf.Int("chain::chainConcurrentCount"))
-	for _, cerId := range cerIds {
-		cerWg.Add(1)
-		chainCerCh <- 1
-		go getChainCer(chains, cerId, &cerWg, chainCerCh)
-
+	for i := range chainCerSqls {
+		chainCer := chainCerSqls[i].ToChainCer()
+		belogs.Debug("GetChainCers():i, chainCer:", i, jsonutil.MarshalJson(chainCer))
+		chains.CerIds = append(chains.CerIds, chainCerSqls[i].Id)
+		chains.AddCer(&chainCer)
 	}
-	cerWg.Wait()
-	close(chainCerCh)
-	belogs.Debug("GetChainCers(): end, len(cerIds):", len(cerIds), "  time(s):", time.Now().Sub(start).Seconds())
+
+	belogs.Debug("GetChainCers(): end, len(chainCerSqls):", len(chainCerSqls), ",   len(chains.CerIds):", len(chains.CerIds), ",  time(s):", time.Now().Sub(start).Seconds())
 	return
 }
 
@@ -66,24 +61,6 @@ func ValidateCers(chains *chainmodel.Chains, wg *sync.WaitGroup) {
 	belogs.Info("ValidateCers():end len(cerIds):", len(cerIds), "  time(s):", time.Now().Sub(start).Seconds())
 }
 
-func getChainCer(chains *chainmodel.Chains, cerId uint64,
-	wg *sync.WaitGroup, chainCerCh chan int) {
-	defer func() {
-		wg.Done()
-		<-chainCerCh
-	}()
-
-	start := time.Now()
-	chainCer, err := db.GetChainCer(cerId)
-	if err != nil {
-		belogs.Error("getChainCer(): getChainCer fail:", cerId, err)
-		return
-	}
-
-	chains.AddCer(&chainCer)
-	belogs.Debug("getChainCer():cerId:", cerId, "  time(s):", time.Now().Sub(start).Seconds())
-
-}
 func validateCer(chains *chainmodel.Chains, cerId uint64, wg *sync.WaitGroup, chainCerCh chan int) {
 	defer func() {
 		wg.Done()
@@ -155,23 +132,25 @@ func validateCer(chains *chainmodel.Chains, cerId uint64, wg *sync.WaitGroup, ch
 			}
 
 			// verify ipaddress prefix,if one parent is not found ,found the upper
+			// rfc8360: Validation Reconsidered, set warning
 			invalidIps := IpAddressesIncludeInParents(chainCer.ParentChainCerAlones, chainCer.ChainIpAddresses)
 			if len(invalidIps) > 0 {
 				belogs.Debug("validateCer(): cer ipaddress is overclaimed, fail, cerId:", chainCer.Id, jsonutil.MarshalJson(invalidIps), err)
 				stateMsg := model.StateMsg{Stage: "chainvalidate",
 					Fail:   "Certificate has overclaimed IP address not contained on the issuing certificate",
 					Detail: "invalid ip are " + jsonutil.MarshalJson(invalidIps)}
-				chainCer.StateModel.AddError(&stateMsg)
+				chainCer.StateModel.AddWarning(&stateMsg)
 			}
 
 			// verify ipaddress prefix,if one parent is not found ,found the upper
+			// rfc8360: Validation Reconsidered, set warning
 			invalidAsns := AsnsIncludeInParents(chainCer.ParentChainCerAlones, chainCer.ChainAsns)
 			if len(invalidAsns) > 0 {
 				belogs.Debug("validateCer(): cer asn is overclaimed, fail, cerId:", chainCer.Id, jsonutil.MarshalJson(invalidAsns), err)
 				stateMsg := model.StateMsg{Stage: "chainvalidate",
 					Fail:   "Certificate has overclaimed ASN not contained on the issuing certificate",
 					Detail: "invalid asns are " + jsonutil.MarshalJson(invalidAsns)}
-				chainCer.StateModel.AddError(&stateMsg)
+				chainCer.StateModel.AddWarning(&stateMsg)
 			}
 
 		} else {
@@ -323,8 +302,6 @@ func ipAddressesIncludeInParent(parents []chainmodel.ChainIpAddress, self []chai
 	for _, s := range self {
 		include := false
 		for _, p := range parents {
-			belogs.Debug("ipAddressesIncludeInParent():compare: parent:[", p.RangeStart, p.RangeEnd,
-				"],  self:[", s.RangeStart, s.RangeEnd, "]")
 			include = iputil.IpRangeIncludeInParentRange(p.RangeStart, p.RangeEnd, s.RangeStart, s.RangeEnd)
 			if include {
 				belogs.Debug("ipAddressesIncludeInParent():is include: parent:[", p.RangeStart, p.RangeEnd,

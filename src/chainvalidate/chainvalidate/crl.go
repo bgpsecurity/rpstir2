@@ -21,25 +21,21 @@ func GetChainCrls(chains *chainmodel.Chains, wg *sync.WaitGroup) {
 	start := time.Now()
 	belogs.Debug("GetChainCrls(): start:")
 
-	// get all crl
-	crlIds, err := db.GetChainCrlIds()
+	chainCrlSqls, err := db.GetChainCrlSqls()
 	if err != nil {
-		belogs.Error("GetChainCrls(): GetChainCrlIds fail:", err)
+		belogs.Error("GetChainCrls(): db.GetChainCrlSqls:", err)
 		return
 	}
-	chains.CrlIds = crlIds
-	belogs.Debug("GetChainCrls(): len(crlIds):", len(crlIds))
+	belogs.Debug("GetChainCrls(): GetChainCers, len(chainCrlSqls):", len(chainCrlSqls))
 
-	var crlWg sync.WaitGroup
-	chainCrlCh := make(chan int, conf.Int("chain::chainConcurrentCount"))
-	for _, crlId := range crlIds {
-		crlWg.Add(1)
-		chainCrlCh <- 1
-		go getChainCrl(chains, crlId, &crlWg, chainCrlCh)
+	for i := range chainCrlSqls {
+		chainCrl := chainCrlSqls[i].ToChainCrl()
+		belogs.Debug("GetChainCrls():i, chainCrl:", i, jsonutil.MarshalJson(chainCrl))
+		chains.CrlIds = append(chains.CrlIds, chainCrlSqls[i].Id)
+		chains.AddCrl(&chainCrl)
 	}
-	crlWg.Wait()
-	close(chainCrlCh)
-	belogs.Debug("GetChainCrls(): end, len(crlIds):", len(crlIds), "  time(s):", time.Now().Sub(start).Seconds())
+
+	belogs.Debug("GetChainCrls(): end, len(chainCrlSqls):", len(chainCrlSqls), ",   len(chains.CrlIds):", len(chains.CrlIds), "  time(s):", time.Now().Sub(start).Seconds())
 	return
 }
 
@@ -62,25 +58,6 @@ func ValidateCrls(chains *chainmodel.Chains, wg *sync.WaitGroup) {
 	close(chainCrlCh)
 
 	belogs.Info("ValidateCrls(): end, len(crlIds):", len(crlIds), "  time(s):", time.Now().Sub(start).Seconds())
-}
-
-func getChainCrl(chains *chainmodel.Chains, crlId uint64,
-	wg *sync.WaitGroup, chainCrlCh chan int) {
-	defer func() {
-		wg.Done()
-		<-chainCrlCh
-	}()
-
-	start := time.Now()
-	chainCrl, err := db.GetChainCrl(crlId)
-	if err != nil {
-		belogs.Error("getChainCrl(): GetChainCrl fail:", crlId, err)
-		return
-	}
-
-	chains.AddCrl(&chainCrl)
-	belogs.Debug("getChainCrl():crlId:", crlId, "  time(s):", time.Now().Sub(start).Seconds())
-
 }
 
 func validateCrl(chains *chainmodel.Chains, crlId uint64, wg *sync.WaitGroup, chainCrlCh chan int) {
@@ -137,14 +114,10 @@ func validateCrl(chains *chainmodel.Chains, crlId uint64, wg *sync.WaitGroup, ch
 
 	// cer in crl(by sn) should not exists
 	if len(chainCrl.ShouldRevokedCerts) > 0 {
-		desc := ""
-		if err != nil {
-			desc = err.Error()
-			belogs.Debug("validateCrl(): still exist revoked cers, fail, crlId:", chainCrl.Id, jsonutil.MarshalJson(chainCrl.ShouldRevokedCerts))
-		}
+		belogs.Debug("validateCrl(): len(chainCrl.ShouldRevokedCerts) > 0, crlId:", chainCrl.Id, jsonutil.MarshalJson(chainCrl.ShouldRevokedCerts))
 		stateMsg := model.StateMsg{Stage: "chainvalidate",
 			Fail:   "Files on revocation list of CRL still exists",
-			Detail: desc + "  crl file is " + chainCrl.FileName + ", and should be revoked cers/roas/mfts are " + strings.Join(chainCrl.ShouldRevokedCerts, ", ")}
+			Detail: "crl file is " + chainCrl.FileName + ", and should be revoked cers/roas/mfts are " + strings.Join(chainCrl.ShouldRevokedCerts, ", ")}
 		chainCrl.StateModel.AddError(&stateMsg)
 	}
 

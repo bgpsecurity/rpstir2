@@ -421,17 +421,39 @@ func ParseByOpensslAns1ToX509(certFile string, results []string) (cerFile *os.Fi
 	}
 	fileByte = fileDecodeBase64Byte[cerStartIndex:cerEndIndex]
 	belogs.Debug("parseMftByOpenssl():len(fileByte):", len(fileByte))
-	fileByte, cerEndIndex = util.TrimSuffix00(fileByte, cerEndIndex)
-	belogs.Debug("parseMftByOpenssl():TrimSuffix00 len(fileByte):", len(fileByte))
+
+	// some need trim00, but others cannot trim00
+	fileByteTrim, cerEndIndexTrim := util.TrimSuffix00(fileByte, cerEndIndex)
+	belogs.Debug("parseMftByOpenssl():ForTrimSuffix00 len(fileByteTrim):", len(fileByteTrim))
 
 	cerFile, err = ioutil.TempFile("", certType) // temp file
 	if err != nil {
-		belogs.Error("ParseByOpensslAns1ToX509():ioutil.TempFile: ", certFile, err)
+		belogs.Error("ParseByOpensslAns1ToX509():ioutil.TempFile trime cerFile: ", cerFile, err)
+		return nil, nil, cerStartIndex, cerEndIndexTrim, err
+	}
+	belogs.Debug("ParseByOpensslAns1ToX509():trime cerFile: [cerStartIndex:cerEndIndexTrim]:", cerFile.Name(), cerStartIndex, cerEndIndexTrim)
+	cerFile.Write(fileByteTrim)
+
+	// test if need trim
+	_, err = GetResultsByOpensslX509(cerFile.Name())
+	if err == nil {
+		return cerFile, fileByteTrim, cerStartIndex, cerEndIndexTrim, nil
+	}
+
+	// if trim fil, the remove old file(trim)
+	osutil.CloseAndRemoveFile(cerFile)
+	belogs.Error("ParseByOpensslAns1ToX509():GetResultsByOpensslX509 trime cerFile fail, will create new cerFile(no trim). old trim file is: ", cerFile, err)
+
+	// and create new file(no trim)
+	cerFile, err = ioutil.TempFile("", certType) // temp file
+	if err != nil {
+		belogs.Error("ParseByOpensslAns1ToX509():ioutil.TempFile notrime cerFile: ", cerFile, err)
 		return nil, nil, cerStartIndex, cerEndIndex, err
 	}
-	belogs.Debug("ParseByOpensslAns1ToX509():cerfile: [cerStartIndex:cerEndIndex]:", cerFile.Name(), cerStartIndex, cerEndIndex)
+	belogs.Debug("ParseByOpensslAns1ToX509():notrime cerFile: [cerStartIndex:cerEndIndex]:", cerFile.Name(), cerStartIndex, cerEndIndex)
 	cerFile.Write(fileByte)
 	return cerFile, fileByte, cerStartIndex, cerEndIndex, nil
+
 }
 
 func ParseCrlModelByOpensslResults(results []string, crlModel *model.CrlModel) (err error) {

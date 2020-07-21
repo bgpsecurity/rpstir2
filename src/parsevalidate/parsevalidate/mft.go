@@ -60,6 +60,17 @@ func parseMftModel(certFile string, mftModel *model.MftModel, stateModel *model.
 	}
 	belogs.Debug("parseMftModel(): len(results):", len(results))
 
+	//get file hash
+	mftModel.FileHash, err = hashutil.Sha256File(certFile)
+	if err != nil {
+		belogs.Error("parseMftModel(): Sha256File: err: ", err, ": "+certFile)
+		stateMsg := model.StateMsg{Stage: "parsevalidate",
+			Fail:   "Fail to read file",
+			Detail: err.Error()}
+		stateModel.AddError(&stateMsg)
+		return err
+	}
+
 	// get mft hex
 	// first HEX DUMP
 	/*

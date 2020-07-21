@@ -15,7 +15,7 @@ import (
 )
 
 func ParseValidateStart(w rest.ResponseWriter, req *rest.Request) {
-	belogs.Info("ParseValidateStart(): start: ")
+	belogs.Debug("ParseValidateStart(): start: ")
 	go parsevalidate.ParseValidateStart()
 
 	w.WriteJson(httpserver.GetOkHttpResponse())

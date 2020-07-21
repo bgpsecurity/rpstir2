@@ -57,6 +57,17 @@ func parseRoaModel(certFile string, roaModel *model.RoaModel, stateModel *model.
 	}
 	belogs.Debug("parseRoaModel(): len(results):", len(results))
 
+	//get file hash
+	roaModel.FileHash, err = hashutil.Sha256File(certFile)
+	if err != nil {
+		belogs.Error("parseRoaModel(): Sha256File: err: ", err, ": "+certFile)
+		stateMsg := model.StateMsg{Stage: "parsevalidate",
+			Fail:   "Fail to read file",
+			Detail: err.Error()}
+		stateModel.AddError(&stateMsg)
+		return err
+	}
+
 	err = openssl.ParseRoaModelByOpensslResults(results, roaModel)
 	if err != nil {
 		belogs.Error("parseRoaModel(): ParseRoaModelByOpensslResults:  certFile:", certFile, "  err:", err, " will try parseMftModelByPacket")

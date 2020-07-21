@@ -14,8 +14,8 @@ import (
 //Try to store the error in statemode instead of returning err
 func ParseEeCertModel(certFile string, fileByte []byte, start int, end int) (eeCertModel model.EeCertModel, err error) {
 
-	eeCertModel.EeCertStartByte = uint64(start)
-	eeCertModel.EeCertEndByte = uint64(end)
+	eeCertModel.EeCertStart = uint64(start)
+	eeCertModel.EeCertEnd = uint64(end)
 	err = openssl.ParseEeCertModelByX509(fileByte, &eeCertModel)
 	if err != nil {
 		belogs.Error("ParseEeCertModel():ParseEeCertModelByX509 err:", err)

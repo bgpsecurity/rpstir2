@@ -1,7 +1,6 @@
 package db
 
 import (
-	"bytes"
 	"sync"
 	"time"
 
@@ -15,137 +14,28 @@ import (
 	"model"
 )
 
-func GetChainCrlIds() (crlIds []uint64, err error) {
+func GetChainCrlSqls() (chainCertSqls []chainmodel.ChainCertSql, err error) {
 	start := time.Now()
-	err = xormdb.XormEngine.Table("lab_rpki_crl").Cols("id").Find(&crlIds)
+	chainCertSqls = make([]chainmodel.ChainCertSql, 0, 50000)
+	// if add "order by ***", the sort_mem may not enough
+	sql := `select c.id, c.jsonAll, c.state ,cer.cerFiles,roa.roaFiles, mft.mftFiles 
+		from lab_rpki_crl c  
+		left join (select GROUP_CONCAT(CONCAT(c.filePath,c.fileName) SEPARATOR  ',') as cerFiles , v.id as crlId from lab_rpki_cer c, lab_rpki_crl_revoked_cert_view v 
+			 where c.sn = v.sn and c.aki =v.aki 
+			 group by v.id) cer on cer.crlId = c.id	
+		left join (select GROUP_CONCAT(CONCAT(c.filePath,c.fileName) SEPARATOR  ',') as roaFiles , v.id as crlId from lab_rpki_roa c, lab_rpki_crl_revoked_cert_view v 
+			 where c.jsonAll->>'$.eeCertModel.sn' = v.sn and c.aki =v.aki 
+			 group by v.id) roa on roa.crlId = c.id 
+		left join (select GROUP_CONCAT(CONCAT(c.filePath,c.fileName) SEPARATOR  ',') as mftFiles , v.id as crlId from lab_rpki_mft c, lab_rpki_crl_revoked_cert_view v 
+			 where c.jsonAll->>'$.eeCertModel.sn' = v.sn and c.aki =v.aki 
+			 group by v.id) mft on mft.crlId = c.id	 `
+	err = xormdb.XormEngine.SQL(sql).Find(&chainCertSqls)
 	if err != nil {
-		belogs.Error("GetChainCrlIds(): lab_rpki_crl id fail:", err)
+		belogs.Error("GetChainCrlSqls(): lab_rpki_crl id fail:", err)
 		return nil, err
 	}
-	belogs.Debug("GetChainCrlIds(): len(crlIds):", len(crlIds), "  time(s):", time.Now().Sub(start).Seconds())
-	return crlIds, nil
-}
-
-func GetChainCrl(crlId uint64) (chainCrl chainmodel.ChainCrl, err error) {
-	start := time.Now()
-
-	chainCrlSql := chainmodel.ChainCrlSql{}
-	has, err := xormdb.XormEngine.Table("lab_rpki_crl").
-		Cols("id,aki,filePath,fileName,state").
-		Where("id=?", crlId).Get(&chainCrlSql)
-	if err != nil {
-		belogs.Error("GetChainCrl(): lab_rpki_crl fail:", crlId, err)
-		return chainCrl, err
-	}
-	belogs.Debug("GetChainCrl(): crlId:", crlId, "  has:", has)
-	chainCrl = chainCrlSql.ToChainCrl()
-	belogs.Debug("GetChainCrl(): crlId:", crlId, "  chainCrl.Id:", chainCrl.Id)
-
-	// get current stateModel
-	chainCrl.StateModel = model.GetStateModelAndResetStage(chainCrl.State, "chainvalidate")
-
-	// get revoked certs
-	chainCrl.ChainRevokedCerts, err = getChainRevokedCerts(chainCrl.Id)
-	if err != nil {
-		belogs.Error("GetChainCrl(): getChainRevokedCerts fail, chainCrl.Id:", chainCrl.Id, err)
-		return chainCrl, err
-	}
-
-	chainCrl.ShouldRevokedCerts, err = getRevokedCerts(&chainCrl)
-	if err != nil {
-		belogs.Error("GetChainCrl(): getRevokedCerts fail, chainCrl.Id:", chainCrl.Id, err)
-		return chainCrl, err
-	}
-
-	belogs.Debug("GetChainCrl(): crlId:", crlId, "    chainCrl.Id:", chainCrl.Id, "  time(s):", time.Now().Sub(start).Seconds())
-	return chainCrl, nil
-}
-func getChainRevokedCerts(crlId uint64) (chainRevokedCerts []chainmodel.ChainRevokedCert, err error) {
-	start := time.Now()
-
-	err = xormdb.XormEngine.Table("lab_rpki_crl_revoked_cert").
-		Cols("sn").
-		Where("crlId=?", crlId).
-		OrderBy("id").Find(&chainRevokedCerts)
-	if err != nil {
-		belogs.Error("getChainRevokedCerts(): lab_rpki_crl_revoked_cert fail, crlId:", crlId, err)
-		return chainRevokedCerts, err
-	}
-	belogs.Debug("getChainRevokedCerts():crlId, len(chainFileHashs):", crlId, len(chainRevokedCerts), "  time(s):", time.Now().Sub(start).Seconds())
-	return chainRevokedCerts, nil
-}
-
-func getRevokedCerts(chainCrl *chainmodel.ChainCrl) (shouldRevokedCerts []string, err error) {
-	start := time.Now()
-	if len(chainCrl.ChainRevokedCerts) == 0 {
-		return
-	}
-
-	shouldRevokedCerts = make([]string, 0)
-
-	var b bytes.Buffer
-	for i, c := range chainCrl.ChainRevokedCerts {
-		if i < len(chainCrl.ChainRevokedCerts)-1 {
-			b.WriteString("'" + c.Sn + "',")
-		} else {
-			b.WriteString("'" + c.Sn + "'")
-		}
-	}
-	belogs.Debug("getRevokedCerts():revokedcerts sn :", b.String())
-
-	//get same sn in cer
-	sql := `select CONCAT(c.filePath,c.fileName) from lab_rpki_cer c  
-	 where c.sn in (` + b.String() + `) and c.aki = '` + chainCrl.Aki + `' order by c.id`
-	belogs.Debug("getRevokedCerts():select lab_rpki_cer, sql:", sql)
-	chainCers := make([]string, 0)
-	err = xormdb.XormEngine.
-		Sql(sql).
-		Find(&chainCers)
-	if err != nil {
-		belogs.Error("getRevokedCerts(): select lab_rpki_cer fail :", sql, err)
-		return nil, err
-	}
-	if len(chainCers) > 0 {
-		shouldRevokedCerts = append(shouldRevokedCerts, chainCers...)
-		belogs.Debug("getRevokedCerts(): shouldRevokedCerts append chainCers:", shouldRevokedCerts)
-	}
-
-	// get same sn in roa
-	sql = `select CONCAT(c.filePath,c.fileName) from lab_rpki_roa c  
-	 where c.jsonAll->'$.eeCertModel.sn' in (` + b.String() + `) and c.aki = '` + chainCrl.Aki + `' order by c.id`
-	belogs.Debug("getRevokedCerts():select lab_rpki_roa, sql:", sql)
-	chaiRoas := make([]string, 0)
-	err = xormdb.XormEngine.
-		Sql(sql).
-		Find(&chaiRoas)
-	if err != nil {
-		belogs.Error("getRevokedCerts(): select  lab_rpki_roa fail :", sql, err)
-		return nil, err
-	}
-	if len(chaiRoas) > 0 {
-		shouldRevokedCerts = append(shouldRevokedCerts, chaiRoas...)
-		belogs.Debug("getRevokedCerts(): shouldRevokedCerts append chaiRoas:", shouldRevokedCerts)
-	}
-
-	// get same sn in mft
-	sql = `select CONCAT(c.filePath,c.fileName) from lab_rpki_mft c  
-	 where c.jsonAll->'$.eeCertModel.sn' in (` + b.String() + `) and c.aki = '` + chainCrl.Aki + `' order by c.id`
-	belogs.Debug("getRevokedCerts():select lab_rpki_mft, sql:", sql)
-	chaiMfts := make([]string, 0)
-	err = xormdb.XormEngine.
-		Sql(sql).
-		Find(&chaiMfts)
-	if err != nil {
-		belogs.Error("getRevokedCerts(): select  lab_rpki_mft fail :", sql, err)
-		return nil, err
-	}
-	if len(chaiRoas) > 0 {
-		shouldRevokedCerts = append(shouldRevokedCerts, chaiMfts...)
-		belogs.Debug("getRevokedCerts(): shouldRevokedCerts append chaiMfts:", shouldRevokedCerts)
-	}
-
-	belogs.Debug("getRevokedCerts(): chainCrl.Id:", chainCrl.Id, "  time(s):", time.Now().Sub(start).Seconds())
-	return shouldRevokedCerts, nil
+	belogs.Info("GetChainCrlSqls(): len(chainCertSqls):", len(chainCertSqls), "  time(s):", time.Now().Sub(start).Seconds())
+	return chainCertSqls, nil
 }
 
 func UpdateCrls(chains *chainmodel.Chains, wg *sync.WaitGroup) {

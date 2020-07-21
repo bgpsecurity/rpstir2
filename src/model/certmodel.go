@@ -344,10 +344,12 @@ type EeCertModel struct {
 	// in roa, ee cert also has ip address
 	CerIpAddressModel CerIpAddressModel `json:"cerIpAddressModel"`
 
+	CrldpModel CrldpModel `json:"crldpModel"`
+
 	// in mft/roa , eecert start/end byte:
-	// eeCertByte:=OraByte[EeCertStartByte:EeCertEndByte] eeCertByte:=MftByte[EeCertStartByte:EeCertEndByte]
-	EeCertStartByte uint64 `json:"eeCertStart"`
-	EeCertEndByte   uint64 `json:"eeCertEnd"`
+	// eeCertByte:=OraByte[EeCertStart:EeCertEnd] eeCertByte:=MftByte[EeCertStart:EeCertEnd]
+	EeCertStart uint64 `json:"eeCertStart"`
+	EeCertEnd   uint64 `json:"eeCertEnd"`
 }
 
 /* rfc5280

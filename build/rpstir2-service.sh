@@ -11,7 +11,7 @@ function startFunc()
   rpstir2_program_dir=$(ReadINIfile $configFile rpstir2 programdir) 
   cd $rpstir2_program_dir/bin
   ./rpstir2-http &
-  ./rpstir2-rtr-tcp &
+  ./rpstir2-rtr &
   return 0
 }
 function stopFunc()
@@ -28,15 +28,15 @@ function stopFunc()
  	fi
   done
 
-  pidtcp=`ps -ef|grep 'rpstir2-rtr-tcp'|grep -v grep|awk '{print $2}'`
-  echo "The current rpstir2-rtr-tcp process id is $pidtcp"
+  pidtcp=`ps -ef|grep 'rpstir2-rtr'|grep -v grep|awk '{print $2}'`
+  echo "The current rpstir2-rtr process id is $pidtcp"
   for pid in $pidtcp
   do
     if [ "$pidtcp" = "" ]; then
       echo "pidtcp is null"
     else
       kill  $pidtcp
-      echo "shutdown rpstir2-rtr-tcp success"
+      echo "shutdown rpstir2-rtr success"
  	fi
   done
   return 0
@@ -96,7 +96,7 @@ function deployFunc()
   # init
   cd ${rpstir2_program_dir}/bin
   ./rpstir2-http &
-  ./rpstir2-rtr-tcp &
+  ./rpstir2-rtr &
   sysserver=$(ReadINIfile $configFile rpstir2 sysserver) 
   echo $sysserver 
   httpport=$(ReadINIfile $configFile rpstir2 httpport) 

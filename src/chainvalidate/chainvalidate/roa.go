@@ -21,26 +21,21 @@ func GetChainRoas(chains *chainmodel.Chains, wg *sync.WaitGroup) {
 	start := time.Now()
 	belogs.Debug("GetChainRoas(): start:")
 
-	// get all roaIds
-	roaIds, err := db.GetChainRoaIds()
+	chainRoaSqls, err := db.GetChainRoaSqls()
 	if err != nil {
-		belogs.Error("GetChainRoas(): GetChainRoaIds:", err)
+		belogs.Error("GetChainRoas(): db.GetChainRoaSqls:", err)
 		return
 	}
-	chains.RoaIds = roaIds
-	belogs.Debug("GetChainRoas(): len(roaIds):", len(roaIds))
+	belogs.Debug("GetChainRoas(): GetChainRoaSqls, len(chainRoaSqls):", len(chainRoaSqls))
 
-	var roaWg sync.WaitGroup
-	chainRoaCh := make(chan int, conf.Int("chain::chainConcurrentCount"))
-	for _, roaId := range roaIds {
-		roaWg.Add(1)
-		chainRoaCh <- 1
-		go getChainRoa(chains, roaId, &roaWg, chainRoaCh)
+	for i := range chainRoaSqls {
+		chainRoa := chainRoaSqls[i].ToChainRoa()
+		belogs.Debug("GetChainRoas():i, chainRoa:", i, jsonutil.MarshalJson(chainRoa))
+		chains.RoaIds = append(chains.RoaIds, chainRoaSqls[i].Id)
+		chains.AddRoa(&chainRoa)
 	}
-	roaWg.Wait()
-	close(chainRoaCh)
 
-	belogs.Debug("ChainValidateRoas(): end, len(roaIds):", len(roaIds), "  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Debug("GetChainRoas(): end, len(chainRoaSqls):", len(chainRoaSqls), ",   len(chains.RoaIds):", len(chains.RoaIds), "  time(s):", time.Now().Sub(start).Seconds())
 	return
 }
 
@@ -63,25 +58,6 @@ func ValidateRoas(chains *chainmodel.Chains, wg *sync.WaitGroup) {
 	close(chainRoaCh)
 
 	belogs.Info("ValidateRoas(): end, len(roaIds):", len(roaIds), "  time(s):", time.Now().Sub(start).Seconds())
-
-}
-
-func getChainRoa(chains *chainmodel.Chains, roaId uint64,
-	wg *sync.WaitGroup, chainRoaCh chan int) {
-	defer func() {
-		wg.Done()
-		<-chainRoaCh
-	}()
-
-	start := time.Now()
-	chainRoa, err := db.GetChainRoa(roaId)
-	if err != nil {
-		belogs.Error("getChainRoa(): GetChainRoa fail:", roaId, err)
-		return
-	}
-
-	chains.AddRoa(&chainRoa)
-	belogs.Debug("getChainRoa():chainRoa, roaId:", roaId, "  time(s):", time.Now().Sub(start).Seconds())
 
 }
 
@@ -130,6 +106,7 @@ func validateRoa(chains *chainmodel.Chains, roaId uint64, wg *sync.WaitGroup, ch
 		}
 
 		// verify ipaddress prefix,if one parent is not found ,found the upper
+		// rfc8360: Validation Reconsidered, set error
 		invalidIps := IpAddressesIncludeInParents(chainRoa.ParentChainCerAlones, chainRoa.ChainIpAddresses)
 		if len(invalidIps) > 0 {
 			belogs.Debug("validateRoa(): cer ipaddress is overclaimed, fail, roaId:", chainRoa.Id, jsonutil.MarshalJson(invalidIps))
@@ -140,6 +117,7 @@ func validateRoa(chains *chainmodel.Chains, roaId uint64, wg *sync.WaitGroup, ch
 		}
 
 		// verify ipaddress prefix,if one parent is not found ,found the upper
+		// rfc8360: Validation Reconsidered, set error
 		self := make([]chainmodel.ChainAsn, 0)
 		asn := chainmodel.ChainAsn{Asn: chainRoa.Asn}
 		self = append(self, asn)

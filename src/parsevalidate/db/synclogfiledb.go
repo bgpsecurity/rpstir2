@@ -1,7 +1,6 @@
 package db
 
 import (
-	"errors"
 	"time"
 
 	belogs "github.com/astaxie/beego/logs"
@@ -17,49 +16,19 @@ func GetSyncLogFileModelsBySyncLogId(labRpkiSyncLogId uint64) (syncLogFileModels
 
 	belogs.Debug("GetSyncLogFileModelsBySyncLogId():start")
 	dbSyncLogFileModels := make([]parsevalidatemodel.SyncLogFileModel, 0)
-	err = xormdb.XormEngine.Table("lab_rpki_sync_log_file").Select("id,syncLogId,filePath,fileName, fileType, syncType").
-		Where("state->'$.updateCertTable'=?", "notYet").And("syncLogId=?", labRpkiSyncLogId).
-		OrderBy("id").Find(&dbSyncLogFileModels)
+	sql := `select s.id,s.syncLogId,s.filePath,s.fileName, s.fileType, s.syncType, 
+				CONCAT(IFNULL(c.id,''),IFNULL(m.id,''),IFNULL(l.id,''),IFNULL(r.id,'')) as certId from lab_rpki_sync_log_file s 
+			left join lab_rpki_cer c on c.filePath = s.filePath and c.fileName = s.fileName  
+			left join lab_rpki_mft m on m.filePath = m.filePath and m.fileName = s.fileName  
+			left join lab_rpki_crl l on l.filePath = s.filePath and l.fileName = s.fileName  
+			left join lab_rpki_roa r on r.filePath = s.filePath and r.fileName = s.fileName 
+			where s.state->>'$.updateCertTable'='notYet' and s.syncLogId=? order by s.id `
+	err = xormdb.XormEngine.SQL(sql, labRpkiSyncLogId).Find(&dbSyncLogFileModels)
 	if err != nil {
 		belogs.Error("GetSyncLogFileModelsBySyncLogId(): Find fail:", err)
 		return nil, err
 	}
 	belogs.Debug("GetSyncLogFileModelsBySyncLogId(): len(dbSyncLogFileModels):", len(dbSyncLogFileModels))
-
-	var certId uint64
-	var tableName string
-	for i := range dbSyncLogFileModels {
-		// only "update" and "del" have certId
-		if dbSyncLogFileModels[i].SyncType == "add" {
-			continue
-		}
-		switch dbSyncLogFileModels[i].FileType {
-		case "cer":
-			tableName = "lab_rpki_cer"
-		case "crl":
-			tableName = "lab_rpki_crl"
-		case "mft":
-			tableName = "lab_rpki_mft"
-		case "roa":
-			tableName = "lab_rpki_roa"
-		default:
-			belogs.Error("GetSyncLogFileModelsBySyncLogId(): dbSyncLogFileModels[i].FileType fail:", dbSyncLogFileModels[i].FileType,
-				"   filePath, fileName:", dbSyncLogFileModels[i].FilePath, dbSyncLogFileModels[i].FileName)
-			return nil, errors.New("FileType is error," + dbSyncLogFileModels[i].FileType)
-		}
-		has, err := xormdb.XormEngine.Table(tableName).Where("filePath=?", dbSyncLogFileModels[i].FilePath).
-			And("fileName=?", dbSyncLogFileModels[i].FileName).Cols("id").Get(&certId)
-		if err != nil {
-			belogs.Error("GetSyncLogFileModelsBySyncLogId(): get id fail:", tableName,
-				"   filePath, fileName:", dbSyncLogFileModels[i].FilePath, dbSyncLogFileModels[i].FileName, err)
-			return nil, err
-		}
-		if has {
-			dbSyncLogFileModels[i].CertId = certId
-			belogs.Debug("GetSyncLogFileModelsBySyncLogId():get id: ", tableName,
-				dbSyncLogFileModels[i].FilePath, dbSyncLogFileModels[i].FileName, dbSyncLogFileModels[i].CertId)
-		}
-	}
 	syncLogFileModels = parsevalidatemodel.NewSyncLogFileModels(labRpkiSyncLogId, dbSyncLogFileModels)
 	belogs.Info("GetSyncLogFileModelsBySyncLogId(): end, len(dbSyncLogFileModels),  time(s):", len(dbSyncLogFileModels), time.Now().Sub(start).Seconds())
 	return syncLogFileModels, nil
