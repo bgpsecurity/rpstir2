@@ -102,8 +102,8 @@ function deployFunc()
   httpport=$(ReadINIfile $configFile rpstir2 httpport) 
   echo $httpport
   # curl
-  echo "curl -d \"\" http://$sysserver:$httpport/sys/init"
-  curl -d "" http://$sysserver:$httpport/sys/init
+  echo "curl -d '{\"sysStyle\": \"init\"}'  -H \"Content-type: application/json\" -X POST http://$sysserver:$httpport/sys/initreset"
+  curl -d '{"sysStyle": "init"}'  -H "Content-type: application/json" -X POST http://$sysserver:$httpport/sys/initreset
   
   cd $curpath
   return 0

@@ -26,15 +26,16 @@ RPSTIR2支持的功能包括：
 #### 2.1.1 安装OpenSSL
 OpenSSL版本需要 1.1.1b及以上，并且在编译OpenSSL时，需要设置"enable-rfc3779"，安装时需要用root安装
 
-```
-	wget --no-verbose --inet4-only https://www.openssl.org/source/openssl-1.1.1d.tar.gz 
-    tar xzvf openssl-1.1.1d.tar.gz 
-    cd openssl-1.1.1d 
-    config shared enable-rfc3779
-	make
-	make install
-	echo "export PATH=/usr/local/ssl/bin:$PATH" >> /root/.bashrc
-    source /root/.bashrc
+```shell
+$ wget --no-verbose --inet4-only
+https://www.openssl.org/source/openssl-1.1.1f.tar.gz 
+$ tar xzvf openssl-1.1.1f.tar.gz 
+$ cd openssl-1.1.1f
+$ config shared enable-rfc3779
+$ make
+$ make install
+$ echo "export PATH=/usr/local/ssl/bin:$PATH" >> /root/.bashrc
+$ source /root/.bashrc
 ```
  
     
@@ -42,14 +43,15 @@ OpenSSL版本需要 1.1.1b及以上，并且在编译OpenSSL时，需要设置"e
 MySQL版本需要8及以上，需要支持json。如果没有安装MySQL，需要根据操作平台，从https://dev.mysql.com/downloads/下载安装MySQL，
 安装好MySQL后，请登陆MySQL，按如下脚本，创建PRSTIR2的用户和数据表。 如果有修改，请在2.1.6对应修改RPSTIR2的配置。
 
+```mysql
+CREATE USER 'rpstir2'@'localhost' IDENTIFIED WITH mysql_native_password BY 'Rpstir-123';
+CREATE USER 'rpstir2'@'%' IDENTIFIED WITH mysql_native_password BY 'Rpstir-123';
+flush privileges;
 
-```
-	CREATE USER 'rpstir2'@'localhost' IDENTIFIED BY 'Rpstir-123';
-	CREATE USER 'rpstir2'@'%' IDENTIFIED BY 'Rpstir-123';
-	CREATE DATABASE rpstir2;
-	GRANT ALL PRIVILEGES ON rpstir2.* TO 'rpstir2'@'localhost'  with grant option;
-	GRANT ALL PRIVILEGES ON rpstir2.* TO 'rpstir2'@'%'  with grant option;
-	flush privileges;
+CREATE DATABASE rpstir2;
+GRANT ALL PRIVILEGES ON rpstir2.* TO 'rpstir2'@'localhost'  with grant option;
+GRANT ALL PRIVILEGES ON rpstir2.* TO 'rpstir2'@'%'  with grant option;
+flush privileges;
 ```
 
 #### 2.1.3 安装GoLang
@@ -79,6 +81,7 @@ $ mkdir -p /root/rpki/source/ /root/rpki/rpstir2  /root/rpki/data
 
 #### 2.1.5 下载RPSTIR2
 进入源代码目录，通过git下载RPSTIR2。
+
 ```shell
 $ cd /root/rpki/source/
 $ git clone https://github.com/bgpsecurity/rpstir2.git 
