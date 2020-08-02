@@ -5,16 +5,20 @@ source $(pwd)/read-conf.sh
 
 function helpFunc()
 {
-    echo "rpstir2-command.sh help:"
-    echo -e "1) ./rpstir2-command.sh rsync:                     it downloads rpki data by rsync, and need use '3)' to get result "
-    echo -e "2) ./rpstir2-command.sh crontab:                   it just uses in crontab, other functions are similar to rsync"
-    echo -e "3) ./rpstir2-command.sh rrdp:                      it downloads rpki data by rrdp(delta), and need use '3)' to get result " 
-    echo -e "4) ./rpstir2-command.sh states:                    when it shows 'state:end', it means rsync/rrdp is end" 
-    echo -e "5) ./rpstir2-command.sh results:                   it shows the valid, warning and invalid number of cer, roa, mft and crl respectively."
-    echo -e "6) ./rpstir2-command.sh reset:                     it resets all data in mysql and in local cache" 
-    echo -e "7) ./rpstir2-command.sh parse *.cer/crl/mft/roa:   it uploads file(*.cer/*.crl/*.mft/*.roa) to parse"
-    echo -e "8) ./rpstir2-command.sh slurm *.json:              it uploads slurm file(*.json)"
-    echo -e "*) ./rpstir2-command.sh:                           it shows this help"
+    echo "rpstir2-command.sh usage:"
+    echo "./rpstir2-command.sh <command> [arguments]"
+    echo "The commands are:"
+    echo -e "\t sync                     it downloads rpki data by sync or rrdp, and need use ' states' to get result "
+    echo -e "\t rsync                    it downloads rpki data only by rsync, and need use ' states' to get result "
+    echo -e "\t rrdp                     it downloads rpki data only by rrdp, and need use ' states' to get result "
+    echo -e "\t crontab                  it just uses in crontab, other functions are similar to sync"
+    echo -e "\t fullsync                 it forece full sync data, other functions are similar to sync" 
+    echo -e "\t states                   when it shows 'state:end', it means rsync/rrdp is end" 
+    echo -e "\t results                  it shows the valid, warning and invalid number of cer, roa, mft and crl respectively."
+    echo -e "\t resetall                 it resets all data in mysql and in local cache" 
+    echo -e "\t parse *.cer/crl/mft/roa  it uploads file(*.cer/*.crl/*.mft/*.roa) to parse"
+    echo -e "\t slurm *.json             it uploads slurm file(*.json)"
+    echo -e "\t help                     it shows this help"
 }
 
 function checkFile()
@@ -31,49 +35,57 @@ function checkFile()
 }
 
 case $1 in
-  init ) 
-    echo "start rpstir2 init"
+  sync)
+    echo "start rpstir2 sync"
     # `ReadINIfile "file" "[section]" "item" `
-    sysserver=`ReadINIfile "$configFile" "rpstir2" "sysserver" `
+    syncserver=`ReadINIfile "$configFile" "rpstir2" "syncserver" `
     httpport=`ReadINIfile "$configFile" "rpstir2" "httpport" `
     # curl
-    curl -d "" http://$sysserver:$httpport/sys/init
-    ;; 
-  rsyncstart | rsync)
+    curl -d '{"syncStyle": "sync"}'  -H "Content-type: application/json" -X POST http://$syncserver:$httpport/sync/start
+    ;;
+  rsync)
     echo "start rpstir2 rsync"
     # `ReadINIfile "file" "[section]" "item" `
     rsyncserver=`ReadINIfile "$configFile" "rpstir2" "rsyncserver" `
     httpport=`ReadINIfile "$configFile" "rpstir2" "httpport" `
     # curl
-    curl -d "" http://$rsyncserver:$httpport/rsync/start
+    curl -d '{"syncStyle": "rsync"}'  -H "Content-type: application/json" -X POST http://$rsyncserver:$httpport/sync/start
     ;;
-  crontab )
-    source /etc/profile
-    source /root/.bashrc
-    echo "start rpstir2 crontab rsync"
-    # `ReadINIfile "file" "[section]" "item" `
-    rsyncserver=`ReadINIfile "$configFile" "rpstir2" "rsyncserver" `
-    httpport=`ReadINIfile "$configFile" "rpstir2" "httpport" `
-    # curl
-    curl -d "" http://$rsyncserver:$httpport/rsync/start
-    ;;  
-  rrdpstart | rrdp | delta)
+  rrdp)
     echo "start rpstir2 rrdp"
     # `ReadINIfile "file" "[section]" "item" `
     rrdpserver=`ReadINIfile "$configFile" "rpstir2" "rrdpserver" `
     httpport=`ReadINIfile "$configFile" "rpstir2" "httpport" `
     # curl
-    curl -d "" http://$rrdpserver:$httpport/rrdp/start
-    ;;
-  states | sumstates)    
+    curl -d '{"syncStyle": "rrdp"}'  -H "Content-type: application/json" -X POST http://$rrdpserver:$httpport/sync/start
+    ;;        
+  crontab )
+    source /etc/profile
+    source /root/.bashrc
+    echo "start rpstir2 crontab sync"
+    # `ReadINIfile "file" "[section]" "item" `
+    rsyncserver=`ReadINIfile "$configFile" "rpstir2" "syncserver" `
+    httpport=`ReadINIfile "$configFile" "rpstir2" "httpport" `
+    # curl
+    curl -d '{"syncStyle": "sync"}'  -H "Content-type: application/json" -X POST http://$syncserver:$httpport/sync/start
+    ;; 
+  fullsync ) 
+    echo "start rpstir2 fullsync"
+    # `ReadINIfile "file" "[section]" "item" `
+    sysserver=`ReadINIfile "$configFile" "rpstir2" "sysserver" `
+    httpport=`ReadINIfile "$configFile" "rpstir2" "httpport" `
+    # curl
+    curl -d '{"sysStyle": "fullsync"}'  -H "Content-type: application/json" -X POST http://$sysserver:$httpport/sys/initreset
+    ;;  
+  states )    
     echo "start rpstir2 states"
     # `ReadINIfile "file" "[section]" "item" `
     sysserver=`ReadINIfile "$configFile" "rpstir2" "sysserver" `
     httpport=`ReadINIfile "$configFile" "rpstir2" "httpport" `
     # curl
-    curl -d "" http://$sysserver:$httpport/sys/summarystates
+    curl -d "" -X POST http://$sysserver:$httpport/sys/summarystates
     ;;   
-  results|result )    
+  results )    
     echo "start rpstir2 results"
     # `ReadINIfile "file" "[section]" "item" `
     sysserver=`ReadINIfile "$configFile" "rpstir2" "sysserver" `
@@ -82,17 +94,17 @@ case $1 in
     #echo $httpport
     # curl
     #echo "curl -d \"\" http://$sysserver:$httpport/sys/results"
-    curl -d "" http://$sysserver:$httpport/sys/results
+    curl -d "" -X POST http://$sysserver:$httpport/sys/results
     ;;      
-  reset ) 
-    echo "start rpstir2 reset"
+  resetall ) 
+    echo "start rpstir2 resetall"
     # `ReadINIfile "file" "[section]" "item" `
     sysserver=`ReadINIfile "$configFile" "rpstir2" "sysserver" `
     httpport=`ReadINIfile "$configFile" "rpstir2" "httpport" `
     # curl
-    curl -d "" http://$sysserver:$httpport/sys/reset
-    ;;  
-  parsefile | parse) 
+    curl -d '{"sysStyle": "resetall"}'  -H "Content-type: application/json" -X POST http://$sysserver:$httpport/sys/initreset
+    ;;     
+   parse) 
     echo "start rpstir2 parse"
     checkFile $2
     # `ReadINIfile "file" "[section]" "item" `
@@ -101,7 +113,7 @@ case $1 in
     # curl
     curl -F  "file=@${2}" http://$parsevalidateserver:$httpport/parsevalidate/parsefile
     ;;         
-  slurmupload | slurm) 
+  slurm) 
     echo "start rpstir2 slurm"
     checkFile $2
     # `ReadINIfile "file" "[section]" "item" `

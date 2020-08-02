@@ -8,53 +8,153 @@ import (
 
 	belogs "github.com/astaxie/beego/logs"
 	conf "github.com/cpusoft/goutil/conf"
+	httpclient "github.com/cpusoft/goutil/httpclient"
 	jsonutil "github.com/cpusoft/goutil/jsonutil"
+	osutil "github.com/cpusoft/goutil/osutil"
 	randutil "github.com/cpusoft/goutil/randutil"
 	rsyncutil "github.com/cpusoft/goutil/rsyncutil"
 
 	"model"
+	rsyncmodel "rsync/model"
 )
 
-func RsyncResult2LabRpkiSyncLogFile(rsyncResult *rsyncutil.RsyncResult, labRpkiSyncLogId uint64, body string) model.LabRpkiSyncLogFile {
-	belogs.Debug("RsyncResult2LabRpkiSyncLogFile():rsyncResult:", jsonutil.MarshalJson(rsyncResult), "    labRpkiSyncLogId:", labRpkiSyncLogId)
-	labRpkiSyncLogFile := model.LabRpkiSyncLogFile{}
-	labRpkiSyncLogFile.FileName = rsyncResult.FileName
-	labRpkiSyncLogFile.FilePath = rsyncResult.FilePath
-	labRpkiSyncLogFile.FileType = rsyncResult.FileType
-	labRpkiSyncLogFile.SyncLogId = labRpkiSyncLogId
-	labRpkiSyncLogFile.ParseValidateResultJson = string(body)
-	labRpkiSyncLogFile.SyncTime = rsyncResult.SyncTime
-	labRpkiSyncLogFile.SyncType = rsyncResult.RsyncType
+func rsyncByUrl(rsyncModelChan rsyncmodel.RsyncModelChan) {
+	defer func() {
+		belogs.Debug("RsyncByUrl():defer rpQueue.RsyncingParsingCount:", atomic.LoadInt64(&rpQueue.RsyncingParsingCount))
+		if atomic.LoadInt64(&rpQueue.RsyncingParsingCount) == 0 {
+			belogs.Debug("RsyncByUrl(): call rsyncmodel.RsyncParseEndChan{}, RsyncingParsingCount is 0")
+			rpQueue.RsyncParseEndChan <- rsyncmodel.RsyncParseEndChan{}
+		}
+	}()
 
-	// only roa need set to rtr. this is initial set. more detail set will after parse to set
-	rtr := "notNeed"
-	if rsyncResult.FileType == "roa" {
-		rtr = "notYet"
-	}
+	// start rsync and check err
+	// if have error, should set RsyncingParsingCount -1
+	start := time.Now()
 
-	state := model.LabRpkiSyncLogFileState{
-		Sync:            "finished",
-		UpdateCertTable: "notYet",
-		Rtr:             rtr,
+	// CurRsyncingCount should +1 and then -1
+	atomic.AddInt64(&rpQueue.CurRsyncingCount, 1)
+	belogs.Debug("RsyncByUrl(): before rsync, rsyncModelChan:", rsyncModelChan, "    CurRsyncingCount:", atomic.LoadInt64(&rpQueue.CurRsyncingCount))
+	rsyncDestPath, _, err := rsyncutil.RsyncQuiet(rsyncModelChan.Url, rsyncModelChan.Dest)
+	atomic.AddInt64(&rpQueue.CurRsyncingCount, -1)
+	belogs.Debug("RsyncByUrl(): rsync rsyncModelChan:", rsyncModelChan, "     CurRsyncingCount:", atomic.LoadInt64(&rpQueue.CurRsyncingCount),
+		"     rsyncDestPath:", rsyncDestPath)
+	if err != nil {
+		rpQueue.RsyncResult.FailUrls[rsyncModelChan.Url] = err.Error()
+		belogs.Error("RsyncByUrl():RsyncQuiet fail, rsyncModelChan.Url:", rsyncModelChan.Url, "   err:", err, "  time(s):", time.Now().Sub(start).Seconds())
+		belogs.Debug("RsyncByUrl():RsyncQuiet fail, before RsyncingParsingCount-1:", atomic.LoadInt64(&rpQueue.RsyncingParsingCount))
+		atomic.AddInt64(&rpQueue.RsyncingParsingCount, -1)
+		belogs.Debug("RsyncByUrl():RsyncQuiet fail, after RsyncingParsingCount-1:", atomic.LoadInt64(&rpQueue.RsyncingParsingCount))
+		return
 	}
-	labRpkiSyncLogFile.State = jsonutil.MarshalJson(state)
-	belogs.Debug("RsyncResult2LabRpkiSyncLogFile():convert rsyncResult to labRpkiSyncLogFile:", jsonutil.MarshalJson(labRpkiSyncLogFile))
-	return labRpkiSyncLogFile
+	belogs.Debug("RsyncByUrl(): rsync.Rsync url:", rsyncModelChan.Url, "   rsyncDestPath:", rsyncDestPath)
+
+	parseModelChan := rsyncmodel.ParseModelChan{FilePathName: rsyncDestPath}
+	belogs.Debug("RsyncByUrl():before parseModelChan:", parseModelChan, "   len(rpQueue.ParseModelChan):", len(rpQueue.ParseModelChan))
+	belogs.Info("RsyncByUrl(): rsync rsyncModelChan:", rsyncModelChan, "     CurRsyncingCount:", atomic.LoadInt64(&rpQueue.CurRsyncingCount),
+		"     rsyncDestPath:", rsyncDestPath, "  time(s):", time.Now().Sub(start).Seconds())
+
+	rpQueue.ParseModelChan <- parseModelChan
+
 }
 
-func AddSubCaRepositoryUrlsToRpQueue(subCaRepositoryUrls []string) {
+func parseCerFiles(parseModelChan rsyncmodel.ParseModelChan) {
+	defer func() {
+		belogs.Debug("parseCerFiles():defer rpQueue.RsyncingParsingCount:", atomic.LoadInt64(&rpQueue.RsyncingParsingCount))
+		if atomic.LoadInt64(&rpQueue.RsyncingParsingCount) == 0 {
+			belogs.Debug("parseCerFiles(): call rsyncmodel.RyncParseEndChan{}, RsyncingParsingCount is 0")
+			rpQueue.RsyncParseEndChan <- rsyncmodel.RsyncParseEndChan{}
+		}
+	}()
+	belogs.Debug("parseCerFiles(): parseModelChan:", parseModelChan)
+
+	// if have erorr, should set RsyncingParsingCount -1
+	// get all cer files, include subcer
+	m := make(map[string]string, 0)
+	m[".cer"] = ".cer"
+	cerFiles, err := osutil.GetAllFilesBySuffixs(parseModelChan.FilePathName, m)
+	if err != nil {
+		belogs.Error("parseCerFiles():GetAllFilesBySuffixs fail, parseModelChan.FilePathName:", parseModelChan.FilePathName, "   err:", err)
+		belogs.Debug("parseCerFiles():GetAllFilesBySuffixs, before RsyncingParsingCount-1:", atomic.LoadInt64(&rpQueue.RsyncingParsingCount))
+		atomic.AddInt64(&rpQueue.RsyncingParsingCount, -1)
+		belogs.Debug("parseCerFiles():GetAllFilesBySuffixs, after RsyncingParsingCount-1:", atomic.LoadInt64(&rpQueue.RsyncingParsingCount))
+		return
+	}
+	belogs.Debug("parseCerFiles(): len(cerFiles):", len(cerFiles))
+
+	// if there are no cer files, return
+	if len(cerFiles) == 0 {
+		belogs.Debug("parseCerFiles():len(cerFiles)==0, before RsyncingParsingCount-1:", atomic.LoadInt64(&rpQueue.RsyncingParsingCount))
+		atomic.AddInt64(&rpQueue.RsyncingParsingCount, -1)
+		belogs.Debug("parseCerFiles():len(cerFiles)==0, after RsyncingParsingCount-1:", atomic.LoadInt64(&rpQueue.RsyncingParsingCount))
+		return
+	}
+
+	// foreach every cerfiles to parseCerAndGetSubCaRepositoryUrl
+	subCaRepositoryUrls := make([]string, 0, len(cerFiles))
+	for _, cerFile := range cerFiles {
+		// just trigger sync ,no need save to db
+		subCaRepositoryUrl := parseCerAndGetSubCaRepositoryUrl(cerFile)
+		if len(subCaRepositoryUrl) > 0 {
+			subCaRepositoryUrls = append(subCaRepositoryUrls, subCaRepositoryUrl)
+		}
+	}
+	belogs.Debug("parseCerFiles(): len(subCaRepositoryUrls):", len(subCaRepositoryUrls))
+
+	// check rsync concurrent count, wait some time,
+	// the father rsyncingparsingcount -1 ,and the children rsyncingparsingcount + len()
+	belogs.Debug("parseCerFiles():will add subCaRepositoryUrls, before RsyncingParsingCount:", atomic.LoadInt64(&rpQueue.RsyncingParsingCount))
+	atomic.AddInt64(&rpQueue.RsyncingParsingCount, int64(len(subCaRepositoryUrls)-1))
+	belogs.Debug("parseCerFiles():will add subCaRepositoryUrls, after RsyncingParsingCount:", atomic.LoadInt64(&rpQueue.RsyncingParsingCount))
+	addSubCaRepositoryUrlsToRpQueue(subCaRepositoryUrls)
+}
+
+// call /parsevalidate/parse to parse cert, and save result
+func parseCerAndGetSubCaRepositoryUrl(cerFile string) (subCaRepositoryUrl string) {
+
+	// call parse, not need to save body to db
+	start := time.Now()
+	belogs.Debug("ParseCerAndGetSubCaRepositoryUrl():/parsevalidate/parsefilesimple cerFile:", cerFile)
+	resp, body, err := httpclient.PostFile("http", conf.String("rpstir2::parsevalidateserver"), conf.Int("rpstir2::httpport"),
+		"/parsevalidate/parsefilesimple", cerFile, "")
+	belogs.Debug("ParseCerAndGetSubCaRepositoryUrl():after /parsevalidate/parsefilesimple cerFile:", cerFile, len(body))
+
+	if err != nil {
+		rpQueue.RsyncResult.FailParseValidateCerts[cerFile] = err.Error()
+		belogs.Error("ParseCerAndGetSubCaRepositoryUrl(): filerepo file connecteds failed:", cerFile, "   err:", err)
+		return ""
+	}
+	defer resp.Body.Close()
+
+	// get parse result
+	parseCerSimpleResponse := model.ParseCerSimpleResponse{}
+	jsonutil.UnmarshalJson(string(body), &parseCerSimpleResponse)
+	belogs.Debug("ParseCerAndGetSubCaRepositoryUrl(): get from parsecert, parseCerSimpleResponse.Result:", parseCerSimpleResponse.Result)
+	if parseCerSimpleResponse.HttpResponse.Result != "ok" {
+		belogs.Error("ParseCerAndGetSubCaRepositoryUrl(): parsecert file failed:", cerFile, "   err:", parseCerSimpleResponse.HttpResponse.Msg)
+		rpQueue.RsyncResult.FailParseValidateCerts[cerFile] = parseCerSimpleResponse.HttpResponse.Msg
+		return ""
+	}
+
+	// get the sub repo url in cer, and send it to rpqueue
+	belogs.Info("ParseCerAndGetSubCaRepositoryUrl(): cerFile:", cerFile, "    caRepository:", parseCerSimpleResponse.ParseCerSimple.CaRepository,
+		"  time(s):", time.Now().Sub(start).Seconds())
+	return parseCerSimpleResponse.ParseCerSimple.CaRepository
+
+}
+
+func addSubCaRepositoryUrlsToRpQueue(subCaRepositoryUrls []string) {
 
 	rsyncConcurrentCount := conf.Int("rsync::rsyncConcurrentCount")
 	belogs.Debug("AddSubCaRepositoryUrlsToRpQueue(): len(rpQueue.RsyncModelChan)+len(subCaRepositoryUrls):", len(rpQueue.RsyncModelChan),
 		" + ", len(subCaRepositoryUrls), " compare rsync::rsyncConcurrentCount ", rsyncConcurrentCount)
 	for i, subCaRepositoryUrl := range subCaRepositoryUrls {
-		belogs.Debug("AddSubCaRepositoryUrlsToRpQueue():waitForRsyncUrl, rpQueue.RsyncingParsingCount: ",
+		belogs.Debug("AddSubCaRepositoryUrlsToRpQueue():will PreCheckRsyncUrl, rpQueue.RsyncingParsingCount: ",
 			atomic.LoadInt64(&rpQueue.RsyncingParsingCount),
 			"   subCaRepositoryUrl:", subCaRepositoryUrl)
 		if !rpQueue.PreCheckRsyncUrl(subCaRepositoryUrl) {
-			belogs.Debug("AddSubCaRepositoryUrlsToRpQueue():PreCheckRsyncUrl before RsyncingParsingCount-1:", atomic.LoadInt64(&rpQueue.RsyncingParsingCount))
+			belogs.Debug("AddSubCaRepositoryUrlsToRpQueue():PreCheckRsyncUrl have exists, before RsyncingParsingCount-1:", subCaRepositoryUrl, atomic.LoadInt64(&rpQueue.RsyncingParsingCount))
 			atomic.AddInt64(&rpQueue.RsyncingParsingCount, -1)
-			belogs.Debug("AddSubCaRepositoryUrlsToRpQueue():PreCheckRsyncUrl after RsyncingParsingCount-1:", atomic.LoadInt64(&rpQueue.RsyncingParsingCount))
+			belogs.Debug("AddSubCaRepositoryUrlsToRpQueue():PreCheckRsyncUrl have exists, after RsyncingParsingCount-1:", subCaRepositoryUrl, atomic.LoadInt64(&rpQueue.RsyncingParsingCount))
 			continue
 		}
 
@@ -67,51 +167,31 @@ func AddSubCaRepositoryUrlsToRpQueue(subCaRepositoryUrls []string) {
 			belogs.Debug("AddSubCaRepositoryUrlsToRpQueue():waitForRsyncUrl,i + rpQueue.curRsyncingCount: ", curRsyncingCount)
 			waitForRsyncUrl(i+curRsyncingCount, subCaRepositoryUrl)
 		}
+		belogs.Debug("AddSubCaRepositoryUrlsToRpQueue():will AddRsyncUrl subCaRepositoryUrl: ", subCaRepositoryUrl)
 		go rpQueue.AddRsyncUrl(subCaRepositoryUrl, conf.VariableString("rsync::destpath")+"/")
 	}
 }
 
-// rsync concurrent is more than rsync::rsyncConcurrentCount, should wait;;;
-// willAddRsyncCount is len(subCaRepositoryUrls, will add len(rpQueue.RsyncModelChan), than compare to  conf.Int("rsync::rsyncConcurrentCount")
-func WaitForRsyncParseEnd() bool {
-	waitCount := int(rpQueue.RsyncMisc.OkRsyncUrlLen) + len(rpQueue.RsyncMisc.FailRsyncUrls)
-	belogs.Debug("WaitForRsyncParseEnd():waitCount: ",
-		rpQueue.RsyncMisc.OkRsyncUrlLen, len(rpQueue.RsyncMisc.FailRsyncUrls))
-	for i := 0; i < waitCount*2; i++ {
-		belogs.Debug("WaitForRsyncParseEnd():waitCount rpQueue.RsyncingParsingCount,i: ",
-			atomic.LoadInt64(&rpQueue.RsyncingParsingCount), i)
-		if atomic.LoadInt64(&rpQueue.RsyncingParsingCount) != 0 {
-			belogs.Debug("WaitForRsyncParseEnd(): return false:   rpQueue.RsyncingParsingCount:",
-				atomic.LoadInt64(&rpQueue.RsyncingParsingCount))
-			return false
-		}
-		//will check again
-		time.Sleep(time.Duration(10) * time.Millisecond)
-	}
-	belogs.Debug("WaitForRsyncParseEnd(): return true, will end ")
-	return true
-}
-
 // will try fail urls  to rsync again
-func TryAgainFailRsyncUrls() bool {
+func tryAgainFailRsyncUrls() bool {
 	// try again
-	belogs.Debug("TryAgainFailRsyncUrls():try fail urls again: len(rpQueue.RsyncMisc.FailRsyncUrls):", len(rpQueue.RsyncMisc.FailRsyncUrls),
-		"      rpQueue.RsyncMisc.FailRsyncUrlsTryCount:", rpQueue.RsyncMisc.FailRsyncUrlsTryCount)
-	if len(rpQueue.RsyncMisc.FailRsyncUrls) > 0 &&
-		rpQueue.RsyncMisc.FailRsyncUrlsTryCount <= uint64(conf.Int("rsync::failRsyncUrlsTryCount")) {
-		failRsyncUrls := make([]string, 0, len(rpQueue.RsyncMisc.FailRsyncUrls))
-		for failRsyncUrl := range rpQueue.RsyncMisc.FailRsyncUrls {
+	belogs.Debug("TryAgainFailRsyncUrls():try fail urls again: len(rpQueue.RsyncResult.FailUrls):", len(rpQueue.RsyncResult.FailUrls),
+		"      rpQueue.RsyncResult.FailUrlsTryCount:", rpQueue.RsyncResult.FailUrlsTryCount)
+	if len(rpQueue.RsyncResult.FailUrls) > 0 &&
+		rpQueue.RsyncResult.FailUrlsTryCount <= uint64(conf.Int("rsync::failRsyncUrlsTryCount")) {
+		failRsyncUrls := make([]string, 0, len(rpQueue.RsyncResult.FailUrls))
+		for failRsyncUrl := range rpQueue.RsyncResult.FailUrls {
 			failRsyncUrls = append(failRsyncUrls, failRsyncUrl)
 			// delete saved url ,so can try again
 			rpQueue.DelRsyncAddedUrl(failRsyncUrl)
 		}
 		// clear fail rsync urls
-		rpQueue.RsyncMisc.FailRsyncUrls = make(map[string]string, 200)
+		rpQueue.RsyncResult.FailUrls = make(map[string]string, 200)
 
 		belogs.Debug("TryAgainFailRsyncUrls(): failRysncUrl:", len(failRsyncUrls), failRsyncUrls,
-			"   rpQueue.RsyncMisc.FailRsyncUrlsTryCount: ", rpQueue.RsyncMisc.FailRsyncUrlsTryCount)
-		atomic.AddUint64(&rpQueue.RsyncMisc.FailRsyncUrlsTryCount, 1)
-		belogs.Debug("TryAgainFailRsyncUrls():after  rpQueue.RsyncMisc.FailRsyncUrlsTryCount: ", rpQueue.RsyncMisc.FailRsyncUrlsTryCount)
+			"   rpQueue.RsyncResult.FailRsyncUrlsTryCount: ", rpQueue.RsyncResult.FailUrlsTryCount)
+		atomic.AddUint64(&rpQueue.RsyncResult.FailUrlsTryCount, 1)
+		belogs.Debug("TryAgainFailRsyncUrls():after  rpQueue.RsyncResult.FailUrlsTryCount: ", rpQueue.RsyncResult.FailUrlsTryCount)
 
 		// check rsync concurrent count, wait some time,
 		rsyncConcurrentCount := conf.Int("rsync::rsyncConcurrentCount")

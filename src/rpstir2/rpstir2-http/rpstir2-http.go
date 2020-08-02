@@ -17,7 +17,9 @@ import (
 	"rrdp/rrdphttp"
 	"rsync/rsynchttp"
 	"slurm/slurmhttp"
+	"sync/synchttp"
 	"sys/syshttp"
+	"tal/talhttp"
 )
 
 func main() {
@@ -54,23 +56,28 @@ func startServer() {
 
 	routes := make([]*rest.Route, 0)
 
-	// rsync
-	routes = append(routes, rest.Post("/rsync/start", rsynchttp.RsyncStart))
+	// tal
+	routes = append(routes, rest.Post("/tal/gettals", talhttp.GetTals))
+	//sync
+	routes = append(routes, rest.Post("/sync/start", synchttp.SyncStart))
+	routes = append(routes, rest.Post("/sync/rrdpresult", synchttp.RrdpResult))
+	routes = append(routes, rest.Post("/sync/rsyncresult", synchttp.RsyncResult))
 	// rrdp(delta)
 	routes = append(routes, rest.Post("/rrdp/start", rrdphttp.RrdpStart))
+	// rsync
+	routes = append(routes, rest.Post("/rsync/start", rsynchttp.RsyncStart))
 
 	// parsevalidate
 	routes = append(routes, rest.Post("/parsevalidate/start", parsevalidatehttp.ParseValidateStart))
 	routes = append(routes, rest.Post("/parsevalidate/file", parsevalidatehttp.ParseValidateFile))
 	routes = append(routes, rest.Post("/parsevalidate/parsefile", parsevalidatehttp.ParseFile))
-	routes = append(routes, rest.Post("/parsevalidate/filerepo", parsevalidatehttp.ParseValidateFileRepo))
+	routes = append(routes, rest.Post("/parsevalidate/parsefilesimple", parsevalidatehttp.ParseFileSimple))
 
 	// chainvalidate
 	routes = append(routes, rest.Post("/chainvalidate/start", chainvalidatehttp.ChainValidateStart))
 
 	// sys
-	routes = append(routes, rest.Post("/sys/init", syshttp.Init))
-	routes = append(routes, rest.Post("/sys/reset", syshttp.Reset))
+	routes = append(routes, rest.Post("/sys/initreset", syshttp.InitReset))
 	routes = append(routes, rest.Post("/sys/detailstates", syshttp.DetailStates))
 	routes = append(routes, rest.Post("/sys/summarystates", syshttp.SummaryStates))
 	routes = append(routes, rest.Post("/sys/results", syshttp.Results))

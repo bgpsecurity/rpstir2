@@ -189,7 +189,7 @@ $./rpstir2-serverice.sh stop
 ```
 
 #### 2.3.2 Download and validate RPKI objects
-You can download RPKI objects with rsync or RRDP protocol, and complete the subsequent validation procedure.
+You can download RPKI objects with rsync or RRDP protocol, and complete the subsequent validation procedure. Or when the parameter is sync, the system will automatically perform hybrid synchronization. 
 
 ##### (1) rsync
 
@@ -203,6 +203,13 @@ $ ./rpstir2-command.sh rsync
 ```shell
 $ cd /root/rpki/rpstir2/bin
 $ ./rpstir2-command.sh rrdp  
+```
+
+##### (3) sync
+
+```shell
+$ cd /root/rpki/rpstir2/bin
+$ ./rpstir2-command.sh sync  
 ```
 
 #### 2.3.3 Get download and validation status

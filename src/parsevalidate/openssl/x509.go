@@ -34,6 +34,7 @@ func ParseCerModelByX509(fileByte []byte, cerModel *model.CerModel) (err error) 
 	cerModel.KeyUsageModel.KeyUsage = int(cer.KeyUsage)
 	cerModel.ExtKeyUsages = util.ExtKeyUsagesToInts(cer.ExtKeyUsage)
 	cerModel.IsCa = cer.IsCA
+
 	//SHA256-RSA
 	//cerModel.SignatureAlgorithm = cer.SignatureAlgorithm.String()
 	//RSA

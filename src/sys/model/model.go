@@ -1,5 +1,15 @@
 package model
 
+type SysStyle struct {
+	// "init" :  will create all table;
+	// "fullsync": will remove current data to forece full sync data, and retain rtr/slurm/transfer data.
+	// "resetall" will remove all data including rtr/slurm/transfer;
+	SysStyle string `jsong:"sysStyle"`
+
+	//the syncStyle from sync,which call fullsync, it will return to sync
+	SyncStyle string `json:"syncStyle"`
+}
+
 type Results struct {
 	CerResult Result `json:"cerResult"`
 	CrlResult Result `json:"crlResult"`

@@ -100,7 +100,12 @@ func validateCrl(chains *chainmodel.Chains, crlId uint64, wg *sync.WaitGroup, ch
 			stateMsg := model.StateMsg{Stage: "chainvalidate",
 				Fail:   "Fail to be verified by its issuing certificate",
 				Detail: desc + "  parent cer file is " + chainCrl.ParentChainCerAlones[0].FileName + ",  crl file is " + chainCrl.FileName}
-			chainCrl.StateModel.AddError(&stateMsg)
+			// if subject doesnot match ,will just set warning
+			if strings.Contains(desc, "issuer name does not match subject from issuing certificate") {
+				chainCrl.StateModel.AddWarning(&stateMsg)
+			} else {
+				chainCrl.StateModel.AddError(&stateMsg)
+			}
 		}
 
 	} else {

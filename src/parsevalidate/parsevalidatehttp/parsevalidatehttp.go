@@ -93,16 +93,16 @@ func ParseFile(w rest.ResponseWriter, req *rest.Request) {
 }
 
 // upload file to parse to get ca repo
-func ParseValidateFileRepo(w rest.ResponseWriter, req *rest.Request) {
-	belogs.Debug("ParseValidateFileRepo(): start: tmpdir:", conf.String("parse::tmpdir"))
+func ParseFileSimple(w rest.ResponseWriter, req *rest.Request) {
+	belogs.Debug("ParseFileSimple(): start: tmpdir:", conf.String("parse::tmpdir"))
 	receiveFiles, err := httpserver.ReceiveFiles(conf.String("parse::tmpdir"), req)
 	defer httpserver.RemoveReceiveFiles(receiveFiles)
 
-	var caRepository string
+	var parseCerSimple model.ParseCerSimple
 	if err == nil {
 		if len(receiveFiles) > 0 {
 			for _, receiveFile := range receiveFiles {
-				caRepository, err = parsevalidate.ParseValidateFileRepo(receiveFile)
+				parseCerSimple, err = parsevalidate.ParseCerSimple(receiveFile)
 				break
 			}
 		} else {
@@ -110,14 +110,14 @@ func ParseValidateFileRepo(w rest.ResponseWriter, req *rest.Request) {
 		}
 	}
 	if err != nil {
-		belogs.Error("ParseValidateFileRepo(): ParseValidateFile: err:", err)
+		belogs.Error("ParseFileSimple(): ParseCerSimple: err:", err)
 		w.WriteJson(httpserver.GetFailHttpResponse(err))
 		return
 	}
 
-	parseCertRepoResponse := model.ParseCertRepoResponse{
-		HttpResponse: httpserver.GetOkHttpResponse(),
-		CaRepository: caRepository,
+	parseCerSimpleResponse := model.ParseCerSimpleResponse{
+		HttpResponse:   httpserver.GetOkHttpResponse(),
+		ParseCerSimple: parseCerSimple,
 	}
-	w.WriteJson(parseCertRepoResponse)
+	w.WriteJson(parseCerSimpleResponse)
 }

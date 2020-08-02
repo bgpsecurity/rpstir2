@@ -5,6 +5,7 @@ import (
 	"time"
 
 	belogs "github.com/astaxie/beego/logs"
+	convert "github.com/cpusoft/goutil/convert"
 	jsonutil "github.com/cpusoft/goutil/jsonutil"
 
 	"model"
@@ -80,13 +81,13 @@ func ValidateEeCertModel(stateModel *model.StateModel, eeCertModel *model.EeCert
 	if eeCertModel.NotBefore.After(now) {
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
 			Fail:   "NotBefore of EE is later than the current time",
-			Detail: ""}
+			Detail: "now is " + convert.Time2StringZone(now) + ", notBefore is " + convert.Time2StringZone(eeCertModel.NotBefore)}
 		stateModel.AddError(&stateMsg)
 	}
 	if eeCertModel.NotAfter.Before(now) {
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
 			Fail:   "NotAfter of EE is earlier than the current time",
-			Detail: ""}
+			Detail: "now is " + convert.Time2StringZone(now) + ", notAfter is " + convert.Time2StringZone(eeCertModel.NotAfter)}
 		stateModel.AddWarning(&stateMsg)
 	}
 	if eeCertModel.NotAfter.Before(eeCertModel.NotBefore) {
@@ -174,15 +175,15 @@ func ValidateSignerInfoModel(stateModel *model.StateModel, signerInfoModel *mode
 		stateModel.AddError(&stateMsg)
 	}
 	now := time.Now()
-	if signerInfoModel.SiningTime.IsZero() {
+	if signerInfoModel.SigningTime.IsZero() {
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
-			Fail:   "SiningTime of SignerInfo is empty",
+			Fail:   "SigningTime of SignerInfo is empty",
 			Detail: ""}
 		stateModel.AddError(&stateMsg)
 	}
-	if signerInfoModel.SiningTime.After(now) {
+	if signerInfoModel.SigningTime.After(now) {
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
-			Fail:   "SiningTime of SignerInfo is later than the current time",
+			Fail:   "SigningTime of SignerInfo is later than the current time",
 			Detail: ""}
 		stateModel.AddError(&stateMsg)
 	}

@@ -6,22 +6,21 @@ import (
 	belogs "github.com/astaxie/beego/logs"
 	jsonutil "github.com/cpusoft/goutil/jsonutil"
 	osutil "github.com/cpusoft/goutil/osutil"
+	xormdb "github.com/cpusoft/goutil/xormdb"
 	"github.com/go-xorm/xorm"
 
 	"model"
 )
 
 func InsertRsyncLogFile(session *xorm.Session,
-	labRpkiSyncLogId uint64,
-	url, syncType, pathFileName string, rrdpTime time.Time) error {
-	belogs.Debug("InsertRsyncLogFile():  labRpkiSyncLogId, rrdpTime, pathFileName:",
-		labRpkiSyncLogId, rrdpTime, pathFileName)
+	syncLogId uint64,
+	syncType, filePath, fileName, fileHash string, rrdpTime time.Time) error {
+	belogs.Debug("InsertRsyncLogFile():  syncLogId, rrdpTime, filePath, fileName,fileHash, rrdpTime:",
+		syncLogId, filePath, fileName, fileHash, rrdpTime)
 
-	filePath, fileName := osutil.GetFilePathAndFileName(pathFileName)
 	fileType := osutil.ExtNoDot(fileName)
-
 	rtr := "notNeed"
-	if osutil.ExtNoDot(url) == "roa" {
+	if osutil.ExtNoDot(fileName) == "roa" {
 		rtr = "notYet"
 	}
 
@@ -40,15 +39,15 @@ func InsertRsyncLogFile(session *xorm.Session,
 	sqlStr := `INSERT ignore into lab_rpki_sync_log_file
 	               (syncLogId, fileType,syncTime,
 	               filePath,fileName,syncType,
-	               state)
+	               syncStyle,state,fileHash)
 			 VALUES(?,?,?,
 			 ?,?,?,
-			 ?)`
-	_, err := session.Exec(sqlStr, labRpkiSyncLogId, fileType, rrdpTime,
+			 ?,?,?)`
+	_, err := session.Exec(sqlStr, syncLogId, fileType, rrdpTime,
 		filePath, fileName, syncType,
-		state)
+		"rrdp", state, xormdb.SqlNullString(fileHash))
 	if err != nil {
-		belogs.Error("InsertRsyncLogFile(): INSERT lab_rpki_sync_log_file fail, labRpkiSyncLogId:", labRpkiSyncLogId, err)
+		belogs.Error("InsertRsyncLogFile(): INSERT lab_rpki_sync_log_file fail, syncLogId:", syncLogId, err)
 		return err
 	}
 	return nil

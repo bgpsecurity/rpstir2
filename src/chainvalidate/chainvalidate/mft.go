@@ -107,7 +107,12 @@ func validateMft(chains *chainmodel.Chains, mftId uint64, wg *sync.WaitGroup, ch
 			stateMsg := model.StateMsg{Stage: "chainvalidate",
 				Fail:   "Fail to be verified by its issuing certificate",
 				Detail: desc + ",  parent cer file is " + chainMft.ParentChainCerAlones[0].FileName + ",  mft file is " + chainMft.FileName}
-			chainMft.StateModel.AddError(&stateMsg)
+			// if subject doesnot match ,will just set warning
+			if strings.Contains(desc, "issuer name does not match subject from issuing certificate") {
+				chainMft.StateModel.AddWarning(&stateMsg)
+			} else {
+				chainMft.StateModel.AddError(&stateMsg)
+			}
 
 		}
 	} else {
@@ -291,8 +296,8 @@ func validateMft(chains *chainmodel.Chains, mftId uint64, wg *sync.WaitGroup, ch
 			chainMft.Id, jsonutil.MarshalJson(chainMft.ChainSnInCrlRevoked.CrlFileName))
 		stateMsg := model.StateMsg{Stage: "chainvalidate",
 			Fail: "The EE of this Manifest is found on the revocation list of CRL",
-			Detail: chainMft.FileName + " is in " + chainMft.ChainSnInCrlRevoked.CrlFileName + "revoked cer list, " +
-				" and revoked time is " + convert.Time2String(chainMft.ChainSnInCrlRevoked.RevocationTime)}
+			Detail: chainMft.FileName + " is in " + chainMft.ChainSnInCrlRevoked.CrlFileName + " revoked cer list, " +
+				" and revoked time is " + convert.Time2StringZone(chainMft.ChainSnInCrlRevoked.RevocationTime)}
 		chainMft.StateModel.AddError(&stateMsg)
 	}
 

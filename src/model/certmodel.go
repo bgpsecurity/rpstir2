@@ -190,6 +190,19 @@ type ExtensionModel struct {
 	Name     string `json:"name"`
 }
 
+// sia.rpkiNotify/caRepository,
+// subjectPublicKeyInfo
+type ParseCerSimple struct {
+	RpkiNotify           string `json:"rpkiNotify"`
+	CaRepository         string `json:"caRepository"`
+	SubjectPublicKeyInfo []byte `json:"subjectPublicKeyInfo"`
+}
+
+type SyncStyle struct {
+	// sync/rrdp/rsync
+	SyncStyle string `json:"syncStyle"`
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // CRL
 type CrlModel struct {
@@ -376,7 +389,7 @@ type SignerInfoModel struct {
 	// 1.2.840.113549.1.9.3 --> roa:1.2.840.113549.1.9.16.1.24  mft:1.2.840.113549.1.9.16.1.26
 	ContentType string `json:"contentType"`
 	// 1.2.840.113549.1.9.5
-	SiningTime time.Time `json:"siningTime"`
+	SigningTime time.Time `json:"signingTime"`
 	// 1.2.840.113549.1.9.4
 	MessageDigest string `json:"messageDigest"`
 }

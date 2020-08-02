@@ -5,14 +5,24 @@ import (
 	"github.com/cpusoft/go-json-rest/rest"
 	httpserver "github.com/cpusoft/goutil/httpserver"
 
+	"model"
 	"rsync/rsync"
 )
 
-// start to rsync
+// start to rsync from sync
 func RsyncStart(w rest.ResponseWriter, req *rest.Request) {
-	belogs.Info("rsyncStart(): start")
+	belogs.Debug("RsyncStart(): start")
 
-	go rsync.Start()
+	syncUrls := model.SyncUrls{}
+	err := req.DecodeJsonPayload(&syncUrls)
+	belogs.Debug("RsyncStart(): syncUrls:", syncUrls, err)
+	if err != nil {
+		belogs.Error("RsyncStart(): DecodeJsonPayload:", err)
+		w.WriteJson(httpserver.GetFailHttpResponse(err))
+		return
+	}
+
+	go rsync.Start(&syncUrls)
 
 	w.WriteJson(httpserver.GetOkHttpResponse())
 }

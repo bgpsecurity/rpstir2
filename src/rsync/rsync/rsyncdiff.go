@@ -6,55 +6,47 @@ import (
 
 	belogs "github.com/astaxie/beego/logs"
 	conf "github.com/cpusoft/goutil/conf"
-	httpclient "github.com/cpusoft/goutil/httpclient"
 	osutil "github.com/cpusoft/goutil/osutil"
 	xormdb "github.com/cpusoft/goutil/xormdb"
 
-	"rsync/db"
+	db "rsync/db"
 	rsyncmodel "rsync/model"
 )
 
-func FoundDiffFiles(labRpkiSyncLogId uint64) {
+func FoundDiffFiles(labRpkiSyncLogId uint64) (addFilesLen, delFilesLen, updateFilesLen, noChangeFilesLen uint64, err error) {
 	start := time.Now()
-	belogs.Info("FoundDiffFiles():start:")
-	// save starttime to lab_rpki_sync_log
-	err := db.UpdateRsyncLogDiffStateStart(labRpkiSyncLogId, "diffing")
-	if err != nil {
-		belogs.Error("Start():InsertRsyncLogRsyncStat fail:", err)
-		return
-	}
+	belogs.Info("FoundDiffFiles():start,  labRpkiSyncLogId:", labRpkiSyncLogId)
 
 	filesFromDb, err := getFilesHashFromDb()
 	if err != nil {
 		belogs.Error("FoundDiffFiles():GetFilesHashFromDb fail:", err)
-		return
+		return 0, 0, 0, 0, err
 	}
 	filesFromDisk, err := getFilesHashFromDisk()
 	if err != nil {
 		belogs.Error("FoundDiffFiles():GetFilesHashFromDiskfail:", err)
-		return
+		return 0, 0, 0, 0, err
 	}
 	addFiles, delFiles, updateFiles, noChangeFiles, err := diffFiles(filesFromDb, filesFromDisk)
 	if err != nil {
 		belogs.Error("FoundDiffFiles():diffFiles:", err)
-		return
+		return 0, 0, 0, 0, err
 	}
-	belogs.Debug("diffFiles(): len(addFiles):", len(addFiles), "  len(delFiles):", len(delFiles),
-		"  len(updateFiles):", len(updateFiles), "  len(noChangeFiles):", len(noChangeFiles))
 
-	err = db.UpdateRsyncLogDiffStateEnd(labRpkiSyncLogId, "diffed", filesFromDb,
-		filesFromDisk, addFiles, delFiles, updateFiles, noChangeFiles)
+	err = db.InsertRsyncLogFiles(labRpkiSyncLogId, addFiles, delFiles, updateFiles)
 	if err != nil {
-		belogs.Error("FoundDiffFiles():UpdateRsyncLogDiffState fail:", err)
-		return
+		belogs.Error("FoundDiffFiles():InsertRsyncLogFiles:", err)
+		return 0, 0, 0, 0, err
 	}
-	belogs.Info("FoundDiffFiles():end , will call parsevalidate,  time(s):", time.Now().Sub(start).Seconds())
 
-	// call parse validate
-	go func() {
-		httpclient.Post("http", conf.String("rpstir2::parsevalidateserver"), conf.Int("rpstir2::httpport"),
-			"/parsevalidate/start", "")
-	}()
+	addFilesLen = uint64(len(addFiles))
+	delFilesLen = uint64(len(delFiles))
+	updateFilesLen = uint64(len(updateFiles))
+	noChangeFilesLen = uint64(len(noChangeFiles))
+
+	belogs.Info("FoundDiffFiles():end, addFilesLen, delFilesLen, updateFilesLen, noChangeFilesLen: ",
+		addFilesLen, delFilesLen, updateFilesLen, noChangeFilesLen, "  time(s):", time.Now().Sub(start).Seconds())
+	return addFilesLen, delFilesLen, updateFilesLen, noChangeFilesLen, nil
 }
 
 // db is old, disk is new

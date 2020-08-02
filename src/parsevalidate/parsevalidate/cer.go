@@ -1,6 +1,7 @@
 package parsevalidate
 
 import (
+	"crypto/x509"
 	"fmt"
 	"net/url"
 	"strings"
@@ -734,21 +735,37 @@ func validateCerlModel(cerModel *model.CerModel, stateModel *model.StateModel) (
 	return nil
 }
 
-func ParseValidateCerRepo(certFile string) (caRepository string, err error) {
+func ParseCerSimple(certFile string) (parseCerSimple model.ParseCerSimple, err error) {
 	// results will be used
+	belogs.Debug("ParseCerSimple(): certFile:", certFile)
 	results, err := openssl.GetResultsByOpensslX509(certFile)
 	if err != nil {
-		belogs.Error("ParseValidateCerRepo(): GetResultsByOpensslX509: err: ", err, ": "+certFile)
-		return "", err
+		belogs.Error("ParseCerSimple(): GetResultsByOpensslX509: err: ", err, ": "+certFile)
+		return parseCerSimple, err
 	}
-	belogs.Debug("ParseValidateCerRepo(): GetResultsByOpensslX509 len(results):", len(results))
+	belogs.Debug("ParseCerSimple(): GetResultsByOpensslX509 len(results):", certFile, len(results))
 
 	//  SIA
 	_, siaModel, err := openssl.ParseAiaModelSiaModelByOpensslResults(results)
 	if err != nil {
-		belogs.Error("ParseValidateCerRepo(): ParseAiaModelSiaModelByOpensslResults: err: ", err, ": "+certFile)
-		return "", err
+		belogs.Error("ParseCerSimple(): ParseAiaModelSiaModelByOpensslResults: certFile,  err: ", certFile, err)
+		return parseCerSimple, err
 	}
-	belogs.Debug("ParseValidateCerRepo():certFile, CaRepository ", certFile, siaModel.CaRepository)
-	return siaModel.CaRepository, nil
+	belogs.Debug("ParseCerSimple():certFile, siaModel ", certFile, siaModel)
+	parseCerSimple.RpkiNotify = siaModel.RpkiNotify
+	parseCerSimple.CaRepository = siaModel.CaRepository
+
+	// get SubjectPublicKeyInfo
+	_, fileDecodeBase64Byte, err := util.ReadFileAndDecodeBase64(certFile)
+	if err != nil {
+		belogs.Error("ParseCerSimple(): ReadFileAndDecodeBase64:certFile,  err: ", certFile, err)
+		return parseCerSimple, err
+	}
+	cer, err := x509.ParseCertificate(fileDecodeBase64Byte)
+	if err != nil {
+		belogs.Error("ParseCerSimple(): ParseCertificate: certFile,  err: ", certFile, err)
+		return parseCerSimple, err
+	}
+	parseCerSimple.SubjectPublicKeyInfo = cer.RawSubjectPublicKeyInfo
+	return parseCerSimple, nil
 }

@@ -5,8 +5,11 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	belogs "github.com/astaxie/beego/logs"
+
+	"model"
 )
 
 // queue for rsync url
@@ -30,27 +33,27 @@ type RsyncParseQueue struct {
 	rsyncAddedUrlsMutex *sync.RWMutex
 	rsyncAddedUrls      *list.List
 
-	// other saved. rsynclog,
+	// other save to synclog,
 	LabRpkiSyncLogId uint64
-	RsyncMisc        RsyncMisc
+	RsyncResult      model.SyncResult
 }
 
 func NewQueue() *RsyncParseQueue {
 	rq := &RsyncParseQueue{}
 
-	rq.RsyncModelChan = make(chan RsyncModelChan, 90000)
-	rq.ParseModelChan = make(chan ParseModelChan, 90000)
-	rq.RsyncParseEndChan = make(chan RsyncParseEndChan, 90000)
+	rq.RsyncModelChan = make(chan RsyncModelChan, 100)
+	rq.ParseModelChan = make(chan ParseModelChan, 100)
+	rq.RsyncParseEndChan = make(chan RsyncParseEndChan, 100)
 	rq.RsyncingParsingCount = 0
 	rq.CurRsyncingCount = 0
 
 	rq.rsyncAddedUrlsMutex = new(sync.RWMutex)
 	rq.rsyncAddedUrls = list.New()
 
-	rq.RsyncMisc.OkRsyncUrlLen = 0
-	rq.RsyncMisc.FailRsyncUrls = make(map[string]string, 200)
-	rq.RsyncMisc.FailRsyncUrlsTryCount = 0
-	rq.RsyncMisc.FailParseValidateCerts = make(map[string]string, 200)
+	rq.RsyncResult.StartTime = time.Now()
+	rq.RsyncResult.OkUrls = make([]string, 0, 100000)
+	rq.RsyncResult.FailUrls = make(map[string]string, 100)
+	rq.RsyncResult.FailParseValidateCerts = make(map[string]string, 100)
 	return rq
 }
 
@@ -60,8 +63,9 @@ func (r *RsyncParseQueue) Close() {
 	close(r.RsyncParseEndChan)
 	r.rsyncAddedUrlsMutex = nil
 	r.rsyncAddedUrls = nil
-	r.RsyncMisc.FailRsyncUrls = nil
-	r.RsyncMisc.FailParseValidateCerts = nil
+	r.RsyncResult.OkUrls = nil
+	r.RsyncResult.FailUrls = nil
+	r.RsyncResult.FailParseValidateCerts = nil
 	r = nil
 
 }
@@ -155,4 +159,16 @@ func (r *RsyncParseQueue) AddRsyncUrl(url string, dest string) {
 	belogs.Debug("AddRsyncUrl():after send to rsyncModelChan:", rsyncModelChan,
 		"   len(r.RsyncModelChan):", len(r.RsyncModelChan), "   len(rsyncAddedUrls):", r.rsyncAddedUrls.Len())
 	return
+}
+
+func (r *RsyncParseQueue) GetRsyncUrls() (urls []string) {
+	r.rsyncAddedUrlsMutex.Lock()
+	defer r.rsyncAddedUrlsMutex.Unlock()
+	urls = make([]string, 0, r.rsyncAddedUrls.Len())
+	belogs.Debug("GetRsyncUrls():r.rsyncAddedUrls.Len():", r.rsyncAddedUrls.Len())
+	for e := r.rsyncAddedUrls.Front(); e != nil; e = e.Next() {
+		urls = append(urls, e.Value.(RsyncModelChan).Url)
+	}
+	belogs.Debug("GetRsyncUrls():urls:", urls)
+	return urls
 }

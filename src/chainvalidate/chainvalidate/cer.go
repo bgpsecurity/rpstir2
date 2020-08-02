@@ -1,6 +1,7 @@
 package chainvalidate
 
 import (
+	"strings"
 	"sync"
 	"time"
 
@@ -128,7 +129,12 @@ func validateCer(chains *chainmodel.Chains, cerId uint64, wg *sync.WaitGroup, ch
 					Fail: "Fail to be verified by its issuing certificate",
 					Detail: desc + ",  parent cer file is " + chainCer.ParentChainCerAlones[0].FileName +
 						",  this cer file is " + chainCer.FileName}
-				chainCer.StateModel.AddError(&stateMsg)
+				// if subject doesnot match ,will just set warning
+				if strings.Contains(desc, "issuer name does not match subject from issuing certificate") {
+					chainCer.StateModel.AddWarning(&stateMsg)
+				} else {
+					chainCer.StateModel.AddError(&stateMsg)
+				}
 			}
 
 			// verify ipaddress prefix,if one parent is not found ,found the upper
@@ -203,8 +209,8 @@ func validateCer(chains *chainmodel.Chains, cerId uint64, wg *sync.WaitGroup, ch
 			chainCer.Id, jsonutil.MarshalJson(chainCer.ChainSnInCrlRevoked.CrlFileName))
 		stateMsg := model.StateMsg{Stage: "chainvalidate",
 			Fail: "Certificate is found on revocation list of CRL",
-			Detail: chainCer.FileName + " is in " + chainCer.ChainSnInCrlRevoked.CrlFileName + "revoked cer list, " +
-				" and revoked time is " + convert.Time2String(chainCer.ChainSnInCrlRevoked.RevocationTime)}
+			Detail: chainCer.FileName + " is in " + chainCer.ChainSnInCrlRevoked.CrlFileName + " revoked cer list, " +
+				" and revoked time is " + convert.Time2StringZone(chainCer.ChainSnInCrlRevoked.RevocationTime)}
 		chainCer.StateModel.AddError(&stateMsg)
 	}
 

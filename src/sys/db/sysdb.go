@@ -331,6 +331,7 @@ CREATE TABLE lab_rpki_roa_ee_ipaddress (
 ################################################
 CREATE TABLE lab_rpki_sync_log (
   id int(10) unsigned not null primary key auto_increment,
+  syncState json,
   rsyncState json,
   rrdpState json,
   diffState json,
@@ -347,22 +348,16 @@ CREATE TABLE lab_rpki_sync_log_file (
   id int(10) unsigned not null primary key auto_increment,
   syncLogId int(10) unsigned not null  COMMENT 'foreign key  references lab_rpki_sync_log(id)',
   syncTime datetime NOT NULL   COMMENT 'sync time for every file',
+  syncStyle varchar(16) NOT NULL COMMENT 'rrdp/rsync' , 
   syncType varchar(16) NOT NULL COMMENT 'add/del/update' ,
   fileType varchar(16) NOT NULL  COMMENT 'cer/roa/mft/crl/',
-  ski varchar(128) ,
-  aki varchar(128) ,
   filePath varchar(512) NOT NULL ,
   fileName varchar(128) NOT NULL ,
-  parseValidateResultJson json COMMENT 'parse json info' ,
   jsonAll json COMMENT 'cert json info from cer/crl/mft/roa.jsonAll' ,
-  lastJsonAll json COMMENT 'when update, last cert json info from cer/crl/mft/roa.jsonAll' ,
   fileHash varchar(512) ,
-  lastFileHash varchar(512) ,
   state json  COMMENT '{"sync":"finished","updateCertTable":"notYet/finished"}: have synced ,have published to main table',
   key  fileType (fileType),
   key  syncType (syncType),
-  key  ski (ski),
-  key  aki (aki),
   key  filePath (filePath),
   key  fileName (fileName),
   unique  synclogfileFilePathFileName (filePath,fileName,syncLogId),
@@ -600,7 +595,7 @@ ORDER BY m.id, fh.id
 `,
 }
 
-var resetSqls []string = []string{
+var fullSyncSqls []string = []string{
 	`truncate  table  lab_rpki_cer  `,
 	`truncate  table  lab_rpki_cer_sia `,
 	`truncate  table  lab_rpki_cer_aia  `,
@@ -618,8 +613,11 @@ var resetSqls []string = []string{
 	`truncate  table  lab_rpki_roa_aia  `,
 	`truncate  table  lab_rpki_roa_ipaddress  `,
 	`truncate  table  lab_rpki_roa_ee_ipaddress  `,
-	`truncate  table  lab_rpki_sync_log_file  `,
 	`truncate  table  lab_rpki_sync_rrdp_log  `,
+}
+var resetAllOtherSqls []string = []string{
+	`truncate  table  lab_rpki_statistic  `,
+	`truncate  table  lab_rpki_sync_log_file  `,
 	`truncate  table  lab_rpki_sync_log  `,
 	`truncate  table  lab_rpki_rtr_session  `,
 	`truncate  table  lab_rpki_rtr_serial_number  `,
@@ -628,11 +626,14 @@ var resetSqls []string = []string{
 	`truncate  table  lab_rpki_rtr_incremental  `,
 	`truncate  table  lab_rpki_slurm  `,
 	`truncate  table  lab_rpki_slurm_file  `,
-	`truncate  table  lab_rpki_statistic  `,
+
 	//	`truncate  table  lab_rpki_stat_roa_competation  `,
 	`truncate  table  lab_rpki_transfer_target  `,
 	`truncate  table  lab_rpki_transfer_log  `,
+	`truncate  table  lab_rpki_conf  `,
+}
 
+var optimizeSqls []string = []string{
 	`optimize  table  lab_rpki_cer  `,
 	`optimize  table  lab_rpki_cer_sia `,
 	`optimize  table  lab_rpki_cer_aia  `,
@@ -663,10 +664,11 @@ var resetSqls []string = []string{
 	`optimize  table  lab_rpki_statistic  `,
 	//	`optimize  table  lab_rpki_stat_roa_competation  `,
 	`optimize  table  lab_rpki_transfer_target  `,
-	`optimize  table  lab_rpki_transfer_log  `}
+	`optimize  table  lab_rpki_transfer_log  `,
+	`optimize  table  lab_rpki_conf `}
 
 // when isInit is true, then init all db. otherwise will reset all db
-func InitResetDb(isInit bool) error {
+func InitResetDb(sysStyle sysmodel.SysStyle) error {
 	session, err := xormdb.NewSession()
 	if err != nil {
 		return err
@@ -674,7 +676,7 @@ func InitResetDb(isInit bool) error {
 	defer session.Close()
 
 	//truncate all table
-	err = initResetDb(session, isInit)
+	err = initResetDb(session, sysStyle)
 	if err != nil {
 		return xormdb.RollbackAndLogError(session, "truncateDb(): truncateDb fail", err)
 	}
@@ -688,7 +690,7 @@ func InitResetDb(isInit bool) error {
 }
 
 // need to init sessionId when it is empty
-func initResetDb(session *xorm.Session, isInit bool) error {
+func initResetDb(session *xorm.Session, sysStyle sysmodel.SysStyle) error {
 	defer func(session1 *xorm.Session) {
 		sql := `set foreign_key_checks=1;`
 		if _, err := session1.Exec(sql); err != nil {
@@ -705,10 +707,14 @@ func initResetDb(session *xorm.Session, isInit bool) error {
 
 	// delete rtr_session
 	var sqls []string
-	if isInit {
+	if sysStyle.SysStyle == "init" {
 		sqls = intiSqls
-	} else {
-		sqls = resetSqls
+	} else if sysStyle.SysStyle == "fullsync" || sysStyle.SysStyle == "resetall" {
+		sqls = fullSyncSqls
+		if sysStyle.SysStyle == "resetall" {
+			sqls = append(sqls, resetAllOtherSqls...)
+		}
+		sqls = append(sqls, optimizeSqls...)
 	}
 	for _, sq := range sqls {
 		if _, err := session.Exec(sq); err != nil {
@@ -717,17 +723,18 @@ func initResetDb(session *xorm.Session, isInit bool) error {
 		}
 	}
 
-	// generate new session random, insert lab_rpki_rtr_session
-	rand.Seed(time.Now().UnixNano())
-	rtrSession := model.LabRpkiRtrSession{}
-	rtrSession.SessionId = uint64(rand.Intn(999) + 99)
-	rtrSession.CreateTime = time.Now()
-	belogs.Info("initResetDb():insert lab_rpki_rtr_session:  ", rtrSession)
-	if _, err := session.Insert(&rtrSession); err != nil {
-		belogs.Error("initResetDb():insert rtr_session fail", err)
-		return err
+	// when resetall,  generate new session random, insert lab_rpki_rtr_session
+	if sysStyle.SysStyle == "resetall" {
+		rand.Seed(time.Now().UnixNano())
+		rtrSession := model.LabRpkiRtrSession{}
+		rtrSession.SessionId = uint64(rand.Intn(999) + 99)
+		rtrSession.CreateTime = time.Now()
+		belogs.Info("initResetDb():insert lab_rpki_rtr_session:  ", rtrSession)
+		if _, err := session.Insert(&rtrSession); err != nil {
+			belogs.Error("initResetDb():insert rtr_session fail", err)
+			return err
+		}
 	}
-
 	return nil
 }
 
