@@ -27,11 +27,10 @@ RPSTIR2支持的功能包括：
 OpenSSL版本需要 1.1.1b及以上，并且在编译OpenSSL时，需要设置"enable-rfc3779"，安装时需要用root安装
 
 ```shell
-$ wget --no-verbose --inet4-only
-https://www.openssl.org/source/openssl-1.1.1f.tar.gz 
+$ wget --no-verbose --inet4-only https://www.openssl.org/source/openssl-1.1.1f.tar.gz 
 $ tar xzvf openssl-1.1.1f.tar.gz 
 $ cd openssl-1.1.1f
-$ config shared enable-rfc3779
+$ ./config shared enable-rfc3779
 $ make
 $ make install
 $ echo "export PATH=/usr/local/ssl/bin:$PATH" >> /root/.bashrc
@@ -66,15 +65,14 @@ $ echo "export PATH=$PATH:/usr/local/go/bin:/usr/local/goext/bin" >> /root/.bash
 $ source  /root/.bashrc
 ```
 #### 2.1.4 创建RPSTIR2目录
-请创建如下三个目录，分别是源程序目录、安装目录和数据目录。如果有修改，则在2.1.6修改RPSTIR2的配置
+请创建如下2个目录，分别是安装目录和数据目录。如果有修改，则在2.1.6修改RPSTIR2的配置
 
 ```shell
-$ mkdir -p /root/rpki/source/ /root/rpki/rpstir2  /root/rpki/data 
+$ mkdir -p /root/rpki/ /root/rpki/rpstir2  /root/rpki/data 
 ```
 
 | Directory  | Path                      |
 | :--------: | ------------------------- |
-| sourcedir  | /root/rpki/source/rpstir2 |
 | programdir | /root/rpki/rpstir2        |
 | datadir    | /root/rpki/data           |
 
@@ -88,16 +86,15 @@ $ git clone https://github.com/bgpsecurity/rpstir2.git
 ```
 
 #### 2.1.6 配置RPSTIR2
-RPSTIR2的配置文件在/root/rpki/source/rpstir2/conf/project.conf，按实际情况，修改 目录。并按MySQL实际配置，修改MySQL参数。
+RPSTIR2的配置文件在/root/rpki/rpstir2/conf/project.conf，并按MySQL实际配置，修改MySQL参数。
 其中RTR端口为8082，路由器将链接到此端口。如果端口有冲突可以修改端口。
 
 ```shell
-$ cd /root/rpki/source/rpstir2/conf
+$ cd /root/rpki/rpstir2/conf
 $ vim project.conf
 
 [rpstir2]
 programdir=/root/rpki/rpstir2
-sourcedir=/root/rpki/source/rpstir2
 datadir=/root/rpki/data
 httpport=8080
 httpsport=8081
@@ -115,13 +112,13 @@ tcpserver=127.0.0.1
 tcpport=8082
 ```
 
-备注：如果在安装后，想再修改RPSTIR2的配置，则修改安装目录下的配置文件/root/rpki/rpstir2/conf/project.conf, 然后重启RPSTIR2.
+
 
 ##### 2.1.7 部署RPSTIR2
-进入RPSTIR2源代码目录，进入build目录，然后执行如下脚本，将安装RPSTIR2到/root/rpki/rpstir2目录 ，并自动启动RPSTIR2
+进入RPSTIR2的bin目录，然后执行如下脚本，并部署成功后将自动启动RPSTIR2
 
 ```shell
-$ cd /root/rpki/source/rpstir2/build
+$ cd /root/rpki/rpstir2/bin
 $ chmod +x *.sh 
 $ ./rpstir2-service.sh deploy
 $ ./rpstir2-service.sh update
@@ -177,7 +174,7 @@ $ docker run -itd --privileged -p 18080-18090:8080-8090   -v /root/rpki/rpstir2d
 
 ```shell
 $ docker exec -it rpstir2_centos8 /bin/bash
-$ cd /root/rpki/source/rpstir2/build 
+$ cd /root/rpki/rpstir2/bin 
 $ chmod +x *.sh
 $ ./rpstir2-service.sh deploy
 $ ./rpstir2-service.sh update

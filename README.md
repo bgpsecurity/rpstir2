@@ -20,11 +20,10 @@ There are two ways to install RPSTIR2, including installing from source code and
 OpenSSL version must be 1.1.1b or higher, and  "enable-rfc3779" needs to be set when compiling OpenSSL.
 
 ```shell
-$ wget --no-verbose --inet4-only
-https://www.openssl.org/source/openssl-1.1.1f.tar.gz 
+$ wget --no-verbose --inet4-only https://www.openssl.org/source/openssl-1.1.1f.tar.gz 
 $ tar xzvf openssl-1.1.1f.tar.gz 
 $ cd openssl-1.1.1f
-$ config shared enable-rfc3779
+$ ./config shared enable-rfc3779
 $ make
 $ make install
 $ echo "export PATH=/usr/local/ssl/bin:$PATH" >> /root/.bashrc
@@ -60,15 +59,14 @@ $ source  /root/.bashrc
 ```
 
 #### 2.1.4 Create RPSTIR2 directories
-Before installing RPSTIR2, you should create three directories in advance, one of which is for RPSTIR2 source code, and one is for program and the other is for the cache data. The following documents are explained according to the configuration given in the following table, which can be modified in locations of your choice.
+Before installing RPSTIR2, you should create directories in advance, one of which is for program and the other is for the cache data. The following documents are explained according to the configuration given in the following table, which can be modified in locations of your choice.
 
 ```shell
-$ mkdir -p /root/rpki/source/ /root/rpki/rpstir2  /root/rpki/data 
+$ mkdir -p /root/rpki/ /root/rpki/rpstir2  /root/rpki/data 
 ```
 
 | Directory  | Path                      |
 | :--------: | ------------------------- |
-| sourcedir  | /root/rpki/source/rpstir2 |
 | programdir | /root/rpki/rpstir2        |
 | datadir    | /root/rpki/data           |
 
@@ -76,21 +74,22 @@ $ mkdir -p /root/rpki/source/ /root/rpki/rpstir2  /root/rpki/data
 #### 2.1.5 Download RPSTIR2 
 
 ```shell
-$ cd /root/rpki/source/
+$ cd /root/rpki/
 $ git clone https://github.com/bgpsecurity/rpstir2.git 
 ```
 
 #### 2.1.6 Configure RPSTIR2
-You can modify configuration parameters of programdir, datadir, mysql, and tcpport of rtr in configuration file(/root/rpki/source/rpstir2/conf/project.conf). 
+You can modify configuration parameters of programdir, datadir, mysql, and tcpport of rtr in configuration file(/root/rpki/rpstir2/conf/project.conf). 
 
 ```shell
-$ cd /root/rpki/source/rpstir2/conf
+$ cd /root/rpki/rpstir2/conf
 $ vim project.conf
 
 [rpstir2]
 programdir=/root/rpki/rpstir2
-sourcedir=/root/rpki/source/rpstir2
 datadir=/root/rpki/data
+httpport=8080
+httpsport=8081
 
 [mysql]
 server=127.0.0.1:3306
@@ -99,16 +98,19 @@ password=Rpstir-123
 database=rpstir2
 
 [rtr]
+httpserver=127.0.0.1
+httpport=8083
+tcpserver=127.0.0.1
 tcpport=8082
 ```
 
-Note: If you want change parameters after building RPSTIR2, you can modify configuration file in /root/rpki/rpstir2/conf/project.conf, and restart RPSTIR2.
+
 
 ##### 2.1.7 Deploy RPSTIR2
 The RPSTIR2 will build and deploy automatically to /root/rpki/rpstir2. 
 
 ```shell
-$ cd /root/rpki/source/rpstir2/build
+$ cd /root/rpki/rpstir2/bin
 $ chmod +x *.sh 
 $ ./rpstir2-service.sh deploy
 $ ./rpstir2-service.sh update
@@ -165,7 +167,7 @@ Then, you should login in RPSTIR2 container, and run deploy and update.
 
 ```shell
 $ docker exec -it rpstir2_centos8 /bin/bash
-$ cd /root/rpki/source/rpstir2/build 
+$ cd /root/rpki/rpstir2/bin 
 $ chmod +x *.sh
 $ ./rpstir2-service.sh deploy
 $ ./rpstir2-service.sh update
@@ -268,26 +270,21 @@ $./rpstir2-command.sh results
 }
 ```
 
-#### 2.3.5 Reset
-When you need to re-synchronize and re-validate RPKI objects, you can call reset to clean the tables in MySQL and cached data.
 
-```shell
-$ cd /root/rpki/rpstir2/bin
-$./rpstir2-command.sh reset  
-```
 
-#### 2.3.6 Slurm
+#### 2.3.5 Slurm
 
 ```shell
 $ cd /root/rpki/rpstir2/bin
 $./rpstir2-command.sh slurm xxx.json  
 ```
 
-#### 2.3.7 Help
+#### 2.3.6 Help
 
 ```shell
 $ cd /root/rpki/rpstir2/bin
-$./rpstir2-command.sh
+$./rpstir2-service.sh help
+$./rpstir2-command.sh help
 ```
 
 
