@@ -12,6 +12,8 @@ function startFunc()
   cd $rpstir2_program_dir/bin
   ./rpstir2-http &
   ./rpstir2-rtr &
+  
+  echo -e "Now, you can view the running status through the log files in $rpstir2_program_dir/log.\n"
   return 0
 }
 function stopFunc()
@@ -36,7 +38,7 @@ function stopFunc()
       echo "pidtcp is null"
     else
       kill  $pidtcp
-      echo "shutdown rpstir2-rtr success"
+      echo "shutdown rpstir2-rtr success."
  	fi
   done
   return 0
@@ -96,6 +98,8 @@ function deployFunc()
   curl -d '{"sysStyle": "init"}'  -H "Content-type: application/json" -X POST http://$sysserver:$httpport/sys/initreset
   
   cd $curpath
+ 
+  echo -e "Now, you can call './rpstir2-command.sh sync' to start RPKI sync.\n"
   return 0
 }
 
@@ -149,7 +153,7 @@ function updateFunc()
   chmod +x ${rpstir2_program_dir}/bin/*  
   cd $curpath
 
-  echo -e "\nrpstir2 updates completed. \nyou can copy your local configuration from conf/project.conf.$oldConfigFile.bak to new conf/project.conf, and then start rpstir2.\n"
+  echo -e "it saved local conf/project.conf to conf/project.conf.$oldConfigFile.bak, that you can copy your local configuration to new prject.conf, and then start rpstir2.\n"
 
   return 0
 }

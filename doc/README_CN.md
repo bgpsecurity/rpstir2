@@ -190,6 +190,7 @@ rpstir2-serverice.sh 执行系统起停、升级等系统命令
 rpstir2-command.sh 执行具体的同步、查看状态和结果、上传Slurm等程序命令，需要在系统启动后，才能执行。
 
 #### 2.3.1 起停RPSTIR2
+可以通过查看./log目录下的日志，查看有无报错
 
 ```shell
 $ cd /root/rpki/rpstir2/bin

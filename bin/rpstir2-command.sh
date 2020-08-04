@@ -130,5 +130,6 @@ case $1 in
     ;;
  esac
  
+ echo -e "Now, you can view the running status through the log files in $rpstir2_program_dir/log\n"
 
 

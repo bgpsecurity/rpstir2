@@ -183,6 +183,7 @@ All functions of RPSTIR2 are accessible on the command line via sub-commands.
 
 #### 2.3.1 Start and stop the RPSTIR2 service
 To execute all RPSTIR2 commands, the RPSTIR2 service must be started first. 
+You can check for errors by looking at the log files in ./log/ directory.
 
 ```shell
 $ cd /root/rpki/rpstir2/bin
