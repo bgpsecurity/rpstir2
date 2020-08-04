@@ -64,7 +64,7 @@ case $1 in
     source /root/.bashrc
     echo "start rpstir2 crontab sync"
     # `ReadINIfile "file" "[section]" "item" `
-    rsyncserver=`ReadINIfile "$configFile" "rpstir2" "syncserver" `
+    syncserver=`ReadINIfile "$configFile" "rpstir2" "syncserver" `
     httpport=`ReadINIfile "$configFile" "rpstir2" "httpport" `
     # curl
     curl -d '{"syncStyle": "sync"}'  -H "Content-type: application/json" -X POST http://$syncserver:$httpport/sync/start
