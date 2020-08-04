@@ -123,7 +123,7 @@ function updateFunc()
   git_dir="${rpstir2_program_dir}/.git"
   # save local project.conf
   oldConfigFile=$(date +%Y%m%d%H%M%S)
-  echo "it will save local conf/project.conf to conf/project.conf.$oldConfigFile.bak, that you can copy some local configuration to new prject.conf, and then start rpstir2."
+  echo "it will save local conf/project.conf to conf/project.conf.$oldConfigFile.bak, that you can copy your local configuration to new prject.conf, and then start rpstir2."
   if [ -d ${git_dir} ];then
     cp ${rpstir2_program_dir}/conf/project.conf ${rpstir2_program_dir}/conf/project.conf.$oldConfigFile.bak
     git checkout .
@@ -149,7 +149,7 @@ function updateFunc()
   chmod +x ${rpstir2_program_dir}/bin/*  
   cd $curpath
 
-  echo -e "\nrpstir2 updates completed. \nyou can copy some local configuration from conf/project.conf.$oldConfigFile.bak to new conf/project.conf, and then start rpstir2.\n"
+  echo -e "\nrpstir2 updates completed. \nyou can copy your local configuration from conf/project.conf.$oldConfigFile.bak to new conf/project.conf, and then start rpstir2.\n"
 
   return 0
 }
