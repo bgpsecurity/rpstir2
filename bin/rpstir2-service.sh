@@ -121,10 +121,15 @@ function updateFunc()
   go get -u github.com/cpusoft/goutil
   go get -u github.com/cpusoft/go-json-rest
   git_dir="${rpstir2_program_dir}/.git"
+  # save local project.conf
+  oldConfigFile=$(date +%Y%m%d%H%M%S)
+  echo "it will save local conf/project.conf to conf/project.conf.$oldConfigFile.bak, that you can copy some local configuration to new prject.conf, and then start rpstir2."
   if [ -d ${git_dir} ];then
+    cp ${rpstir2_program_dir}/conf/project.conf ${rpstir2_program_dir}/conf/project.conf.$oldConfigFile.bak
     git checkout .
     git pull
   else
+    cp ${rpstir2_program_dir}/conf/project.conf ${rpstir2_program_dir}/conf/project.conf.$oldConfigFile.bak
     svn update --accept tf 
   fi
 
@@ -143,6 +148,9 @@ function updateFunc()
   
   chmod +x ${rpstir2_program_dir}/bin/*  
   cd $curpath
+
+  echo -e "\nrpstir2 updates completed. \nyou can copy some local configuration from conf/project.conf.$oldConfigFile.bak to new conf/project.conf, and then start rpstir2.\n"
+
   return 0
 }
 
@@ -174,7 +182,6 @@ case $1 in
     echo "deploy rpstir2"
     stopFunc
     updateFunc
-    startFunc
     ;; 
   help)
     helpFunc
