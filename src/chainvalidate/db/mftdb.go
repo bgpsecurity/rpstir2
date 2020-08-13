@@ -46,7 +46,7 @@ func GetChainFileHashs(mftId uint64) (chainFileHashs []chainmodel.ChainFileHash,
 		return chainFileHashs, err
 	}
 
-	belogs.Info("GetChainFileHashs():mftId:",
+	belogs.Debug("GetChainFileHashs():mftId:",
 		mftId, "    len(chainFileHashs)", len(chainFileHashs), "  time(s):", time.Now().Sub(start).Seconds())
 	return chainFileHashs, nil
 }

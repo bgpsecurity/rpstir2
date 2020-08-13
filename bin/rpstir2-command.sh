@@ -75,7 +75,7 @@ case $1 in
     sysserver=`ReadINIfile "$configFile" "rpstir2" "sysserver" `
     httpport=`ReadINIfile "$configFile" "rpstir2" "httpport" `
     # curl
-    curl -d '{"syncStyle": "fullsync"}'  -H "Content-type: application/json" -X POST http://$sysserver:$httpport/sys/initreset
+    curl -d '{"sysStyle": "fullsync"}'  -H "Content-type: application/json" -X POST http://$sysserver:$httpport/sys/initreset
     ;;  
   states )    
     echo "start rpstir2 states"
