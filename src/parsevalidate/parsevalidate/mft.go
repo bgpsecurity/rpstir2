@@ -6,6 +6,7 @@ import (
 
 	belogs "github.com/astaxie/beego/logs"
 	conf "github.com/cpusoft/goutil/conf"
+	convert "github.com/cpusoft/goutil/convert"
 	hashutil "github.com/cpusoft/goutil/hashutil"
 	jsonutil "github.com/cpusoft/goutil/jsonutil"
 	osutil "github.com/cpusoft/goutil/osutil"
@@ -316,7 +317,7 @@ func validateMftModel(mftModel *model.MftModel, stateModel *model.StateModel) (e
 	if mftModel.ThisUpdate.After(now) {
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
 			Fail:   "ThisUpdate is later than the current time",
-			Detail: ""}
+			Detail: "now is " + convert.Time2StringZone(now) + ", thisUpdate is " + convert.Time2StringZone(mftModel.ThisUpdate)}
 		if conf.Bool("policy::allowNotYetMft") {
 			stateModel.AddWarning(&stateMsg)
 		} else {
@@ -326,7 +327,7 @@ func validateMftModel(mftModel *model.MftModel, stateModel *model.StateModel) (e
 	if mftModel.NextUpdate.Before(now) {
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
 			Fail:   "NextUpdate is earlier than the current time",
-			Detail: ""}
+			Detail: "now is " + convert.Time2StringZone(now) + ", nextUpdate is " + convert.Time2StringZone(mftModel.NextUpdate)}
 		if conf.Bool("policy::allowStaleMft") {
 			stateModel.AddWarning(&stateMsg)
 		} else {

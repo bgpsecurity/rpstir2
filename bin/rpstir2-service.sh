@@ -12,6 +12,8 @@ function startFunc()
   cd $rpstir2_program_dir/bin
   ./rpstir2-http &
   ./rpstir2-rtr &
+  
+  echo -e "Now, you can view the running status through the log files in $rpstir2_program_dir/log.\n"
   return 0
 }
 function stopFunc()
@@ -36,7 +38,7 @@ function stopFunc()
       echo "pidtcp is null"
     else
       kill  $pidtcp
-      echo "shutdown rpstir2-rtr success"
+      echo "shutdown rpstir2-rtr success."
  	fi
   done
   return 0
@@ -49,11 +51,9 @@ function deployFunc()
   source $(pwd)/read-conf.sh
 
   rpstir2_program_dir=$(ReadINIfile $configFile rpstir2 programdir)
-  rpstir2_source_dir=$(ReadINIfile $configFile rpstir2 sourcedir)
   rpstir2_data_dir=$(ReadINIfile $configFile rpstir2 datadir)
 
   echo "program directory is " $rpstir2_program_dir
-  echo "source directory is " $rpstir2_source_dir
   echo "data directory is " $rpstir2_data_dir
 
   mkdir -p ${rpstir2_program_dir} ${rpstir2_program_dir}/bin    ${rpstir2_program_dir}/conf  ${rpstir2_program_dir}/log  
@@ -73,24 +73,16 @@ function deployFunc()
   go get -u github.com/cpusoft/go-json-rest
   go get -u github.com/cpusoft/goutil
 
-  cd ${rpstir2_source_dir}
+  cd ${rpstir2_program_dir}
   oldgopath=$GOPATH
   CGO_ENABLED=0
   GOOS=linux
   GOARCH=amd64
-  GOPATH=$GOPATH:$rpstir2_source_dir
+  GOPATH=$GOPATH:$rpstir2_program_dir
   # see: go tool compile -help
   go install -v -gcflags "-N -l" ./...
   export GOPATH=$oldgopath
-  cp ${rpstir2_source_dir}/bin/*                    ${rpstir2_program_dir}/bin/
-  cp ${rpstir2_source_dir}/build/rpstir2-command.sh ${rpstir2_program_dir}/bin/
-  cp ${rpstir2_source_dir}/build/rpstir2-service.sh ${rpstir2_program_dir}/bin/
-  cp ${rpstir2_source_dir}/build/read-conf.sh       ${rpstir2_program_dir}/bin/
-  cp -r ${rpstir2_source_dir}/build/tal/*           ${rpstir2_data_dir}/tal/
-  cp -r ${rpstir2_source_dir}/conf/*                ${rpstir2_program_dir}/conf/
-  
-
-  chmod +x ${rpstir2_source_dir}/build/*.sh
+  cp -r ${rpstir2_program_dir}/build/tal/*           ${rpstir2_data_dir}/tal/
   chmod +x ${rpstir2_program_dir}/bin/*
   
   # init
@@ -102,10 +94,12 @@ function deployFunc()
   httpport=$(ReadINIfile $configFile rpstir2 httpport) 
   echo $httpport
   # curl
-  echo "curl -d \"\" http://$sysserver:$httpport/sys/init"
-  curl -d "" http://$sysserver:$httpport/sys/init
+  echo "curl -d '{\"sysStyle\": \"init\"}'  -H \"Content-type: application/json\" -X POST http://$sysserver:$httpport/sys/initreset"
+  curl -d '{"sysStyle": "init"}'  -H "Content-type: application/json" -X POST http://$sysserver:$httpport/sys/initreset
   
   cd $curpath
+ 
+  echo -e "Now, you can call './rpstir2-command.sh sync' to start RPKI sync.\n"
   return 0
 }
 
@@ -118,25 +112,28 @@ function updateFunc()
   source $(pwd)/read-conf.sh
 
   rpstir2_program_dir=$(ReadINIfile $configFile rpstir2 programdir)
-  rpstir2_source_dir=$(ReadINIfile $configFile rpstir2 sourcedir)
   rpstir2_data_dir=$(ReadINIfile $configFile rpstir2 datadir)
 
   echo "program directory is " $rpstir2_program_dir
-  echo "source directory is " $rpstir2_source_dir
   echo "data directory is " $rpstir2_data_dir
 
   mkdir -p ${rpstir2_program_dir} ${rpstir2_program_dir}/bin    ${rpstir2_program_dir}/conf  ${rpstir2_program_dir}/log  
   mkdir -p ${rpstir2_data_dir}    ${rpstir2_data_dir}/rsyncrepo ${rpstir2_data_dir}/rrdprepo ${rpstir2_data_dir}/slurm  ${rpstir2_data_dir}/tal 
  
  
-  cd ${rpstir2_source_dir}
+  cd ${rpstir2_program_dir}
   go get -u github.com/cpusoft/goutil
   go get -u github.com/cpusoft/go-json-rest
-  git_dir="${rpstir2_source_dir}/.git"
+  git_dir="${rpstir2_program_dir}/.git"
+  # save local project.conf
+  oldConfigFile=$(date +%Y%m%d%H%M%S)
+  echo "it will save local conf/project.conf to conf/project.conf.$oldConfigFile.bak, that you can copy your local configuration to new prject.conf, and then start rpstir2."
   if [ -d ${git_dir} ];then
+    cp ${rpstir2_program_dir}/conf/project.conf ${rpstir2_program_dir}/conf/project.conf.$oldConfigFile.bak
     git checkout .
     git pull
   else
+    cp ${rpstir2_program_dir}/conf/project.conf ${rpstir2_program_dir}/conf/project.conf.$oldConfigFile.bak
     svn update --accept tf 
   fi
 
@@ -145,21 +142,19 @@ function updateFunc()
   CGO_ENABLED=0
   GOOS=linux
   GOARCH=amd64
-  GOPATH=$GOPATH:$rpstir2_source_dir
+  GOPATH=$GOPATH:$rpstir2_program_dir
   # see: go tool compile -help
   go install -v -gcflags "-N -l" ./...
   export GOPATH=$oldgopath
 
   # will not copy conf/project.conf
-  cp ${rpstir2_source_dir}/bin/*                    ${rpstir2_program_dir}/bin/
-  cp ${rpstir2_source_dir}/build/rpstir2-command.sh ${rpstir2_program_dir}/bin/
-  cp ${rpstir2_source_dir}/build/rpstir2-service.sh ${rpstir2_program_dir}/bin/
-  cp ${rpstir2_source_dir}/build/read-conf.sh       ${rpstir2_program_dir}/bin/
-  cp -r ${rpstir2_source_dir}/build/tal/*           ${rpstir2_data_dir}/tal/
+  cp -r ${rpstir2_program_dir}/build/tal/*           ${rpstir2_data_dir}/tal/
   
-  chmod +x ${rpstir2_source_dir}/build/*.sh
   chmod +x ${rpstir2_program_dir}/bin/*  
   cd $curpath
+
+  echo -e "it saved local conf/project.conf to conf/project.conf.$oldConfigFile.bak, that you can copy your local configuration to new prject.conf, and then start rpstir2.\n"
+
   return 0
 }
 
@@ -191,7 +186,6 @@ case $1 in
     echo "deploy rpstir2"
     stopFunc
     updateFunc
-    startFunc
     ;; 
   help)
     helpFunc

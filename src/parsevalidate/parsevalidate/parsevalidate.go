@@ -336,10 +336,10 @@ func ParseFile(certFile string) (certModel interface{}, err error) {
 	}
 }
 
-// only parse cer to get ca repository
-func ParseValidateFileRepo(certFile string) (caRepository string, err error) {
+// only parse cer to get ca repository/rpkiNotify, raw subjct public key info
+func ParseFileSimple(certFile string) (parseCerSimple model.ParseCerSimple, err error) {
 	if strings.HasSuffix(certFile, ".cer") {
-		return ParseValidateCerRepo(certFile)
+		return ParseCerSimple(certFile)
 	}
-	return "", errors.New("unknown file type")
+	return parseCerSimple, errors.New("unknown file type")
 }

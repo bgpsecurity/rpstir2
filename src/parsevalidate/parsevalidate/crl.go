@@ -6,6 +6,7 @@ import (
 
 	belogs "github.com/astaxie/beego/logs"
 	conf "github.com/cpusoft/goutil/conf"
+	convert "github.com/cpusoft/goutil/convert"
 	hashutil "github.com/cpusoft/goutil/hashutil"
 	jsonutil "github.com/cpusoft/goutil/jsonutil"
 	osutil "github.com/cpusoft/goutil/osutil"
@@ -140,7 +141,7 @@ func validateCrlModel(crlModel *model.CrlModel, stateModel *model.StateModel) (e
 	if crlModel.ThisUpdate.After(now) {
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
 			Fail:   "ThisUpdate is later than the current time",
-			Detail: ""}
+			Detail: "now is " + convert.Time2StringZone(now) + ", thisUpdate is " + convert.Time2StringZone(crlModel.ThisUpdate)}
 		if conf.Bool("policy::allowNotYetCrl") {
 			stateModel.AddWarning(&stateMsg)
 		} else {
@@ -150,7 +151,7 @@ func validateCrlModel(crlModel *model.CrlModel, stateModel *model.StateModel) (e
 	if crlModel.NextUpdate.Before(now) {
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
 			Fail:   "NextUpdate is earlier than the current time",
-			Detail: ""}
+			Detail: "now is " + convert.Time2StringZone(now) + ", nextUpdate is " + convert.Time2StringZone(crlModel.NextUpdate)}
 		if conf.Bool("policy::allowStaleCrl") {
 			stateModel.AddWarning(&stateMsg)
 		} else {

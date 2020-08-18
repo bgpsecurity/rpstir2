@@ -1,6 +1,7 @@
 package chainvalidate
 
 import (
+	"strings"
 	"sync"
 	"time"
 
@@ -101,7 +102,12 @@ func validateRoa(chains *chainmodel.Chains, roaId uint64, wg *sync.WaitGroup, ch
 			stateMsg := model.StateMsg{Stage: "chainvalidate",
 				Fail:   "Fail to be verified by its issuing certificate",
 				Detail: desc + "  parent cer file is " + chainRoa.ParentChainCerAlones[0].FileName + ",  roa file is " + chainRoa.FileName}
-			chainRoa.StateModel.AddError(&stateMsg)
+			// if subject doesnot match ,will just set warning
+			if strings.Contains(desc, "issuer name does not match subject from issuing certificate") {
+				chainRoa.StateModel.AddWarning(&stateMsg)
+			} else {
+				chainRoa.StateModel.AddError(&stateMsg)
+			}
 
 		}
 
@@ -144,8 +150,8 @@ func validateRoa(chains *chainmodel.Chains, roaId uint64, wg *sync.WaitGroup, ch
 			chainRoa.Id, jsonutil.MarshalJson(chainRoa.ChainSnInCrlRevoked.CrlFileName))
 		stateMsg := model.StateMsg{Stage: "chainvalidate",
 			Fail: "The EE of this ROA is found on the revocation list of CRL",
-			Detail: chainRoa.FileName + " is in " + chainRoa.ChainSnInCrlRevoked.CrlFileName + "revoked cer list, " +
-				" and revoked time is " + convert.Time2String(chainRoa.ChainSnInCrlRevoked.RevocationTime)}
+			Detail: chainRoa.FileName + " is in " + chainRoa.ChainSnInCrlRevoked.CrlFileName + " revoked cer list, " +
+				" and revoked time is " + convert.Time2StringZone(chainRoa.ChainSnInCrlRevoked.RevocationTime)}
 		chainRoa.StateModel.AddError(&stateMsg)
 	}
 

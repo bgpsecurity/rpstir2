@@ -1,5 +1,7 @@
 package model
 
+import ()
+
 // rsync channel
 type RsyncModelChan struct {
 	Url  string `json:"url"`
@@ -13,18 +15,6 @@ type ParseModelChan struct {
 
 // rsync and parse end channel, may be end
 type RsyncParseEndChan struct {
-}
-
-// miscellaneous times should be saved
-type RsyncMisc struct {
-	OkRsyncUrlLen uint64 `json:"okRsyncUrlLen"`
-
-	//rsync failed
-	FailRsyncUrls         map[string]string `json:"failsRsyncUrls"`
-	FailRsyncUrlsTryCount uint64            `json:"failRsyncUrlsTryCount"`
-
-	//parse failed
-	FailParseValidateCerts map[string]string `json:"failParseValidateCerts"`
 }
 
 type RsyncFileHash struct {

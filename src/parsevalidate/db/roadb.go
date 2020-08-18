@@ -200,7 +200,7 @@ func insertRoa(session *xorm.Session,
 	}
 
 	//lab_rpki_roa_ipaddress
-	belogs.Debug("insertRoa(): roaModel.IPAddrBlocks:", roaModel.RoaIpAddressModels)
+	belogs.Debug("insertRoa(): roaModel.IPAddrBlocks:", jsonutil.MarshalJson(roaModel.RoaIpAddressModels))
 	if roaModel.RoaIpAddressModels != nil && len(roaModel.RoaIpAddressModels) > 0 {
 		sqlStr = `INSERT lab_rpki_roa_ipaddress(roaId, addressFamily,addressPrefix,maxLength, rangeStart, rangeEnd,addressPrefixRange )
 						VALUES(?,?,?,?,?,?,?)`

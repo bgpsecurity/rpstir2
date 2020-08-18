@@ -179,7 +179,18 @@ type SyncLogRrdpState struct {
 	StartTime time.Time `json:"startTime,omitempty"`
 	EndTime   time.Time `json:"endTime,omitempty"`
 }
+type SyncLogSyncState struct {
+	SyncStyle string `json:"syncStyle"`
 
+	StartTime time.Time `json:"startTime,omitempty"`
+	EndTime   time.Time `json:"endTime,omitempty"`
+
+	RrdpUrls   []string   `json:"rrdpUrls"`
+	RrdpResult SyncResult `json:"rrdpResult"`
+
+	RsyncUrls   []string   `json:"rsyncUrls"`
+	RsyncResult SyncResult `json:"rsyncResult"`
+}
 type SyncLogDiffState struct {
 	StartTime        time.Time `json:"startTime,omitempty"`
 	EndTime          time.Time `json:"endTime,omitempty"`
@@ -231,18 +242,15 @@ type LabRpkiSyncLogFile struct {
 	//cer/roa/mft/crl, not dot
 	FileType string `json:"fileType" xorm:"fileType varchar(16)"`
 	//sync time for every file
-	SyncTime                time.Time `json:"syncTime" xorm:"syncTime datetime"`
-	Ski                     string    `json:"ski" xorm:"ski varchar(128)"`
-	Aki                     string    `json:"aki" xorm:"aki varchar(128)"`
-	FilePath                string    `json:"filePath" xorm:"filePath varchar(512)"`
-	FileName                string    `json:"fileName" xorm:"fileName varchar(128)"`
-	ParseValidateResultJson string    `json:"syncJson" xorm:"syncJson json"`
-	JsonAll                 string    `json:"jsonAll" xorm:"jsonAll json"`
-	LastJsonAll             string    `json:"jsonAll" xorm:"lastJsonAll json"`
-	FileHash                string    `json:"fileHash" xorm:"fileHash varchar(512)"`
-	LastFileHash            string    `json:"lastFileHash" xorm:"lastFileHash varchar(512)"`
+	SyncTime time.Time `json:"syncTime" xorm:"syncTime datetime"`
+	FilePath string    `json:"filePath" xorm:"filePath varchar(512)"`
+	FileName string    `json:"fileName" xorm:"fileName varchar(128)"`
+	JsonAll  string    `json:"jsonAll" xorm:"jsonAll json"`
+	FileHash string    `json:"fileHash" xorm:"fileHash varchar(512)"`
 	//add/update/del
 	SyncType string `json:"syncType" xorm:"syncType varchar(16)"`
+	//rrdp/rsync
+	SyncStyle string `json:"syncStyle" xorm:"syncStyle varchar(16)"`
 	//LabRpkiSyncLogFileState:
 	State string `json:"state" xorm:"state json"`
 }

@@ -2,187 +2,93 @@ package rrdp
 
 import (
 	"os"
+	"sync/atomic"
+	"time"
 
 	belogs "github.com/astaxie/beego/logs"
 	conf "github.com/cpusoft/goutil/conf"
 	httpclient "github.com/cpusoft/goutil/httpclient"
 	jsonutil "github.com/cpusoft/goutil/jsonutil"
-	osutil "github.com/cpusoft/goutil/osutil"
-	rrdputil "github.com/cpusoft/goutil/rrdputil"
 
+	"model"
 	"rrdp/db"
+	rrdpmodel "rrdp/model"
 )
 
+var rrQueue *rrdpmodel.RrdpParseQueue
+
 // start to rrdp
-func Start() {
-	belogs.Info("Start():rrdp")
+func Start(syncUrls *model.SyncUrls) {
+	belogs.Info("Start(): rrdp: syncUrls:", jsonutil.MarshalJson(syncUrls))
 
-	// save starttime to lab_rpki_sync_log
-	syncLogId, err := db.InsertRsyncLogRrdpStateStart("rrdping", "rrdp")
+	syncRrdpLogs, err := db.GetLastSyncRrdpLogsByNotifyUrl()
 	if err != nil {
-		belogs.Error("Start():InsertRsyncLogRsyncStateStart fail:", err)
+		belogs.Error("Start(): rrdp: GetLastSyncRrdpLogsByNotifyUrl fail:", err)
 		return
 	}
-	belogs.Debug("Start():labRpkiSyncLogId:", syncLogId)
 
-	// get all rpki notify url in cer/conf
-	notifyUrls := conf.Strings("rrdp::notifyurls")
-	for _, notifyUrl := range notifyUrls {
-		rrdpByUrl(notifyUrl, syncLogId)
-	}
-	err = db.UpdateRsyncLogRrdpStateEnd(syncLogId, "rrdped")
-	if err != nil {
-		belogs.Error("Start():UpdateRsyncLogRrdpStateEnd fail, syncLogId:",
-			syncLogId, err)
-		return
-	}
-	belogs.Info("Start():end rrdp")
+	//start rrQueue and rrdpForSelect
+	rrQueue = rrdpmodel.NewQueue()
+	rrQueue.LastSyncRrdpLogs = syncRrdpLogs
+	rrQueue.LabRpkiSyncLogId = syncUrls.SyncLogId
+	go startRrdpServer()
+	belogs.Debug("Start(): rrQueue:", jsonutil.MarshalJson(rrQueue))
 
-	// call parse validate
-	go func() {
-		httpclient.Post("http", conf.String("rpstir2::parsevalidateserver"), conf.Int("rpstir2::httpport"),
-			"/parsevalidate/start", "")
-	}()
+	// start to rrdp by sync url in tal, to get root cer
+	// first: remove all root cer, so can will rrdp download and will trigger parse all cer files.
+	// otherwise, will have to load all root file manually
+	os.RemoveAll(conf.VariableString("rrdp::destpath") + "/root/")
+	os.MkdirAll(conf.VariableString("rrdp::destpath")+"/root/", os.ModePerm)
+	atomic.AddInt64(&rrQueue.RrdpingParsingCount, int64(len(syncUrls.RrdpUrls)))
+	belogs.Debug("Start():after RrdpingParsingCount:", atomic.LoadInt64(&rrQueue.RrdpingParsingCount))
+	for _, url := range syncUrls.RrdpUrls {
+		go rrQueue.AddRrdpUrl(url, conf.VariableString("rrdp::destpath")+"/")
+	}
 }
 
-func rrdpByUrl(notifyUrl string, syncLogId uint64) (err error) {
+// start server ,wait input channel
+func startRrdpServer() {
+	start := time.Now()
+	belogs.Info("startRrdpServer():start")
 
-	//defer RsyncByUrlDefer(rsyncUrl, rsyncUrlCh)
-	belogs.Debug("rrdpByUrl():start, notifyUrl, syncLogId:", notifyUrl, syncLogId)
+	for {
+		select {
+		case rrdpModelChan := <-rrQueue.RrdpModelChan:
+			belogs.Debug("startRrdpServer(): rrdpModelChan:", rrdpModelChan,
+				"  len(rrdprpQueue.RrdpModelChan):", len(rrQueue.RrdpModelChan),
+				"  receive rrdpModelChan rrQueue.RrdpingParsingCount:", atomic.LoadInt64(&rrQueue.RrdpingParsingCount))
+			go rrdpByUrl(rrdpModelChan)
+		case parseModelChan := <-rrQueue.ParseModelChan:
+			belogs.Debug("startRrdpServer(): parseModelChan:", parseModelChan,
+				"  receive parseModelChan rrQueue.RrdpingParsingCount:", atomic.LoadInt64(&rrQueue.RrdpingParsingCount))
+			go parseCerFiles(parseModelChan)
+		case rrdpParseEndChan := <-rrQueue.RrdpParseEndChan:
+			belogs.Debug("startRrdpServer():rrdpParseEndChan:", rrdpParseEndChan, "  rrQueue.RrdpingParsingCount:", atomic.LoadInt64(&rrQueue.RrdpingParsingCount))
 
-	// get notify xml
-	notificationModel, err := getRrdpNotification(notifyUrl)
-	if err != nil {
-		belogs.Error("rrdpByUrl(): GetRrdpNotification fail, notifyUrl, syncLogId: ",
-			notifyUrl, syncLogId, err)
-		return err
-	}
+			// try again the fail urls
+			belogs.Debug("startRrdpServer():try fail urls again: len(rrQueue.RrdpResult.FailRrdpUrls):", len(rrQueue.RrdpResult.FailUrls))
+			if tryAgainFailRrdpUrls() {
+				belogs.Debug("startRrdpServer(): tryAgainFailRrdpUrls continue")
+				continue
+			}
+			rrQueue.RrdpResult.EndTime = time.Now()
+			rrQueue.RrdpResult.OkUrls = rrQueue.GetRrdpUrls()
+			rrQueue.RrdpResult.OkUrlsLen = uint64(len(rrQueue.RrdpResult.OkUrls))
+			rrdpResultJson := jsonutil.MarshalJson(rrQueue.RrdpResult)
+			belogs.Debug("startRrdpServer():end this rrdp success: rrdpResultJson:", rrdpResultJson)
+			// will call sync to return result
+			go func(rrdpResultJson string) {
+				belogs.Debug("startRrdpServer():call /sync/rrdpresult: rrdpResultJson:", rrdpResultJson)
+				httpclient.Post("http", conf.String("rpstir2::rrdpserver"), conf.Int("rpstir2::httpport"),
+					"/sync/rrdpresult", rrdpResultJson)
+			}(rrdpResultJson)
 
-	// get rsync_rrdp_log ,
-	has, syncRrdpLog, err := db.GetLastSyncRrdpLog(notifyUrl,
-		notificationModel.SessionId,
-		notificationModel.MinSerail, notificationModel.MaxSerail)
-	if err != nil {
-		belogs.Error("rrdpByUrl(): GetLastSyncRrdpLog fail, notifyUrl, syncLogId: ",
-			notifyUrl, syncLogId, err)
-		return err
-	}
-	belogs.Debug("rrdpByUrl(): notifyUrl, syncRrdpLog:", notifyUrl,
-		jsonutil.MarshalJson(syncRrdpLog))
+			// close rrQueue
+			rrQueue.Close()
 
-	// need to get snapshot
-	if !has {
-		err = processRrdpSnapshot(&notificationModel, syncLogId)
-
-	} else {
-		// get delta
-		err = processRrdpDelta(&notificationModel, syncLogId, syncRrdpLog.CurSerial)
-	}
-
-	if err != nil {
-		belogs.Error("rrdpByUrl(): GetLastSyncRrdpLog fail, notifyUrl, syncLogIdsyncLogId: ",
-			notifyUrl, syncLogId, err)
-		return err
-	}
-
-	// insert new sync_rrdp_log
-	err = db.InsertSyncRrdpLog(has, syncLogId, notifyUrl, &syncRrdpLog, &notificationModel)
-	if err != nil {
-		belogs.Error("UpdateRrdpSnapshot():InsertSyncRrdpLog fail: ", err)
-		return err
-	}
-	// get notification xml
-	belogs.Debug("rrdpByUrl(): end ok, notifyUrl, syncLogId:", notifyUrl, syncLogId)
-	return nil
-
-}
-
-func processRrdpSnapshot(notificationModel *rrdputil.NotificationModel,
-	syncRrdpLog uint64) (err error) {
-
-	// first to get snapshot files, because this may fail easily
-	snapshotModel, err := getRrdpSnapshot(notificationModel)
-	if err != nil {
-		belogs.Error("ProcessRrdpSnapshot(): getRrdpSnapshot fail, Snapshot url: ",
-			notificationModel.Snapshot.Uri, err)
-		return err
-	}
-	belogs.Debug("processRrdpSnapshot():notificationModel.Snapshot.Uri, snapshotModel:",
-		notificationModel.Snapshot.Uri,
-		snapshotModel.Serial, len(snapshotModel.SnapshotPublishs))
-
-	// rm disk files
-	repoHostPath, err := osutil.GetHostPathFromUrl(conf.VariableString("rrdp::destpath"), notificationModel.Snapshot.Uri)
-	if err != nil {
-		belogs.Error("ProcessRrdpSnapshot(): GetHostPathFromUrl fail, Snapshot url: ",
-			notificationModel.Snapshot.Uri, err)
-		return err
-	}
-	belogs.Debug("processRrdpSnapshot():repoHostPath:", repoHostPath)
-
-	err = os.RemoveAll(repoHostPath)
-	if err != nil {
-		belogs.Error("ProcessRrdpSnapshot(): RemoveAll, repoHostPath: ", repoHostPath, err)
-	}
-	err = os.MkdirAll(repoHostPath, os.ModePerm)
-	if err != nil {
-		belogs.Error("ProcessRrdpSnapshot(): MkdirAll, repoHostPath: ", repoHostPath, err)
-	}
-	// download snapshot files
-	repoPath := conf.VariableString("rrdp::destpath") + osutil.GetPathSeparator()
-	err = rrdputil.SaveRrdpSnapshotToFiles(&snapshotModel, repoPath)
-	if err != nil {
-		belogs.Error("ProcessRrdpSnapshot(): SaveRrdpSnapshotToFiles fail, Snapshot url,  repoPath: ",
-			notificationModel.Snapshot.Uri, repoPath, err)
-		return err
-	}
-
-	// del old cer/crl/mft/roa and update to rsynclog
-	err = db.UpdateRrdpSnapshot(&snapshotModel, syncRrdpLog, repoHostPath)
-	if err != nil {
-		belogs.Error("ProcessRrdpSnapshot(): SaveRrdpSnapshotToFiles fail, Snapshot url,  repoPath: ",
-			notificationModel.Snapshot.Uri, repoPath, err)
-		return err
-	}
-	return nil
-
-}
-
-// lastSerial is last syncRrdpLog's curSerial
-func processRrdpDelta(notificationModel *rrdputil.NotificationModel,
-	syncRrdpLog, lastSerial uint64) (err error) {
-
-	deltaModels, err := getRrdpDelta(notificationModel, lastSerial)
-	if err != nil {
-		belogs.Error("processRrdpDelta(): getRrdpDelta fail,  len(notificationModel.MapSerialDeltas) :",
-			len(notificationModel.MapSerialDeltas), err)
-		return err
-	}
-	belogs.Debug("processRrdpDelta():getRrdpDelta len(deltaModels):", len(deltaModels))
-	if len(deltaModels) <= 0 {
-		return nil
-	}
-
-	// download snapshot files
-	repoPath := conf.VariableString("rrdp::destpath") + osutil.GetPathSeparator()
-	for i := range deltaModels {
-		// save publish files and remove withdraw files
-		err = rrdputil.SaveRrdpDeltaToFiles(&deltaModels[i], repoPath)
-		if err != nil {
-			belogs.Error("processRrdpDelta(): SaveRrdpDeltaToFiles fail, deltaModels[i].Serial,  repoPath: ",
-				deltaModels[i].Serial, repoPath, err)
-			return err
+			// return out of the for
+			belogs.Info("startRrdpServer():end this rrdp success: rrdpResultJson:", rrdpResultJson, "  time(s):", time.Now().Sub(start).Seconds())
+			return
 		}
 	}
-	for i := range deltaModels {
-		// del old cer/crl/mft/roa and update to rsynclog
-		// get dest path : /root/rpki/data/reporrdp/
-		err = db.UpdateRrdpDelta(&deltaModels[i], syncRrdpLog)
-		if err != nil {
-			belogs.Error("ProcessRrdpSnapshot(): SaveRrdpSnapshotToFiles fail, Snapshot url,  repoPath: ",
-				notificationModel.Snapshot.Uri, repoPath, err)
-			return err
-		}
-	}
-	return nil
 }

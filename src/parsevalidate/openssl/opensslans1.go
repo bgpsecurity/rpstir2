@@ -195,7 +195,7 @@ func ParseRoaModelByOpensslResults(results []string, roaModel *model.RoaModel) (
 		if strings.Contains(one, keyword) {
 			index := strings.Index(one, keyword)
 			roaHex = string(one[index+len(keyword):])
-			belogs.Debug("ParseRoaModelByOpensslResults(): roaHex:", roaHex)
+			belogs.Debug("ParseRoaModelByOpensslResults(): len(roaHex):", len(roaHex))
 
 			if !strings.Contains(results[i+1], keyword) {
 				foundAllRoaHex = true
@@ -219,7 +219,7 @@ func ParseRoaModelByOpensslResults(results []string, roaModel *model.RoaModel) (
 			break
 		}
 	}
-	belogs.Debug("ParseRoaModelByOpensslResults():all roaHex:", roaHex)
+	belogs.Debug("ParseRoaModelByOpensslResults():all len(roaHex):", len(roaHex))
 
 	if len(roaHex) == 0 {
 		belogs.Error("ParseRoaModelByOpensslResults():len(roaHex) == 0")
@@ -365,7 +365,7 @@ func ParseSignerInfoModelByOpensslResults(results []string) (signerInfoModel mod
 		}
 
 		if strings.Contains(resultsSigs[i], sigTime) {
-			// next 2 lines, is oid in siningTime
+			// next 2 lines, is oid in signingTime
 			split := strings.Split(resultsSigs[i+2], ":")
 			sigTimeStr := strings.TrimSpace(split[len(split)-1])
 			tm, err := datetime.ParseTime(sigTimeStr, "060102150405Z")
@@ -373,12 +373,12 @@ func ParseSignerInfoModelByOpensslResults(results []string) (signerInfoModel mod
 				belogs.Error("ParseSignerInfoModelByOpensslResults():datetime.ParseTime err: ", err)
 				return signerInfoModel, err
 			}
-			signerInfoModel.SiningTime = tm
-			belogs.Debug("ParseSignerInfoModelByOpensslResults(): signerInfoModel.SiningTime:", signerInfoModel.SiningTime)
+			signerInfoModel.SigningTime = tm
+			belogs.Debug("ParseSignerInfoModelByOpensslResults(): signerInfoModel.SigningTime:", signerInfoModel.SigningTime)
 		}
 
 		if strings.Contains(resultsSigs[i], messageDig) {
-			// next 2 lines, is oid in siningTime
+			// next 2 lines, is oid in signingTime
 			split := strings.Split(resultsSigs[i+2], ":")
 			signerInfoModel.MessageDigest = strings.TrimSpace(split[len(split)-1])
 			belogs.Debug("ParseSignerInfoModelByOpensslResults():resultsSigs[i]:", resultsSigs[i],
