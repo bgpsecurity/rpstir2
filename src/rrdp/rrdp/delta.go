@@ -2,6 +2,7 @@ package rrdp
 
 import (
 	belogs "github.com/astaxie/beego/logs"
+	jsonutil "github.com/cpusoft/goutil/jsonutil"
 	rrdputil "github.com/cpusoft/goutil/rrdputil"
 
 	"rrdp/db"
@@ -36,7 +37,7 @@ func getRrdpDelta(notificationModel *rrdputil.NotificationModel, lastSerial uint
 				notificationModel.Deltas[i].Uri, err)
 			return deltaModels, err
 		}
-		belogs.Debug("getRrdpDelta(): delta.Uri, deltaModel.Serial:", notificationModel.Deltas[i].Uri, deltaModel.Serial)
+		belogs.Debug("getRrdpDelta(): delta.Uri, deltaModel:", notificationModel.Deltas[i].Uri, jsonutil.MarshalJson(deltaModel))
 		deltaModels = append(deltaModels, deltaModel)
 	}
 
@@ -64,14 +65,17 @@ func processRrdpDelta(syncLogId uint64, notificationModel *rrdputil.Notification
 		// save publish files and remove withdraw files
 		rrdpFiles, err := rrdputil.SaveRrdpDeltaToRrdpFiles(&deltaModels[i], snapshotDeltaResult.DestPath)
 		if err != nil {
-			belogs.Error("processRrdpDelta(): SaveRrdpDeltaToFiles fail, deltaModels[i].Serial,  repoPath: ",
-				deltaModels[i].Serial, snapshotDeltaResult.DestPath, err)
+			belogs.Error("processRrdpDelta(): SaveRrdpDeltaToRrdpFiles fail, deltaModels[i],  snapshotDeltaResult.DestPath: ",
+				jsonutil.MarshalJson(deltaModels[i]), snapshotDeltaResult.DestPath, err)
 			return err
 		}
 		rrdpFilesAll = append(rrdpFilesAll, rrdpFiles...)
 	}
 	snapshotDeltaResult.RrdpFiles = rrdpFilesAll
-	belogs.Debug("processRrdpDelta():SaveRrdpDeltaToRrdpFiles len(snapshotDeltaResult.RrdpFiles):", len(snapshotDeltaResult.RrdpFiles))
+	belogs.Debug("processRrdpDelta():SaveRrdpDeltaToRrdpFiles notificationModel.Snapshot.Uri, snapshotDeltaResult.RrdpFiles, snapshotDeltaResult.DestPath:",
+		notificationModel.Snapshot.Uri, snapshotDeltaResult.RrdpFiles, snapshotDeltaResult.DestPath)
+	belogs.Info("processRrdpDelta():SaveRrdpDeltaToRrdpFiles len(rrdpFiles), snapshotDeltaResult.DestPath:",
+		notificationModel.Snapshot.Uri, len(snapshotDeltaResult.RrdpFiles), snapshotDeltaResult.DestPath)
 
 	// del old cer/crl/mft/roa and update to rrdplog
 	// get dest path : /root/rpki/data/reporrdp/

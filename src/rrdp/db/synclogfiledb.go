@@ -12,10 +12,10 @@ import (
 	"model"
 )
 
-func InsertRsyncLogFile(session *xorm.Session,
+func InsertSyncLogFile(session *xorm.Session,
 	syncLogId uint64,
 	syncType, filePath, fileName, fileHash string, rrdpTime time.Time) error {
-	belogs.Debug("InsertRsyncLogFile():  syncLogId, rrdpTime, filePath, fileName,fileHash, rrdpTime:",
+	belogs.Debug("InsertSyncLogFile():rrdp,  syncLogId, rrdpTime, filePath, fileName,fileHash, rrdpTime:",
 		syncLogId, filePath, fileName, fileHash, rrdpTime)
 
 	fileType := osutil.ExtNoDot(fileName)
@@ -30,7 +30,7 @@ func InsertRsyncLogFile(session *xorm.Session,
 		Rtr:             rtr,
 	}
 	state := jsonutil.MarshalJson(labRpkiSyncLogFileState)
-	belogs.Debug("InsertRsyncLogFile():fileType,rrdpTime,filePath,fileName,syncType,state:",
+	belogs.Debug("InsertSyncLogFile():rrdp,fileType,rrdpTime,filePath,fileName,syncType,state:",
 		fileType, rrdpTime, filePath, fileName, syncType, state)
 
 	//lab_rpki_sync_log_file
@@ -47,7 +47,7 @@ func InsertRsyncLogFile(session *xorm.Session,
 		filePath, fileName, syncType,
 		"rrdp", state, xormdb.SqlNullString(fileHash))
 	if err != nil {
-		belogs.Error("InsertRsyncLogFile(): INSERT lab_rpki_sync_log_file fail, syncLogId:", syncLogId, err)
+		belogs.Error("InsertSyncLogFile():rrdp, INSERT lab_rpki_sync_log_file fail, syncLogId:", syncLogId, filePath, fileName, err)
 		return err
 	}
 	return nil

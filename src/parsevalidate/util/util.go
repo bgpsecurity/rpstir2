@@ -335,16 +335,8 @@ func TrimSuffix00(oldByte []byte, cerEndIndex int) (b []byte, i int) {
 	}
 	return oldByte, cerEndIndex
 }
-func ForTrimSuffix00(oldByte []byte, cerEndIndex int) (b []byte, i int) {
-	nullbytes := []byte{0x00, 0x00}
-	for bytes.HasSuffix(oldByte, nullbytes) {
-		oldByte = oldByte[:len(oldByte)-len(nullbytes)]
-		cerEndIndex = cerEndIndex - len(nullbytes)
-	}
-	return oldByte, cerEndIndex
-}
 
-func TrimNull(olddb []byte) []byte {
+func TrimPrefix00(olddb []byte) []byte {
 	if len(olddb) <= 2 {
 		return olddb
 	}

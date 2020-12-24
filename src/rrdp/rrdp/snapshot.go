@@ -25,6 +25,8 @@ func getRrdpSnapshot(notificationModel *rrdputil.NotificationModel) (snapshotMod
 	err = rrdputil.CheckRrdpSnapshot(&snapshotModel, notificationModel)
 	if err != nil {
 		belogs.Error("getRrdpSnapshot(): CheckRrdpSnapshot fail, Snapshot.Uri,snapshotModel :",
+			notificationModel.Snapshot.Uri, err)
+		belogs.Debug("getRrdpSnapshot(): CheckRrdpSnapshot fail, Snapshot.Uri,snapshotModel :",
 			notificationModel.Snapshot.Uri, jsonutil.MarshalJson(snapshotModel), err)
 		return snapshotModel, err
 	}
@@ -73,7 +75,10 @@ func processRrdpSnapshot(syncLogId uint64, notificationModel *rrdputil.Notificat
 		return err
 	}
 	snapshotDeltaResult.RrdpFiles = rrdpFiles
-	belogs.Debug("processRrdpSnapshot():SaveRrdpSnapshotToFiles,  len(rrdpFiles):", len(rrdpFiles))
+	belogs.Debug("processRrdpSnapshot():SaveRrdpSnapshotToFiles, notificationModel.Snapshot.Uri, rrdpFiles,snapshotDeltaResult.DestPath:",
+		notificationModel.Snapshot.Uri, rrdpFiles, snapshotDeltaResult.DestPath)
+	belogs.Info("processRrdpSnapshot():SaveRrdpSnapshotToFiles, notificationModel.Snapshot.Uri, len(rrdpFiles),snapshotDeltaResult.DestPath:",
+		notificationModel.Snapshot.Uri, len(rrdpFiles), snapshotDeltaResult.DestPath)
 
 	// del old cer/crl/mft/roa and update to rrdplog
 	err = db.UpdateRrdpSnapshot(syncLogId, notificationModel, &snapshotModel, snapshotDeltaResult)

@@ -162,71 +162,20 @@ type LabRpkiRoaIpaddressView struct {
 	AddressPrefix string `json:"addressPrefix" xorm:"addressPrefix varchar(512)"`
 	MaxLength     uint64 `json:"maxLength" xorm:"maxLength int"`
 	SyncLogId     uint64 `json:"syncLogId" xorm:"syncLogId int"`
-	SyncLogFileId uint64 `json:"syncLogId" xorm:"syncLogFileId int"`
+	SyncLogFileId uint64 `json:"syncLogFileId" xorm:"syncLogFileId int"`
 }
 
 //////////////////
 // recored every sync log for cer/crl/roa/mft
 //////////////////
 
-type SyncLogRsyncState struct {
-	StartTime     time.Time         `json:"startTime,omitempty"`
-	EndTime       time.Time         `json:"endTime,omitempty"`
-	OkRsyncUrlLen uint64            `json:"okRsyncUrlLen,omitempty"`
-	FailRsyncUrls map[string]string `json:"failRsyncUrls,omitempty"`
-}
-type SyncLogRrdpState struct {
-	StartTime time.Time `json:"startTime,omitempty"`
-	EndTime   time.Time `json:"endTime,omitempty"`
-}
-type SyncLogSyncState struct {
-	SyncStyle string `json:"syncStyle"`
-
-	StartTime time.Time `json:"startTime,omitempty"`
-	EndTime   time.Time `json:"endTime,omitempty"`
-
-	RrdpUrls   []string   `json:"rrdpUrls"`
-	RrdpResult SyncResult `json:"rrdpResult"`
-
-	RsyncUrls   []string   `json:"rsyncUrls"`
-	RsyncResult SyncResult `json:"rsyncResult"`
-}
-type SyncLogDiffState struct {
-	StartTime        time.Time `json:"startTime,omitempty"`
-	EndTime          time.Time `json:"endTime,omitempty"`
-	FilesFromDbLen   uint64    `json:"filesFromDbLen,omitempty"`
-	FilesFromDiskLen uint64    `json:"filesFromDiskLen,omitempty"`
-	AddFilesLen      uint64    `json:"addFilesLen,omitempty"`
-	DelFilesLen      uint64    `json:"delFilesLen,omitempty"`
-	UpdateFilesLen   uint64    `json:"updateFilesLen,omitempty"`
-	NoChangeFilesLen uint64    `json:"noChangeFilesLen,omitempty"`
-}
-
-type SyncLogParseValidateState struct {
-	StartTime      time.Time `json:"startTime,omitempty"`
-	EndTime        time.Time `json:"endTime,omitempty"`
-	ParseFailFiles []string  `json:"parseFailFiles,omitempty"`
-}
-type SyncLogChainValidateState struct {
-	StartTime time.Time `json:"startTime,omitempty"`
-	EndTime   time.Time `json:"endTime,omitempty"`
-}
-
-type SyncLogRtrState struct {
-	StartTime time.Time `json:"startTime,omitempty"`
-	EndTime   time.Time `json:"endTime,omitempty"`
-}
-
 // lab_rpki_sync_log
 type LabRpkiSyncLog struct {
 	Id uint64 `json:"id" xorm:"id"`
 
 	//rsync/delta
-	SyncStyle  string `json:"syncStyle" xorm:"syncStyle varchar(16)"`
-	RsyncState string `json:"rsyncState" xorm:"rsyncState json"`
-	RrdpState  string `json:"rrdpState" xorm:"rrdpState json"`
-
-	DiffState          string `json:"diffState" xorm:"diffState json"`
+	SyncStyle          string `json:"syncStyle" xorm:"syncStyle varchar(16)"`
+	SyncState          string `json:"syncState" xorm:"syncState json"`
 	ParseValidateState string `json:"parseValidateState" xorm:"parseValidateState json"`
 	ChainValidateState string `json:"chainValidateState" xorm:"chainValidateState json"`
 	RtrState           string `json:"rtrState" xorm:"rtrState json"`
@@ -278,7 +227,7 @@ type LabRpkiRtrSession struct {
 type LabRpkiRtrSerialNumber struct {
 	Id           uint64    `json:"id" xorm:"id int"`
 	SerialNumber uint64    `json:"serialNumber" xorm:"serialNumber bigint"`
-	CreateTime   time.Time `json:"createTime" xorm:"createTime   datetime"`
+	CreateTime   time.Time `json:"createTime" xorm:"createTime datetime"`
 }
 
 //lab_rpki_rtr_full
@@ -344,27 +293,6 @@ type LabRpkiRtrSourceFrom struct {
 //////////////////
 //  SLURM
 //////////////////
-//lab_rpki_slurm
-type LabRpkiSlurm struct {
-	Id uint64 `json:"id" xorm:"id int"`
-	//prefixFilter/bgpsecFilter/prefixAssertion/bgpsecAssertion',
-	Style string `json:"style" xorm:"style varchar(128)"`
-	Asn   int64  `json:"asn" xorm:"asn bigint"`
-	//198.51.100.0/24 or 2001:DB8::/32
-	AddressPrefix string `json:"addressPrefix" xorm:"addressPrefix varchar(64)"`
-	MaxLength     uint64 `json:"maxLength" xorm:"maxLength int"`
-	//some base64 ski'
-	Ski string `json:"ski" xorm:"ski varchar(256)"`
-	//some base64 RouterPublicKey'
-	RouterPublicKey string `json:"routerPublicKey" xorm:"routerPublicKey varchar(256)"`
-	Comment         string `json:"comment" xorm:"comment varchar(256)"`
-	//lab_rpki_slurm_file.id
-	SlurmFileId uint64 `json:"slurmFileId" xorm:"slurmFileId  int"`
-	//0-10, 0 is highest level, 10 is  lowest. default 5. the higher level user`s slurm will conver lower '
-	Priority uint64 `json:"priority" xorm:"priority  int"`
-	//using/unused
-	State string `json:"state" xorm:"state json"`
-}
 
 // because asn may be nil or be 0, so using  sql.NullInt64
 type SlurmToRtrFullLog struct {
@@ -383,22 +311,8 @@ type LabRpkiSlurmFile struct {
 	Id         uint64    `json:"id" xorm:"id int"`
 	JsonAll    string    `json:"jsonAll" xorm:"jsonAll json"`
 	UploadTime time.Time `json:"uploadTime" xorm:"uploadTime datetime"`
+	FilePath   string    `json:"filePath" xorm:"filePath varchar(128)"`
 	FileName   string    `json:"fileName" xorm:"fileName varchar(128)"`
-	//0-10, 0 is highest level, 10 is  lowest. default 5. the higher level user`s slurm will conver lower '
-	Priority uint64 `json:"priority" xorm:"priority  int"`
-}
-
-//////////////////
-// stat:
-// 1. competetation result
-//////////////////
-//after every sync, will delete and re-caculate all competation result
-//lab_rpki_stat_roa_competation
-type LabRpkiStatRoaCompetation struct {
-	Id         uint64 `json:"id" xorm:"id int"`
-	RoaId      uint64 `json:"roaId" xorm:"roaId int"`
-	HtmlResult string `json:"htmlResult" xorm:"htmlResult mediumtext"`
-	JsonResult string `json:"jsonResult" xorm:"jsonResult json"`
 }
 
 //////////////////
@@ -414,8 +328,8 @@ type LabRpkiTransferTarget struct {
 	Port    uint64 `json:"port" xorm:"port  int"`
 	//vc/rp
 	TargetType string `json:"targetType" xorm:"targetType varchar(64)"`
-	//create time
-	CreateTime time.Time `json:"createTime" xorm:"createTime datetime"`
+	//update time
+	UpdateTime time.Time `json:"updateTime" xorm:"updateTime datetime"`
 	//valid/invalid
 	State string `json:"state" xorm:"state varchar(64)"`
 }
@@ -437,7 +351,6 @@ type LabRpkiTransferLog struct {
 	Result string `json:"result" xorm:"result varchar(64)"`
 	ErrMsg string `json:"errMsg" xorm:"errMsg varchar(256)"`
 }
-
 ////////////////////////////////////
 // rrdp
 ///////////////////////////////////

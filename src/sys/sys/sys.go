@@ -27,23 +27,23 @@ func InitReset(sysStyle sysmodel.SysStyle) (err error) {
 	belogs.Debug("InitReset(): InitReset db ok, will reset local file cache", sysStyle)
 
 	//delete repo dir
-	os.RemoveAll(conf.VariableString("rsync::destpath"))
-	os.MkdirAll(conf.VariableString("rsync::destpath"), os.ModePerm)
+	os.RemoveAll(conf.VariableString("rsync::destPath"))
+	os.MkdirAll(conf.VariableString("rsync::destPath"), os.ModePerm)
 
 	//delete repo rrdpdir
-	os.RemoveAll(conf.VariableString("rrdp::destpath"))
-	os.MkdirAll(conf.VariableString("rrdp::destpath"), os.ModePerm)
+	os.RemoveAll(conf.VariableString("rrdp::destPath"))
+	os.MkdirAll(conf.VariableString("rrdp::destPath"), os.ModePerm)
 
 	if sysStyle.SysStyle == "fullsync" {
 		go func() {
-			// default syncStyle is syns
+			// default syncStyle is sync
 			// but ,if it get syncStyle from sysStyle, it will return to "/sync/start"
 			syncStyle := "sync"
 			if len(sysStyle.SyncStyle) > 0 {
 				syncStyle = sysStyle.SyncStyle
 			}
 			belogs.Info("InitReset():fullsync will call sync:", syncStyle)
-			httpclient.Post("http", conf.String("rpstir2::syncserver"), conf.Int("rpstir2::httpport"),
+			httpclient.Post("https", conf.String("rpstir2::serverHost"), conf.Int("rpstir2::serverHttpsPort"),
 				"/sync/start", `{"syncStyle": "`+syncStyle+`"}`)
 		}()
 	}

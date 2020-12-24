@@ -1,6 +1,7 @@
 package chainvalidate
 
 import (
+	"errors"
 	"strings"
 	"sync"
 	"time"
@@ -77,13 +78,15 @@ func validateMft(chains *chainmodel.Chains, mftId uint64, wg *sync.WaitGroup, ch
 	start := time.Now()
 	chainMft, err := chains.GetMftById(mftId)
 	if err != nil {
-		belogs.Error("validateMft(): GetMft fail:", mftId, err)
+		belogs.Error("validateMft(): GetMftById fail:", mftId, err)
 		return
 	}
 	// set parent cer
 	chainMft.ParentChainCerAlones, err = getMftParentChainCers(chains, mftId)
 	if err != nil {
-		belogs.Error("getChainMft(): ParentChainCer fail:", mftId, err)
+		belogs.Error("validateMft(): getMftParentChainCers fail:", mftId, err)
+		chainMft.StateModel.JudgeState()
+		chains.UpdateFileTypeIdToMft(&chainMft)
 		return
 	}
 	belogs.Debug("validateMft(): chainMft.ParentChainCer:  mftId,  len(chainMft.ParentChainCerAlones):", mftId, len(chainMft.ParentChainCerAlones))
@@ -346,6 +349,11 @@ func getMftParentChainCer(chains *chainmodel.Chains, mftId uint64) (chainCerAlon
 	belogs.Debug("getMftParentChainCer(): mftId:", mftId, "  chainMft:", chainMft)
 
 	//get mft's aki --> parent cer's ski
+	if len(chainMft.Aki) == 0 {
+		belogs.Error("getMftParentChainCer(): chainMft.Aki is empty, fail:", mftId)
+		return chainCerAlone, errors.New("mft's aki is empty")
+	}
+
 	aki := chainMft.Aki
 	parentCerSki := aki
 	fileTypeId, ok := chains.SkiToFileTypeId[parentCerSki]

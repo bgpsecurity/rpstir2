@@ -26,3 +26,7 @@ type TalResponse struct {
 	HttpResponse
 	TalModels []TalModel `json:"talModels"`
 }
+type RsyncResultResponse struct {
+	HttpResponse
+	RsyncResult SyncResult `json:"rsyncResult"`
+}

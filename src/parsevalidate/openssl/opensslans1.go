@@ -6,7 +6,6 @@ import (
 	"errors"
 	"io/ioutil"
 	"os"
-	"os/exec"
 	"strconv"
 	"strings"
 	"time"
@@ -16,28 +15,12 @@ import (
 	datetime "github.com/cpusoft/goutil/datetime"
 	iputil "github.com/cpusoft/goutil/iputil"
 	jsonutil "github.com/cpusoft/goutil/jsonutil"
+	opensslutil "github.com/cpusoft/goutil/opensslutil"
 	osutil "github.com/cpusoft/goutil/osutil"
 
 	"model"
 	"parsevalidate/util"
 )
-
-func GetResultsByOpensslAns1(certFile string) (results []string, err error) {
-
-	//https://blog.csdn.net/Zhymax/article/details/7683925
-	//openssl asn1parse -in -ard.mft -inform DER
-	belogs.Debug("GetResultsByOpensslAns1(): certFile:", certFile)
-	cmd := exec.Command("openssl", "asn1parse", "-in", certFile, "--inform", "der")
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		belogs.Error("GetResultsByOpensslAns1(): exec.Command: certFile:", certFile, "   err: ", err, ": "+string(output))
-		return nil, err
-	}
-	result := string(output)
-	results = strings.Split(result, osutil.GetNewLineSep())
-	belogs.Debug("GetResultsByOpensslAns1(): len(results):", len(results))
-	return results, nil
-}
 
 type ManifestParse struct {
 	ManifestNumber asn1.RawValue         `json:"manifestNumber"`
@@ -392,66 +375,149 @@ func ParseSignerInfoModelByOpensslResults(results []string) (signerInfoModel mod
 
 func ParseByOpensslAns1ToX509(certFile string, results []string) (cerFile *os.File, fileByte []byte,
 	cerStartIndex int, cerEndIndex int, err error) {
+	belogs.Debug("ParseByOpensslAns1ToX509(): certFile:", certFile, "   len(results):", len(results))
 	// get cer info
 	certType := osutil.Ext(certFile)
+	/*
+	   400:d=4  hl=4 l=1409 cons: SEQUENCE
+	   404:d=5  hl=4 l=1129 cons: SEQUENCE
+	   408:d=6  hl=2 l=   3 cons: cont [ 0 ]
+	   410:d=7  hl=2 l=   1 prim: INTEGER           :02
+	   .........
+	   1813:d=3  hl=4 l= 428 cons: SET
+	   1817:d=4  hl=4 l= 424 cons: SEQUENCE
+	   1821:d=5  hl=2 l=   1 prim: INTEGER           :03
+	*/
+	iStart := 0
 	cerStartIndex = 0
 	cerEndIndex = 0
-	cerStartStr1 := "d=4  hl=4"
-	cerStartStr2 := "cons: SEQUENCE"
-	cerEndStr1 := "d=3  hl=4"
-	cerEndStr2 := "cons: SET"
-	for _, one := range results {
-		if strings.Contains(one, cerStartStr1) && strings.Contains(one, cerStartStr2) {
+	/*
+				835579:d=4  hl=5 l=179842 cons: SEQUENCE
+				835584:d=5  hl=5 l=179561 cons: SEQUENCE
+				835589:d=6  hl=2 l=   3 cons: cont [ 0 ]
+				835591:d=7  hl=2 l=   1 prim: INTEGER           :02
+						.........
+				1015426:d=3  hl=4 l= 428 cons: SET
+				1015430:d=4  hl=4 l= 424 cons: SEQUENCE
+				1015434:d=5  hl=2 l=   1 prim: INTEGER           :03
+
+		or end
+		 1242:d=5  hl=4 l= 257 prim: BIT STRING
+		 1503:d=4  hl=2 l=   0 prim: EOC
+		 1505:d=3  hl=4 l= 428 cons: SET
+		 1509:d=4  hl=4 l= 424 cons: SEQUENCE
+		 1513:d=5  hl=2 l=   1 prim: INTEGER           :03
+	*/
+	cerStartStr1 := "INTEGER           :02"
+	cerEndStr1 := "INTEGER           :03"
+	cerEndStr2 := "prim: EOC"
+	for i := range results {
+		belogs.Debug("ParseByOpensslAns1ToX509(): certFile:", certFile, "  i:", i, "   results[i]:", results[i])
+		if cerStartIndex == 0 && strings.HasSuffix(results[i], cerStartStr1) {
+			one := results[i-3] // last line 3
 			end := strings.Index(one, ":")
 			cerStartIndex, _ = strconv.Atoi(strings.TrimSpace(string([]byte(one[:end]))))
-		} else if cerStartIndex > 0 && strings.Contains(one, cerEndStr1) && strings.Contains(one, cerEndStr2) {
+			iStart = i
+			belogs.Debug("ParseByOpensslAns1ToX509():contains cerStartStr1, certFile:", certFile,
+				"  i:", i, "   results[i]:", results[i], "   one:", one, "    cerStartIndex:", cerStartIndex)
+
+		} else if cerStartIndex > 0 && i-iStart > 10 && strings.HasSuffix(results[i], cerEndStr1) {
+			// (i-iStart) should > 10
+			var one string
+			if strings.HasSuffix(results[i-3], cerEndStr2) {
+				one = results[i-3] // last line 3
+			} else {
+				one = results[i-2] // last line 2
+			}
 			end := strings.Index(one, ":")
 			cerEndIndex, _ = strconv.Atoi(strings.TrimSpace(string([]byte(one[:end]))))
+			belogs.Debug("ParseByOpensslAns1ToX509():contains cerEndStr1, certFile:", certFile,
+				"  i:", i, "   results[i]:", results[i], "   one:", one, "    cerEndIndex:", cerEndIndex)
 			break
 		}
 	}
+	belogs.Debug("ParseByOpensslAns1ToX509(): certFile:", certFile, "  cerStartIndex:", cerStartIndex, "   cerEndIndex:", cerEndIndex)
+
+	// if not found ,then found again
 	if cerStartIndex == 0 || cerEndIndex == 0 {
-		belogs.Error("ParseByOpensslAns1ToX509():cerStartIndex==0 || cerEndIndex == 0 ")
-		return nil, nil, cerStartIndex, cerEndIndex, errors.New("parse mft sub cer error")
+		cerStartStr1 := "d=4  hl=4"
+		cerStartStr2 := "cons: SEQUENCE"
+		cerEndStr1 := "d=3  hl=4"
+		cerEndStr2 := "cons: SET"
+
+		cerStartIndex = 0
+		cerEndIndex = 0
+		for _, one := range results {
+			if strings.Contains(one, cerStartStr1) && strings.Contains(one, cerStartStr2) {
+				end := strings.Index(one, ":")
+				cerStartIndex, _ = strconv.Atoi(strings.TrimSpace(string([]byte(one[:end]))))
+			} else if cerStartIndex > 0 && strings.Contains(one, cerEndStr1) && strings.Contains(one, cerEndStr2) {
+				end := strings.Index(one, ":")
+				cerEndIndex, _ = strconv.Atoi(strings.TrimSpace(string([]byte(one[:end]))))
+				break
+			}
+		}
+		belogs.Debug("ParseByOpensslAns1ToX509():again  certFile:", certFile, "  cerStartIndex:", cerStartIndex, "   cerEndIndex:", cerEndIndex)
 	}
+
+	if cerStartIndex == 0 || cerEndIndex == 0 {
+		belogs.Error("ParseByOpensslAns1ToX509():cerStartIndex==0 || cerEndIndex == 0 , certFile:", certFile)
+		return nil, nil, 0, 0, errors.New("fail to parse ee certificate")
+	}
+
 	_, fileDecodeBase64Byte, err := util.ReadFileAndDecodeBase64(certFile)
 	if err != nil {
 		belogs.Error("ParseByOpensslAns1ToX509():ReadFile return err: ", certFile, err)
-		return nil, nil, cerStartIndex, cerEndIndex, err
+		return nil, nil, 0, 0, err
 	}
 	fileByte = fileDecodeBase64Byte[cerStartIndex:cerEndIndex]
-	belogs.Debug("parseMftByOpenssl():len(fileByte):", len(fileByte))
+	belogs.Debug("ParseByOpensslAns1ToX509():len(fileByte):", len(fileByte))
 
-	// some need trim00, but others cannot trim00
-	fileByteTrim, cerEndIndexTrim := util.TrimSuffix00(fileByte, cerEndIndex)
-	belogs.Debug("parseMftByOpenssl():ForTrimSuffix00 len(fileByteTrim):", len(fileByteTrim))
-
-	cerFile, err = ioutil.TempFile("", certType) // temp file
+	// will test file(no trim)
+	cerFile, err = ioutil.TempFile("", certType+"_notrim_") // temp file
 	if err != nil {
-		belogs.Error("ParseByOpensslAns1ToX509():ioutil.TempFile trime cerFile: ", cerFile, err)
-		return nil, nil, cerStartIndex, cerEndIndexTrim, err
-	}
-	belogs.Debug("ParseByOpensslAns1ToX509():trime cerFile: [cerStartIndex:cerEndIndexTrim]:", cerFile.Name(), cerStartIndex, cerEndIndexTrim)
-	cerFile.Write(fileByteTrim)
-
-	// test if need trim
-	_, err = GetResultsByOpensslX509(cerFile.Name())
-	if err == nil {
-		return cerFile, fileByteTrim, cerStartIndex, cerEndIndexTrim, nil
-	}
-
-	// if trim fil, the remove old file(trim)
-	osutil.CloseAndRemoveFile(cerFile)
-	belogs.Error("ParseByOpensslAns1ToX509():GetResultsByOpensslX509 trime cerFile fail, will create new cerFile(no trim). old trim file is: ", cerFile, err)
-
-	// and create new file(no trim)
-	cerFile, err = ioutil.TempFile("", certType) // temp file
-	if err != nil {
-		belogs.Error("ParseByOpensslAns1ToX509():ioutil.TempFile notrime cerFile: ", cerFile, err)
+		belogs.Error("ParseByOpensslAns1ToX509():ioutil.TempFile notrim cerFile fail: ", certFile, cerFile, err)
 		return nil, nil, cerStartIndex, cerEndIndex, err
 	}
-	belogs.Debug("ParseByOpensslAns1ToX509():notrime cerFile: [cerStartIndex:cerEndIndex]:", cerFile.Name(), cerStartIndex, cerEndIndex)
+	belogs.Debug("ParseByOpensslAns1ToX509():notrim cerFile: [cerStartIndex:cerEndIndex]:", certFile, cerFile.Name(), cerStartIndex, cerEndIndex)
 	cerFile.Write(fileByte)
+	// test notrim by openssl x509
+	_, err = opensslutil.GetResultsByOpensslX509(cerFile.Name())
+	if err != nil {
+		belogs.Debug("ParseByOpensslAns1ToX509():notrim cerFile fail: [cerStartIndex:cerEndIndex]:",
+			certFile, cerFile.Name(),
+			"  cerStartIndex, cerEndIndex:", cerStartIndex, cerEndIndex, err)
+		osutil.CloseAndRemoveFile(cerFile)
+
+		// test if need trim00
+		fileByteTrim, cerEndIndexTrim := util.TrimSuffix00(fileByte, cerEndIndex)
+		belogs.Debug("ParseByOpensslAns1ToX509():TrimSuffix00 len(fileByteTrim):", certFile, len(fileByteTrim))
+
+		cerFile, err = ioutil.TempFile("", certType+"_trim_") // temp file
+		if err != nil {
+			belogs.Error("ParseByOpensslAns1ToX509():ioutil.TempFile trim cerFile: ", certFile, cerFile, err)
+			return nil, nil, 0, 0, err
+		}
+		belogs.Debug("ParseByOpensslAns1ToX509():trim cerFile: [cerStartIndex:cerEndIndexTrim]:", certFile, cerFile.Name(), cerStartIndex, cerEndIndexTrim)
+		cerFile.Write(fileByteTrim)
+
+		// test if need trim
+		_, err = opensslutil.GetResultsByOpensslX509(cerFile.Name())
+		if err != nil {
+			// if trim fil, the remove old file(trim)
+			belogs.Error("ParseByOpensslAns1ToX509():GetResultsByOpensslX509 trim and notrim all fail: ",
+				certFile, cerFile.Name(),
+				"   cerStartIndex, cerEndIndex:", cerStartIndex, cerEndIndex,
+				"   cerStartIndex, cerEndIndexTrim:", cerStartIndex, cerEndIndexTrim, err)
+			osutil.CloseAndRemoveFile(cerFile)
+			return nil, nil, 0, 0, err
+		}
+
+		belogs.Debug("ParseByOpensslAns1ToX509():trim cerFile pass: [cerStartIndex:cerEndIndexTrim]:", certFile, cerFile.Name(), cerStartIndex, cerEndIndexTrim)
+		return cerFile, fileByteTrim, cerStartIndex, cerEndIndexTrim, nil
+
+	}
+	belogs.Debug("ParseByOpensslAns1ToX509():notrim cerFile pass: [cerStartIndex:cerEndIndex]:", certFile, cerFile.Name(), cerStartIndex, cerEndIndex)
 	return cerFile, fileByte, cerStartIndex, cerEndIndex, nil
 
 }

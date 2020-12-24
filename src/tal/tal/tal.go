@@ -28,7 +28,7 @@ func GetTals() (passTalModels []model.TalModel, err error) {
 	belogs.Debug("GetTals():")
 
 	// get all tal files
-	talPath := conf.VariableString("sync::talpath")
+	talPath := conf.VariableString("sync::talPath")
 	files, err := getAllTalFiles(talPath)
 	if err != nil {
 		belogs.Error("GetTals(): GetAllTalFile failed:", err)
@@ -254,7 +254,8 @@ func parseAndValidateCer(talUrl, subjectPublicKeyInfo, tmpDir string, talSyncUrl
 	belogs.Debug("parseAndValidateCer(): talSyncUrl:", jsonutil.MarshalJson(talSyncUrl), "   subjectPublicKeyInfo:", subjectPublicKeyInfo)
 
 	// parse by /parsevalidate/parsefilesimple
-	resp, body, err := httpclient.PostFile("http", conf.String("rpstir2::parsevalidateserver"), conf.Int("rpstir2::httpport"),
+	// post file, still use http
+	resp, body, err := httpclient.PostFile("http", conf.String("rpstir2::serverHost"), conf.Int("rpstir2::serverHttpPort"),
 		"/parsevalidate/parsefilesimple",
 		talSyncUrl.LocalFile, "")
 	belogs.Debug("parseAndValidateCer():after /parsevalidate/parsefilesimple cerFile:", talSyncUrl.LocalFile, len(body))

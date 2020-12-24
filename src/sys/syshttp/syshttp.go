@@ -43,24 +43,35 @@ func InitReset(w rest.ResponseWriter, req *rest.Request) {
 	}
 }
 
-// detail
-func DetailStates(w rest.ResponseWriter, req *rest.Request) {
-	belogs.Info("DetailStates()")
+// enter
+func ServiceState(w rest.ResponseWriter, req *rest.Request) {
+	belogs.Info("ServiceState()")
 
-	detailStates, err := sys.DetailStates()
+	ssr := model.ServiceStateRequest{}
+	err := req.DecodeJsonPayload(&ssr)
 	if err != nil {
+		belogs.Error("ServiceState(): DecodeJsonPayload fail :", err)
 		w.WriteJson(httpserver.GetFailHttpResponse(err))
 		return
 	}
-	belogs.Info("DetailStates():detailStates:", jsonutil.MarshalJson(detailStates))
-
-	stateResponse := model.StateResponse{
-		HttpResponse: httpserver.GetOkHttpResponse(),
-		State:        detailStates,
+	belogs.Info("ServiceState(): ServiceStateRequest:", jsonutil.MarshalJson(ssr))
+	serviceState, err := sys.ServiceState(ssr)
+	if err != nil {
+		belogs.Error("ServiceState(): ServiceState fail, ssr :", jsonutil.MarshalJson(ssr),
+			"    serviceState:", serviceState, err)
+		w.WriteJson(httpserver.GetFailHttpResponse(err))
+		return
 	}
-	w.WriteJson(stateResponse)
+	belogs.Info("ServiceState(): serviceState:", jsonutil.MarshalJson(serviceState))
+
+	serviceStateResponse := model.ServiceStateResponse{
+		HttpResponse: httpserver.GetOkHttpResponse(),
+		ServiceState: *serviceState,
+	}
+	w.WriteJson(serviceStateResponse)
 }
 
+/*
 // summary
 func SummaryStates(w rest.ResponseWriter, req *rest.Request) {
 	belogs.Info("SummaryStates()")
@@ -78,7 +89,7 @@ func SummaryStates(w rest.ResponseWriter, req *rest.Request) {
 	}
 	w.WriteJson(stateResponse)
 }
-
+*/
 // just return valid/warning/invalid count in cer/roa/mft/crl
 func Results(w rest.ResponseWriter, req *rest.Request) {
 	belogs.Info("Results()")
@@ -88,8 +99,8 @@ func Results(w rest.ResponseWriter, req *rest.Request) {
 		w.WriteJson(httpserver.GetFailHttpResponse(err))
 		return
 	}
-	belogs.Info("Results():results:", jsonutil.MarshalJson(results))
-	w.WriteJson(results)
+	belogs.Info("Results():results:", jsonutil.MarshallJsonIndent(results))
+	w.WriteJsonString(jsonutil.MarshallJsonIndent(results))
 }
 
 func ExportRoas(w rest.ResponseWriter, req *rest.Request) {

@@ -11,6 +11,7 @@ import (
 	hashutil "github.com/cpusoft/goutil/hashutil"
 	iputil "github.com/cpusoft/goutil/iputil"
 	jsonutil "github.com/cpusoft/goutil/jsonutil"
+	opensslutil "github.com/cpusoft/goutil/opensslutil"
 	osutil "github.com/cpusoft/goutil/osutil"
 	regexputil "github.com/cpusoft/goutil/regexputil"
 
@@ -73,11 +74,11 @@ func parseCerModel(certFile string, cerModel *model.CerModel, stateModel *model.
 	}
 
 	// results will be used
-	results, err := openssl.GetResultsByOpensslX509(certFile)
+	results, err := opensslutil.GetResultsByOpensslX509(certFile)
 	if err != nil {
 		belogs.Error("parseCerModel(): GetResultsByOpensslX509: err: ", err, ": "+certFile)
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
-			Fail:   "Fail to parse file",
+			Fail:   "Fail to parse file by openssl",
 			Detail: err.Error()}
 		stateModel.AddError(&stateMsg)
 		return err
@@ -738,7 +739,7 @@ func validateCerlModel(cerModel *model.CerModel, stateModel *model.StateModel) (
 func ParseCerSimple(certFile string) (parseCerSimple model.ParseCerSimple, err error) {
 	// results will be used
 	belogs.Debug("ParseCerSimple(): certFile:", certFile)
-	results, err := openssl.GetResultsByOpensslX509(certFile)
+	results, err := opensslutil.GetResultsByOpensslX509(certFile)
 	if err != nil {
 		belogs.Error("ParseCerSimple(): GetResultsByOpensslX509: err: ", err, ": "+certFile)
 		return parseCerSimple, err

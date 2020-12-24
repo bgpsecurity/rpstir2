@@ -30,7 +30,7 @@ func decodePacketImpl(data []byte, hierarchyFor00 int, topHierarchyFor00 int) (*
 		return nil, nil, errors.New("data is empty")
 	}
 	// may have 0x00, 0x00, should be trimed
-	data = util.TrimNull(data)
+	data = util.TrimPrefix00(data)
 	if len(data) == 0 {
 		return nil, nil, nil
 	}
@@ -87,7 +87,7 @@ func decodePacketImpl(data []byte, hierarchyFor00 int, topHierarchyFor00 int) (*
 		}
 	}
 	valueData := data[datapos : datapos+datalen]
-	valueDataTmp := util.TrimNull(valueData)
+	valueDataTmp := util.TrimPrefix00(valueData)
 	//logs.LogDebugBytes(("valueDataTmp", valueDataTmp)
 	if len(valueDataTmp) == 0 {
 		return nil, nil, nil

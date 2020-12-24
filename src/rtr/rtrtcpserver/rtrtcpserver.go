@@ -16,7 +16,7 @@ import (
 var RtrTcpServer *ts.TcpServer
 
 func Start() {
-	tcpport := conf.String("rtr::tcpport")
+	tcpport := conf.String("rpstir2::serverTcpPort")
 	belogs.Debug("Start(): tcpport:", tcpport)
 
 	rtrTcpServerProcessFunc := new(RtrTcpServerProcessFunc)

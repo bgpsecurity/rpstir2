@@ -17,9 +17,9 @@ func GetSyncLogFileModelsBySyncLogId(labRpkiSyncLogId uint64) (syncLogFileModels
 	belogs.Debug("GetSyncLogFileModelsBySyncLogId():start")
 	dbSyncLogFileModels := make([]parsevalidatemodel.SyncLogFileModel, 0)
 	sql := `select s.id,s.syncLogId,s.filePath,s.fileName, s.fileType, s.syncType, 
-				CONCAT(IFNULL(c.id,''),IFNULL(m.id,''),IFNULL(l.id,''),IFNULL(r.id,'')) as certId from lab_rpki_sync_log_file s 
+				cast(CONCAT(IFNULL(c.id,''),IFNULL(m.id,''),IFNULL(l.id,''),IFNULL(r.id,'')) as unsigned int) as certId from lab_rpki_sync_log_file s 
 			left join lab_rpki_cer c on c.filePath = s.filePath and c.fileName = s.fileName  
-			left join lab_rpki_mft m on m.filePath = m.filePath and m.fileName = s.fileName  
+			left join lab_rpki_mft m on m.filePath = s.filePath and m.fileName = s.fileName  
 			left join lab_rpki_crl l on l.filePath = s.filePath and l.fileName = s.fileName  
 			left join lab_rpki_roa r on r.filePath = s.filePath and r.fileName = s.fileName 
 			where s.state->>'$.updateCertTable'='notYet' and s.syncLogId=? order by s.id `
@@ -28,7 +28,7 @@ func GetSyncLogFileModelsBySyncLogId(labRpkiSyncLogId uint64) (syncLogFileModels
 		belogs.Error("GetSyncLogFileModelsBySyncLogId(): Find fail:", err)
 		return nil, err
 	}
-	belogs.Debug("GetSyncLogFileModelsBySyncLogId(): len(dbSyncLogFileModels):", len(dbSyncLogFileModels))
+	belogs.Debug("GetSyncLogFileModelsBySyncLogId(): len(dbSyncLogFileModels):", len(dbSyncLogFileModels), jsonutil.MarshalJson(dbSyncLogFileModels))
 	syncLogFileModels = parsevalidatemodel.NewSyncLogFileModels(labRpkiSyncLogId, dbSyncLogFileModels)
 	belogs.Info("GetSyncLogFileModelsBySyncLogId(): end, len(dbSyncLogFileModels),  time(s):", len(dbSyncLogFileModels), time.Now().Sub(start).Seconds())
 	return syncLogFileModels, nil

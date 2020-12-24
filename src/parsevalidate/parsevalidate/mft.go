@@ -9,6 +9,7 @@ import (
 	convert "github.com/cpusoft/goutil/convert"
 	hashutil "github.com/cpusoft/goutil/hashutil"
 	jsonutil "github.com/cpusoft/goutil/jsonutil"
+	opensslutil "github.com/cpusoft/goutil/opensslutil"
 	osutil "github.com/cpusoft/goutil/osutil"
 	regexputil "github.com/cpusoft/goutil/regexputil"
 
@@ -50,11 +51,11 @@ func parseMftModel(certFile string, mftModel *model.MftModel, stateModel *model.
 
 	//https://blog.csdn.net/Zhymax/article/details/7683925
 	//openssl asn1parse -in -ard.mft -inform DER
-	results, err := openssl.GetResultsByOpensslAns1(certFile)
+	results, err := opensslutil.GetResultsByOpensslAns1(certFile)
 	if err != nil {
-		belogs.Error("parseMftModel(): ParseByOpensslAns1: err: ", err, ": "+certFile)
+		belogs.Error("parseMftModel(): GetResultsByOpensslAns1: err: ", err, ": "+certFile)
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
-			Fail:   "Fail to read file",
+			Fail:   "Fail to parse file by openssl",
 			Detail: err.Error()}
 		stateModel.AddError(&stateMsg)
 		return err
@@ -86,7 +87,7 @@ func parseMftModel(certFile string, mftModel *model.MftModel, stateModel *model.
 
 	err = openssl.ParseMftModelByOpensslResults(results, mftModel)
 	if err != nil {
-		belogs.Error("parseMftModel():ParseByOpensslAns1ToX509  certFile:", certFile, "  err:", err, " will try parseMftModelByPacket")
+		belogs.Error("parseMftModel():ParseMftModelByOpensslResults  certFile:", certFile, "  err:", err, " will try parseMftModelByPacket")
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
 			Fail:   "Fail to parse file",
 			Detail: err.Error()}
@@ -127,18 +128,18 @@ func parseMftModel(certFile string, mftModel *model.MftModel, stateModel *model.
 	if err != nil {
 		belogs.Error("parseMftModel():ParseByOpensslAns1ToX509  certFile:", certFile, "  err:", err)
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
-			Fail:   "Fail to parse file",
+			Fail:   "Fail to parse ee certificate by openssl",
 			Detail: err.Error()}
 		stateModel.AddError(&stateMsg)
 		return err
 	}
 	defer osutil.CloseAndRemoveFile(cerFile)
 
-	results, err = openssl.GetResultsByOpensslX509(cerFile.Name())
+	results, err = opensslutil.GetResultsByOpensslX509(cerFile.Name())
 	if err != nil {
 		belogs.Error("parseMftModel(): GetResultsByOpensslX509: err: ", err, ": "+cerFile.Name())
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
-			Fail:   "Fail to parse file",
+			Fail:   "Fail to parse ee certificate by openssl",
 			Detail: err.Error()}
 		stateModel.AddError(&stateMsg)
 		return err

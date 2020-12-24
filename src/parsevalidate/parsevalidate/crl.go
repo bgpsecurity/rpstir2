@@ -9,6 +9,7 @@ import (
 	convert "github.com/cpusoft/goutil/convert"
 	hashutil "github.com/cpusoft/goutil/hashutil"
 	jsonutil "github.com/cpusoft/goutil/jsonutil"
+	opensslutil "github.com/cpusoft/goutil/opensslutil"
 	osutil "github.com/cpusoft/goutil/osutil"
 	regexputil "github.com/cpusoft/goutil/regexputil"
 
@@ -67,11 +68,11 @@ func parseCrlModel(certFile string, crlModel *model.CrlModel, stateModel *model.
 		return err
 	}
 
-	results, err := openssl.GetResultsByOpensslAns1(certFile)
+	results, err := opensslutil.GetResultsByOpensslAns1(certFile)
 	if err != nil {
 		belogs.Error("parseCrlModel(): GetResultsByOpensslAns1: err: ", err, ": "+certFile)
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
-			Fail:   "Fail to parse file",
+			Fail:   "Fail to parse file by openssl",
 			Detail: err.Error()}
 		stateModel.AddError(&stateMsg)
 		return err

@@ -31,18 +31,20 @@ func Start(syncUrls *model.SyncUrls) {
 	rrQueue = rrdpmodel.NewQueue()
 	rrQueue.LastSyncRrdpLogs = syncRrdpLogs
 	rrQueue.LabRpkiSyncLogId = syncUrls.SyncLogId
+	belogs.Debug("Start(): before startRrdpServer rrQueue:", jsonutil.MarshalJson(rrQueue))
+
 	go startRrdpServer()
-	belogs.Debug("Start(): rrQueue:", jsonutil.MarshalJson(rrQueue))
+	belogs.Debug("Start(): after startRrdpServer rrQueue:", jsonutil.MarshalJson(rrQueue))
 
 	// start to rrdp by sync url in tal, to get root cer
 	// first: remove all root cer, so can will rrdp download and will trigger parse all cer files.
 	// otherwise, will have to load all root file manually
-	os.RemoveAll(conf.VariableString("rrdp::destpath") + "/root/")
-	os.MkdirAll(conf.VariableString("rrdp::destpath")+"/root/", os.ModePerm)
+	os.RemoveAll(conf.VariableString("rrdp::destPath") + "/root/")
+	os.MkdirAll(conf.VariableString("rrdp::destPath")+"/root/", os.ModePerm)
 	atomic.AddInt64(&rrQueue.RrdpingParsingCount, int64(len(syncUrls.RrdpUrls)))
 	belogs.Debug("Start():after RrdpingParsingCount:", atomic.LoadInt64(&rrQueue.RrdpingParsingCount))
 	for _, url := range syncUrls.RrdpUrls {
-		go rrQueue.AddRrdpUrl(url, conf.VariableString("rrdp::destpath")+"/")
+		go rrQueue.AddRrdpUrl(url, conf.VariableString("rrdp::destPath")+"/")
 	}
 }
 
@@ -79,7 +81,7 @@ func startRrdpServer() {
 			// will call sync to return result
 			go func(rrdpResultJson string) {
 				belogs.Debug("startRrdpServer():call /sync/rrdpresult: rrdpResultJson:", rrdpResultJson)
-				httpclient.Post("http", conf.String("rpstir2::rrdpserver"), conf.Int("rpstir2::httpport"),
+				httpclient.Post("https", conf.String("rpstir2::serverHost"), conf.Int("rpstir2::serverHttpsPort"),
 					"/sync/rrdpresult", rrdpResultJson)
 			}(rrdpResultJson)
 

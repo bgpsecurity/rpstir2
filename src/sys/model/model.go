@@ -1,5 +1,7 @@
 package model
 
+import ()
+
 type SysStyle struct {
 	// "init" :  will create all table;
 	// "fullsync": will remove current data to forece full sync data, and retain rtr/slurm/transfer data.

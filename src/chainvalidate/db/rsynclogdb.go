@@ -45,7 +45,7 @@ func UpdateRsyncLogChainValidateStateStart(state string) (labRpkiSyncLogId uint6
 }
 
 func UpdateRsyncLogChainValidateStateEnd(labRpkiSyncLogId uint64, state string) (err error) {
-	// get current rsyncState, the set new value
+	// get current chainValidateState, the set new value
 	session, err := xormdb.NewSession()
 	defer session.Close()
 

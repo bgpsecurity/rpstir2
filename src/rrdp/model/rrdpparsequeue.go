@@ -8,6 +8,7 @@ import (
 	"time"
 
 	belogs "github.com/astaxie/beego/logs"
+	jsonutil "github.com/cpusoft/goutil/jsonutil"
 
 	"model"
 )
@@ -15,7 +16,7 @@ import (
 // queue for rrdp url of notify.xml
 type RrdpParseQueue struct {
 
-	//rrdp channel, store will rrdp url and destpath
+	//rrdp channel, store will rrdp url and destPath
 	RrdpModelChan chan RrdpModelChan
 
 	// parse cer channel, store will parse filepathname
@@ -57,6 +58,7 @@ func NewQueue() *RrdpParseQueue {
 	rq.RrdpResult.OkUrls = make([]string, 0, 100000)
 	rq.RrdpResult.FailUrls = make(map[string]string, 100)
 	rq.RrdpResult.FailParseValidateCerts = make(map[string]string, 100)
+	belogs.Debug("NewQueue():rq:", jsonutil.MarshalJson(rq))
 	return rq
 }
 

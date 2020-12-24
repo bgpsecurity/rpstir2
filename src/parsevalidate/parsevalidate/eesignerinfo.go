@@ -7,6 +7,7 @@ import (
 	belogs "github.com/astaxie/beego/logs"
 	convert "github.com/cpusoft/goutil/convert"
 	jsonutil "github.com/cpusoft/goutil/jsonutil"
+	opensslutil "github.com/cpusoft/goutil/opensslutil"
 
 	"model"
 	"parsevalidate/openssl"
@@ -23,7 +24,7 @@ func ParseEeCertModel(certFile string, fileByte []byte, start int, end int) (eeC
 		return eeCertModel, err
 	}
 
-	results, err := openssl.GetResultsByOpensslX509(certFile)
+	results, err := opensslutil.GetResultsByOpensslX509(certFile)
 	if err != nil {
 		belogs.Error("ParseEeCertModel(): GetResultsByOpensslX509: err: ", err, ": "+certFile)
 		return eeCertModel, err

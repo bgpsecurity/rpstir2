@@ -13,9 +13,9 @@ import (
 	rsyncmodel "rsync/model"
 )
 
-func InsertRsyncLogFiles(labRpkiSyncLogId uint64,
+func InsertSyncLogFiles(labRpkiSyncLogId uint64,
 	addFiles, delFiles, updateFiles map[string]rsyncmodel.RsyncFileHash) (err error) {
-	belogs.Debug("InsertRsyncLogFiles():labRpkiSyncLogId:", labRpkiSyncLogId)
+	belogs.Debug("InsertSyncLogFiles():rsync, labRpkiSyncLogId:", labRpkiSyncLogId)
 
 	// update lab_rpki_sync_log
 	session, err := xormdb.NewSession()
@@ -26,39 +26,45 @@ func InsertRsyncLogFiles(labRpkiSyncLogId uint64,
 	// insert lab_rpki_sync_log_file
 	rsyncType := "add"
 	for _, fileHash := range addFiles {
-		err = InsertRsyncLogFile(session, labRpkiSyncLogId, rsyncTime, rsyncType, &fileHash)
+		err = InsertSyncLogFile(session, labRpkiSyncLogId, rsyncTime, rsyncType, &fileHash)
 		if err != nil {
 			return xormdb.RollbackAndLogError(session, "InsertRsyncLogFiles(): InsertRsyncLogFile add fail : fileName:"+
 				fileHash.FileName, err)
 		}
 	}
+	belogs.Debug("InsertSyncLogFiles():rsync, after len(addFiles):", labRpkiSyncLogId, len(addFiles))
+
 	rsyncType = "update"
 	for _, fileHash := range updateFiles {
-		err = InsertRsyncLogFile(session, labRpkiSyncLogId, rsyncTime, rsyncType, &fileHash)
+		err = InsertSyncLogFile(session, labRpkiSyncLogId, rsyncTime, rsyncType, &fileHash)
 		if err != nil {
 			return xormdb.RollbackAndLogError(session, "InsertRsyncLogFiles(): InsertRsyncLogFile update fail : fileName:"+
 				fileHash.FileName, err)
 		}
 	}
+	belogs.Debug("InsertSyncLogFiles():rsync, after len(updateFiles):", labRpkiSyncLogId, len(updateFiles))
+
 	rsyncType = "del"
 	for _, fileHash := range delFiles {
-		err = InsertRsyncLogFile(session, labRpkiSyncLogId, rsyncTime, rsyncType, &fileHash)
+		err = InsertSyncLogFile(session, labRpkiSyncLogId, rsyncTime, rsyncType, &fileHash)
 		if err != nil {
 			return xormdb.RollbackAndLogError(session, "InsertRsyncLogFiles(): InsertRsyncLogFile  del fail :  fileName:"+
 				fileHash.FileName, err)
 		}
 	}
+	belogs.Debug("InsertSyncLogFiles():rsync, after len(delFiles):", labRpkiSyncLogId, len(delFiles))
+
 	// commit
 	err = xormdb.CommitSession(session)
 	if err != nil {
-		return xormdb.RollbackAndLogError(session, "InsertRsyncLogFiles(): CommitSession fail: labRpkiSyncLogId:"+
+		return xormdb.RollbackAndLogError(session, "InsertSyncLogFiles(): CommitSession fail: labRpkiSyncLogId:"+
 			convert.ToString(labRpkiSyncLogId), err)
 	}
 	return nil
 
 }
 
-func InsertRsyncLogFile(session *xorm.Session, labRpkiSyncLogId uint64, rsyncTime time.Time,
+func InsertSyncLogFile(session *xorm.Session, labRpkiSyncLogId uint64, rsyncTime time.Time,
 	syncType string, rsyncFileHash *rsyncmodel.RsyncFileHash) error {
 
 	rtr := "notNeed"
@@ -72,10 +78,8 @@ func InsertRsyncLogFile(session *xorm.Session, labRpkiSyncLogId uint64, rsyncTim
 		Rtr:             rtr,
 	}
 	state := jsonutil.MarshalJson(labRpkiSyncLogFileState)
-	belogs.Debug("InsertRsyncLogFile():  labRpkiSyncLogId:", labRpkiSyncLogId, "  state:", state)
-
 	//lab_rpki_sync_log_file
-	sqlStr := `INSERT lab_rpki_sync_log_file
+	sqlStr := `INSERT ignore lab_rpki_sync_log_file
 	               (syncLogId, fileType,syncTime,
 	               filePath,fileName,syncType,
 	               syncStyle,state,fileHash)
@@ -85,8 +89,11 @@ func InsertRsyncLogFile(session *xorm.Session, labRpkiSyncLogId uint64, rsyncTim
 	_, err := session.Exec(sqlStr, labRpkiSyncLogId, rsyncFileHash.FileType, rsyncTime,
 		rsyncFileHash.FilePath, rsyncFileHash.FileName, syncType,
 		"rsync", state, xormdb.SqlNullString(rsyncFileHash.FileHash))
+	belogs.Debug("InsertSyncLogFile(): rsync, labRpkiSyncLogId:",
+		labRpkiSyncLogId, "    rsyncFileHash:", rsyncFileHash.FilePath, rsyncFileHash.FileName,
+		"   syncType:", syncType, "  state:", state)
 	if err != nil {
-		belogs.Error("InsertRsyncLogFile(): INSERT lab_rpki_sync_log_file fail, labRpkiSyncLogId:", labRpkiSyncLogId, err)
+		belogs.Error("InsertSyncLogFile(): rsync, INSERT lab_rpki_sync_log_file fail, labRpkiSyncLogId:", labRpkiSyncLogId, rsyncFileHash.FilePath, rsyncFileHash.FileName, err)
 		return xormdb.RollbackAndLogError(session, "INSERT lab_rpki_sync_log_file fail", err)
 	}
 	return nil
