@@ -1,56 +1,29 @@
 package sys
 
 import (
-	belogs "github.com/astaxie/beego/logs"
-	convert "github.com/cpusoft/goutil/convert"
-	jsonutil "github.com/cpusoft/goutil/jsonutil"
+	"errors"
 
 	"model"
-	db "sys/db"
 )
 
-func DetailStates() (detailStates map[string]interface{}, err error) {
-	syncLog, err := db.GetMaxSyncLog()
-	if err != nil {
-		belogs.Error("DetailStates():GetMaxSyncLog fail:", err)
-		return detailStates, err
-	}
-	detailStates = make(map[string]interface{}, 0)
-	detailStates["state"] = syncLog.State
-	if len(syncLog.RsyncState) > 0 {
-		syncLogRsyncState := model.SyncLogRsyncState{}
-		jsonutil.UnmarshalJson(syncLog.RsyncState, &syncLogRsyncState)
-		detailStates["rsyncState"] = syncLogRsyncState
-	}
-	if len(syncLog.RrdpState) > 0 {
-		syncLogRrdpState := model.SyncLogRrdpState{}
-		jsonutil.UnmarshalJson(syncLog.RrdpState, &syncLogRrdpState)
-		detailStates["rrdpState"] = syncLogRrdpState
-	}
-	if len(syncLog.DiffState) > 0 {
-		syncLogDiffState := model.SyncLogDiffState{}
-		jsonutil.UnmarshalJson(syncLog.DiffState, &syncLogDiffState)
-		detailStates["diffState"] = syncLogDiffState
-	}
-	if len(syncLog.ParseValidateState) > 0 {
-		syncLogParseValidateState := model.SyncLogParseValidateState{}
-		jsonutil.UnmarshalJson(syncLog.ParseValidateState, &syncLogParseValidateState)
-		detailStates["parseValidateState"] = syncLogParseValidateState
-	}
-	if len(syncLog.ChainValidateState) > 0 {
-		syncLogChainValidateState := model.SyncLogChainValidateState{}
-		jsonutil.UnmarshalJson(syncLog.ChainValidateState, &syncLogChainValidateState)
-		detailStates["chainValidateState"] = syncLogChainValidateState
-	}
-	if len(syncLog.RtrState) > 0 {
-		syncLogRtrState := model.SyncLogRtrState{}
-		jsonutil.UnmarshalJson(syncLog.RtrState, &syncLogRtrState)
-		detailStates["rtrState"] = syncLogRtrState
-	}
-	belogs.Info("DetailStates(): detailStates:", jsonutil.MarshalJson(detailStates))
-	return detailStates, nil
+var serviceState *model.ServiceState
+
+func init() {
+	serviceState = model.NewServiceState()
 }
 
+func ServiceState(ssp model.ServiceStateRequest) (*model.ServiceState, error) {
+	if ssp.Operate == "enter" {
+		return serviceState.EnterState(ssp.State)
+	} else if ssp.Operate == "leave" {
+		return serviceState.LeaveState(ssp.State)
+	} else if ssp.Operate == "get" {
+		return serviceState, nil
+	}
+	return nil, errors.New("param is error")
+}
+
+/*
 func SummaryStates() (summaryStates map[string]interface{}, err error) {
 	syncLog, err := db.GetMaxSyncLog()
 	if err != nil {
@@ -66,15 +39,10 @@ func SummaryStates() (summaryStates map[string]interface{}, err error) {
 	summaryStates["state"] = state
 
 	startTime := ""
-	if len(syncLog.RsyncState) > 0 {
-		syncLogRsyncState := model.SyncLogRsyncState{}
-		jsonutil.UnmarshalJson(syncLog.RsyncState, &syncLogRsyncState)
-		startTime = convert.Time2String(syncLogRsyncState.StartTime)
-	}
-	if len(syncLog.RrdpState) > 0 {
-		syncLogRrdpState := model.SyncLogRrdpState{}
-		jsonutil.UnmarshalJson(syncLog.RrdpState, &syncLogRrdpState)
-		startTime = convert.Time2String(syncLogRrdpState.StartTime)
+	if len(syncLog.SyncState) > 0 {
+		syncLogSyncState := model.SyncLogSyncState{}
+		jsonutil.UnmarshalJson(syncLog.SyncState, &syncLogSyncState)
+		startTime = convert.Time2String(syncLogSyncState.StartTime)
 	}
 	summaryStates["startTime"] = startTime
 
@@ -88,3 +56,4 @@ func SummaryStates() (summaryStates map[string]interface{}, err error) {
 	belogs.Info("SummaryStates(): summaryStates:", jsonutil.MarshalJson(summaryStates))
 	return summaryStates, nil
 }
+*/

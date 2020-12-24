@@ -7,6 +7,7 @@ import (
 	belogs "github.com/astaxie/beego/logs"
 	"github.com/cpusoft/go-json-rest/rest"
 	conf "github.com/cpusoft/goutil/conf"
+	"github.com/cpusoft/goutil/httpclient"
 	"github.com/cpusoft/goutil/httpserver"
 	"github.com/cpusoft/goutil/jsonutil"
 
@@ -16,7 +17,30 @@ import (
 
 func ParseValidateStart(w rest.ResponseWriter, req *rest.Request) {
 	belogs.Debug("ParseValidateStart(): start: ")
-	go parsevalidate.ParseValidateStart()
+
+	//check serviceState
+	httpclient.Post("https", conf.String("rpstir2::serverHost"), conf.Int("rpstir2::serverHttpsPort"),
+		"/sys/servicestate", `{"operate":"enter","state":"parsevalidate"}`)
+
+	go func() {
+		nextStep, err := parsevalidate.ParseValidateStart()
+		belogs.Debug("ParseValidateStart():  ParseValidateStart end,  nextStep is :", nextStep, err)
+		// leave serviceState
+		if err != nil {
+			// will end this whole sync
+			belogs.Error("ParseValidateStart():  ParseValidateStart fail", err)
+			httpclient.Post("https", conf.String("rpstir2::serverHost"), conf.Int("rpstir2::serverHttpsPort"),
+				"/sys/servicestate", `{"operate":"leave","state":"end"}`)
+		} else {
+			httpclient.Post("https", conf.String("rpstir2::serverHost"), conf.Int("rpstir2::serverHttpsPort"),
+				"/sys/servicestate", `{"operate":"leave","state":"parsevalidate"}`)
+			// will call ChainValidate
+			go httpclient.Post("https", conf.String("rpstir2::serverHost"), conf.Int("rpstir2::serverHttpsPort"),
+				"/chainvalidate/start", "")
+			belogs.Info("ParseValidateStart():  sync.Start end,  nextStep is :", nextStep)
+		}
+
+	}()
 
 	w.WriteJson(httpserver.GetOkHttpResponse())
 
@@ -25,10 +49,12 @@ func ParseValidateStart(w rest.ResponseWriter, req *rest.Request) {
 // upload file to parse;
 // only one file
 func ParseValidateFile(w rest.ResponseWriter, req *rest.Request) {
-	belogs.Debug("ParseValidateFile(): start: tmpdir:", conf.String("parse::tmpdir"))
+	belogs.Debug("ParseValidateFile(): start: tmpDir:", conf.String("parse::tmpDir"))
 
-	receiveFiles, err := httpserver.ReceiveFiles(conf.String("parse::tmpdir"), req)
+	receiveFiles, err := httpserver.ReceiveFiles(conf.String("parse::tmpDir"), req)
 	defer httpserver.RemoveReceiveFiles(receiveFiles)
+	belogs.Debug("ParseValidateFile(): receiveFiles:", receiveFiles)
+
 	var certType string
 	var certModel interface{}
 	var stateModel model.StateModel
@@ -65,9 +91,9 @@ func ParseValidateFile(w rest.ResponseWriter, req *rest.Request) {
 // only one file
 func ParseFile(w rest.ResponseWriter, req *rest.Request) {
 	start := time.Now()
-	belogs.Debug("ParseFile(): start: tmpdir:", conf.String("parse::tmpdir"))
+	belogs.Debug("ParseFile(): start: tmpDir:", conf.String("parse::tmpDir"))
 
-	receiveFiles, err := httpserver.ReceiveFiles(conf.String("parse::tmpdir"), req)
+	receiveFiles, err := httpserver.ReceiveFiles(conf.String("parse::tmpDir"), req)
 	defer httpserver.RemoveReceiveFiles(receiveFiles)
 
 	var certModel interface{}
@@ -94,8 +120,8 @@ func ParseFile(w rest.ResponseWriter, req *rest.Request) {
 
 // upload file to parse to get ca repo
 func ParseFileSimple(w rest.ResponseWriter, req *rest.Request) {
-	belogs.Debug("ParseFileSimple(): start: tmpdir:", conf.String("parse::tmpdir"))
-	receiveFiles, err := httpserver.ReceiveFiles(conf.String("parse::tmpdir"), req)
+	belogs.Debug("ParseFileSimple(): start: tmpDir:", conf.String("parse::tmpDir"))
+	receiveFiles, err := httpserver.ReceiveFiles(conf.String("parse::tmpDir"), req)
 	defer httpserver.RemoveReceiveFiles(receiveFiles)
 
 	var parseCerSimple model.ParseCerSimple

@@ -48,7 +48,8 @@ var intiSqls []string = []string{
 	`DROP TABLE IF EXISTS	lab_rpki_transfer_target`,
 	`DROP TABLE IF EXISTS	lab_rpki_transfer_log`,
 	`DROP TABLE IF EXISTS	lab_rpki_statistic`,
-	`DROP TABLE IF EXISTS	lab_rpki_conf`,
+	`DROP TABLE IF EXISTS	lab_rpki_analyse_roa_history`,
+	`DROP TABLE IF EXISTS	lab_rpki_analyse_roa_compete`,
 	`DROP VIEW  IF EXISTS	lab_rpki_roa_ipaddress_view`,
 	`DROP VIEW  IF EXISTS	lab_rpki_crl_revoked_cert_view`,
 	`DROP VIEW  IF EXISTS	lab_rpki_mft_file_hash_view`,
@@ -332,9 +333,6 @@ CREATE TABLE lab_rpki_roa_ee_ipaddress (
 CREATE TABLE lab_rpki_sync_log (
   id int(10) unsigned not null primary key auto_increment,
   syncState json,
-  rsyncState json,
-  rrdpState json,
-  diffState json,
   parseValidateState json,
   chainValidateState json,
   rtrState json,
@@ -469,8 +467,8 @@ CREATE TABLE lab_rpki_slurm_file (
   id int(10) unsigned not null primary key auto_increment,
   jsonAll  json not null  COMMENT 'slurm content',
   uploadTime  datetime NOT NULL,
-  fileName varchar(128) NOT NULL ,
-  priority int(10) unsigned not null default 5  COMMENT '0-10, 0 is highest level, 10 is  lowest. default 5. the higher level users slurm will conver lower '
+  filePath varchar(128) NOT NULL ,
+  fileName varchar(128) NOT NULL   
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin comment='support different user upload different zone slurm file'
 `,
 
@@ -499,7 +497,7 @@ CREATE TABLE lab_rpki_transfer_target (
   address varchar(64) NOT NULL COMMENT 'IP or domain ',
   port    int(10) unsigned NOT NULL COMMENT 'port',
   targetType   varchar(64) NOT NULL COMMENT 'vc/rp',
-  createTime datetime NOT NULL COMMENT 'create time',
+  updateTime datetime NOT NULL COMMENT 'update time',
   state varchar(16) NOT NULL DEFAULT 'valid'  COMMENT 'valid/invalid'
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin comment='linked server, as target. so every server(rp/vc) may have different targets'
 `,
@@ -530,22 +528,33 @@ CREATE TABLE lab_rpki_statistic (
   mftFileCount json NOT NULL COMMENT 'mft Count',
   roaFileCount json NOT NULL COMMENT 'roa Count',
   repos json NOT NULL COMMENT 'repos, big json',
-  sync json  NOT NULL COMMENT 'sync info'  
+  syncLogId int(10) unsigned not null  COMMENT 'foreign key  references lab_rpki_sync_log(id)'
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin comment='statis, update after every sync'
 `,
 
 	`
 #####################
-####  configure
+####  analyse
 #####################
-CREATE TABLE lab_rpki_conf (
-  id int(10) unsigned NOT NULL primary key auto_increment,
-  systemName varchar(256) NOT NULL  COMMENT 'system name',
-  parameterName varchar(256) NOT NULL  COMMENT 'parameter name',
-  parameterValue json COMMENT 'parameter value',
-  parameterDefaultValue json COMMENT 'parameter default value',
-  updateTime datetime NOT NULL COMMENT 'update time'
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin comment='configuration of rpstir2'
+CREATE TABLE lab_rpki_analyse_roa_history (
+	id int(10) unsigned not null primary key auto_increment,
+	syncLogId int(10) unsigned not null  COMMENT 'foreign key  references lab_rpki_sync_log(id)',
+	roas json,
+	updateTime datetime NOT NULL
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin comment='roa history info';
+
+  
+CREATE TABLE lab_rpki_analyse_roa_compete (
+	id int(10) unsigned NOT NULL primary key auto_increment,
+	fileName varchar(128)  NOT NULL COMMENT 'roa file name',
+	asn bigint(20) signed NOT NULL  COMMENT 'roa asn',
+	addressPrefixes json NOT NULL  COMMENT 'roa all prefix: [203.147.108.0/23,..,]',
+	competeResult json  NOT NULL COMMENT 'roa compete result, big json',
+	slurm json COMMENT 'slurm',
+	updateTime datetime NOT NULL COMMENT 'update time'
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin comment='roa compete'
+  
+
 `,
 
 	`
@@ -626,11 +635,10 @@ var resetAllOtherSqls []string = []string{
 	`truncate  table  lab_rpki_rtr_incremental  `,
 	`truncate  table  lab_rpki_slurm  `,
 	`truncate  table  lab_rpki_slurm_file  `,
-
-	//	`truncate  table  lab_rpki_stat_roa_competation  `,
 	`truncate  table  lab_rpki_transfer_target  `,
 	`truncate  table  lab_rpki_transfer_log  `,
-	`truncate  table  lab_rpki_conf  `,
+	`truncate  table  lab_rpki_analyse_roa_history  `,
+	`truncate  table  lab_rpki_analyse_roa_compete  `,
 }
 
 var optimizeSqls []string = []string{
@@ -665,7 +673,8 @@ var optimizeSqls []string = []string{
 	//	`optimize  table  lab_rpki_stat_roa_competation  `,
 	`optimize  table  lab_rpki_transfer_target  `,
 	`optimize  table  lab_rpki_transfer_log  `,
-	`optimize  table  lab_rpki_conf `}
+	`optimize  table  lab_rpki_analyse_roa_history  `,
+	`optimize  table  lab_rpki_analyse_roa_compete `}
 
 // when isInit is true, then init all db. otherwise will reset all db
 func InitResetDb(sysStyle sysmodel.SysStyle) error {
@@ -738,9 +747,10 @@ func initResetDb(session *xorm.Session, sysStyle sysmodel.SysStyle) error {
 	return nil
 }
 
+/*
 func GetMaxSyncLog() (syncLog model.LabRpkiSyncLog, err error) {
-	sql := `select id,rsyncState,diffState,parseValidateState ,chainValidateState,
-	 rtrState,rrdpState,state,syncStyle from lab_rpki_sync_log order by id desc limit 1`
+	sql := `select id,syncState,parseValidateState ,chainValidateState, rtrState,state,
+	 syncStyle from lab_rpki_sync_log order by id desc limit 1`
 	has, err := xormdb.XormEngine.Sql(sql).Get(&syncLog)
 	if err != nil {
 		belogs.Error("GetMaxSyncLog():select from lab_rpki_sync_log, fail:", err)
@@ -753,7 +763,7 @@ func GetMaxSyncLog() (syncLog model.LabRpkiSyncLog, err error) {
 	belogs.Debug("GetMaxSyncLog():syncLog :", jsonutil.MarshalJson(syncLog))
 	return syncLog, nil
 }
-
+*/
 func Results() (results sysmodel.Results, err error) {
 	results.CerResult, err = result("lab_rpki_cer", "cer")
 	if err != nil {

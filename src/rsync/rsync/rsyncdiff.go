@@ -6,6 +6,7 @@ import (
 
 	belogs "github.com/astaxie/beego/logs"
 	conf "github.com/cpusoft/goutil/conf"
+	jsonutil "github.com/cpusoft/goutil/jsonutil"
 	osutil "github.com/cpusoft/goutil/osutil"
 	xormdb "github.com/cpusoft/goutil/xormdb"
 
@@ -24,7 +25,7 @@ func FoundDiffFiles(labRpkiSyncLogId uint64) (addFilesLen, delFilesLen, updateFi
 	}
 	filesFromDisk, err := getFilesHashFromDisk()
 	if err != nil {
-		belogs.Error("FoundDiffFiles():GetFilesHashFromDiskfail:", err)
+		belogs.Error("FoundDiffFiles():GetFilesHashFromDisk fail:", err)
 		return 0, 0, 0, 0, err
 	}
 	addFiles, delFiles, updateFiles, noChangeFiles, err := diffFiles(filesFromDb, filesFromDisk)
@@ -33,7 +34,7 @@ func FoundDiffFiles(labRpkiSyncLogId uint64) (addFilesLen, delFilesLen, updateFi
 		return 0, 0, 0, 0, err
 	}
 
-	err = db.InsertRsyncLogFiles(labRpkiSyncLogId, addFiles, delFiles, updateFiles)
+	err = db.InsertSyncLogFiles(labRpkiSyncLogId, addFiles, delFiles, updateFiles)
 	if err != nil {
 		belogs.Error("FoundDiffFiles():InsertRsyncLogFiles:", err)
 		return 0, 0, 0, 0, err
@@ -93,8 +94,14 @@ func diffFiles(filesFromDb, filesFromDisk map[string]rsyncmodel.RsyncFileHash) (
 		}
 	}
 	addFiles = filesFromDisk
+	belogs.Debug("diffFiles(): len(addFiles):", len(addFiles), jsonutil.MarshalJson(addFiles),
+		"  len(delFiles):", len(delFiles), jsonutil.MarshalJson(delFiles),
+		"  len(updateFiles):", len(updateFiles), jsonutil.MarshalJson(updateFiles),
+		"  len(noChangeFiles):", len(noChangeFiles), jsonutil.MarshalJson(noChangeFiles),
+		"  time(s):", time.Now().Sub(start).Seconds())
 	belogs.Info("diffFiles(): len(addFiles):", len(addFiles), "  len(delFiles):", len(delFiles),
 		"  len(updateFiles):", len(updateFiles), "  len(noChangeFiles):", len(noChangeFiles), "  time(s):", time.Now().Sub(start).Seconds())
+
 	return addFiles, delFiles, updateFiles, noChangeFiles, nil
 
 }
@@ -160,7 +167,8 @@ func getFilesHashFromDb() (files map[string]rsyncmodel.RsyncFileHash, err error)
 	for i := range mftFileHashs {
 		files[osutil.JoinPathFile(mftFileHashs[i].FilePath, mftFileHashs[i].FileName)] = mftFileHashs[i]
 	}
-	belogs.Info("getFilesHashFromDb(): len(files):", len(files), "  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Debug("getFilesHashFromDb(): len(files):", len(files),
+		"     files:", jsonutil.MarshalJson(files), "  time(s):", time.Now().Sub(start).Seconds())
 	return files, nil
 }
 
@@ -173,12 +181,12 @@ func getFilesHashFromDisk() (files map[string]rsyncmodel.RsyncFileHash, err erro
 	m[".roa"] = ".roa"
 	m[".mft"] = ".mft"
 
-	fileStats, err := osutil.GetAllFileStatsBySuffixs(conf.VariableString("rsync::destpath")+"/", m)
+	fileStats, err := osutil.GetAllFileStatsBySuffixs(conf.VariableString("rsync::destPath")+"/", m)
 	if err != nil {
-		belogs.Error("GetFilesHashFromDisk(): GetAllFileStatsBySuffixs fail:", conf.VariableString("rsync::destpath")+"/", err)
+		belogs.Error("GetFilesHashFromDisk(): GetAllFileStatsBySuffixs fail:", conf.VariableString("rsync::destPath")+"/", err)
 		return nil, err
 	}
-	belogs.Debug("getFilesHashFromDisk(): len(fileStats):", len(fileStats))
+	belogs.Debug("getFilesHashFromDisk(): len(fileStats):", len(fileStats), "    fileStats:", jsonutil.MarshalJson(fileStats))
 	files = make(map[string]rsyncmodel.RsyncFileHash, len(fileStats))
 	for i := range fileStats {
 		fileHash := rsyncmodel.RsyncFileHash{}
@@ -186,9 +194,9 @@ func getFilesHashFromDisk() (files map[string]rsyncmodel.RsyncFileHash, err erro
 		fileHash.FileName = fileStats[i].FileName
 		fileHash.FilePath = fileStats[i].FilePath
 		fileHash.FileType = strings.Replace(osutil.Ext(fileStats[i].FileName), ".", "", -1) //remove dot, should be cer/crl/roa/mft
-		belogs.Debug("getFilesHashFromDisk(): fileHash:", fileHash)
 		files[osutil.JoinPathFile(fileStats[i].FilePath, fileStats[i].FileName)] = fileHash
 	}
+
 	belogs.Info("getFilesHashFromDisk(): len(files):", len(files), "  time(s):", time.Now().Sub(start).Seconds())
 	return files, nil
 

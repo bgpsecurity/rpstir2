@@ -137,15 +137,15 @@ const (
 )
 */
 type KeyUsageModel struct {
-	KeyUsage      int    `json:keyUsage"`
+	KeyUsage      int    `json:"keyUsage"`
 	Critical      bool   `json:"critical"`
-	KeyUsageValue string `json:keyUsageValue"`
+	KeyUsageValue string `json:"keyUsageValue"`
 }
 
 // certPolicy
 type CertPolicyModel struct {
 	Critical bool   `json:"critical"`
-	Cps      string `json:Cps"`
+	Cps      string `json:"cps"`
 }
 
 // basic constraints
@@ -341,7 +341,7 @@ type EeCertModel struct {
 	Version int `json:"version"`
 	// SHA256-RSA: x509.SignatureAlgorithm
 	DigestAlgorithm string        `json:"digestAlgorithm"`
-	Sn              string        `json:"sn""`
+	Sn              string        `json:"sn"`
 	NotBefore       time.Time     `json:"notBefore"`
 	NotAfter        time.Time     `json:"notAfter"`
 	KeyUsageModel   KeyUsageModel `json:"keyUsageModel"`

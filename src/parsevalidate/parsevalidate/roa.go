@@ -8,6 +8,7 @@ import (
 	hashutil "github.com/cpusoft/goutil/hashutil"
 	iputil "github.com/cpusoft/goutil/iputil"
 	jsonutil "github.com/cpusoft/goutil/jsonutil"
+	opensslutil "github.com/cpusoft/goutil/opensslutil"
 	osutil "github.com/cpusoft/goutil/osutil"
 
 	"model"
@@ -46,11 +47,11 @@ func parseRoaModel(certFile string, roaModel *model.RoaModel, stateModel *model.
 	//https://blog.csdn.net/Zhymax/article/details/7683925
 	// get asn1 using to cer、crl
 	//openssl asn1parse -in -0AU6cJZAl7QHJeNhN9vE3zUBr4.roa -inform DER
-	results, err := openssl.GetResultsByOpensslAns1(certFile)
+	results, err := opensslutil.GetResultsByOpensslAns1(certFile)
 	if err != nil {
-		belogs.Error("parseRoaModel(): ParseByOpensslAns1: err: ", err, ": "+certFile)
+		belogs.Error("parseRoaModel(): GetResultsByOpensslAns1: err: ", err, ": "+certFile)
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
-			Fail:   "Fail to read file",
+			Fail:   "Fail to parse file by openssl",
 			Detail: err.Error()}
 		stateModel.AddError(&stateMsg)
 		return err
@@ -110,18 +111,18 @@ func parseRoaModel(certFile string, roaModel *model.RoaModel, stateModel *model.
 	if err != nil {
 		belogs.Error("parseRoaModel():ParseByOpensslAns1ToX509  certFile:", certFile, "  err:", err)
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
-			Fail:   "Fail to parse file",
+			Fail:   "Fail to parse ee certificate by openssl",
 			Detail: err.Error()}
 		stateModel.AddError(&stateMsg)
 		return err
 	}
 	defer osutil.CloseAndRemoveFile(cerFile)
 
-	results, err = openssl.GetResultsByOpensslX509(cerFile.Name())
+	results, err = opensslutil.GetResultsByOpensslX509(cerFile.Name())
 	if err != nil {
 		belogs.Error("parseRoaModel(): GetResultsByOpensslX509: err: ", err, ": "+cerFile.Name())
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
-			Fail:   "Fail to parse file",
+			Fail:   "Fail to parse ee certificate by openssl",
 			Detail: err.Error()}
 		stateModel.AddError(&stateMsg)
 		return err

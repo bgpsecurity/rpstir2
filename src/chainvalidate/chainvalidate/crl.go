@@ -1,6 +1,7 @@
 package chainvalidate
 
 import (
+	"errors"
 	"strings"
 	"sync"
 	"time"
@@ -76,6 +77,8 @@ func validateCrl(chains *chainmodel.Chains, crlId uint64, wg *sync.WaitGroup, ch
 	chainCrl.ParentChainCerAlones, err = getCrlParentChainCers(chains, crlId)
 	if err != nil {
 		belogs.Error("getChainCrl(): GetCrlParentChainCer fail:", crlId, err)
+		chainCrl.StateModel.JudgeState()
+		chains.UpdateFileTypeIdToCrl(&chainCrl)
 		return
 	}
 	belogs.Debug("validateCrl():chainCrl.ParentChainCer, crlId,  len(chainCrl.ParentChainCerAlones):", crlId, len(chainCrl.ParentChainCerAlones))
@@ -247,6 +250,10 @@ func getCrlParentChainCer(chains *chainmodel.Chains, crlId uint64) (chainCerAlon
 	belogs.Debug("getCrlParentChainCer(): crlId:", crlId, "  chainCrl.Id:", chainCrl.Id)
 
 	//get mft's aki --> parent cer's ski
+	if len(chainCrl.Aki) == 0 {
+		belogs.Error("getCrlParentChainCer(): chainCrl.Aki is empty, fail:", crlId)
+		return chainCerAlone, errors.New("crl's aki is empty")
+	}
 	aki := chainCrl.Aki
 	parentCerSki := aki
 	fileTypeId, ok := chains.SkiToFileTypeId[parentCerSki]

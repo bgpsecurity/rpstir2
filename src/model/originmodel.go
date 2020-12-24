@@ -35,6 +35,7 @@ func JudgeOrigin(filePath string) (originModel OriginModel) {
 		rpki.tools.westconnect.ca
 		repository.rpki.rocks
 		rpki.apnic.net
+		rpki-as0.apnic.net
 		rpkica.mckay.com
 		rpki.arin.net
 		rpkica.twnic.tw
@@ -43,6 +44,8 @@ func JudgeOrigin(filePath string) (originModel OriginModel) {
 		rsync.rpki.nlnetlabs.nl
 		rpki-repo.registro.br
 		rpki.qs.nu
+		repo-rpki.idnic.net
+		sakuya.nat.moe
 	*/
 	var rir string
 	var repo string
@@ -108,10 +111,31 @@ func JudgeOrigin(filePath string) (originModel OriginModel) {
 	} else if strings.Index(filePath, "rpki.qs.nu") > 0 {
 		rir = ORIGIN_RIR_RIPE_NCC
 		repo = "rpki.qs.nu"
+	} else if strings.Index(filePath, "rpki-as0.apnic.net") > 0 {
+		rir = ORIGIN_RIR_APNIC
+		repo = "rpki-as0.apnic.net"
+	} else if strings.Index(filePath, "repo-rpki.idnic.net") > 0 {
+		rir = ORIGIN_RIR_APNIC
+		repo = "repo-rpki.idnic.net"
+	} else if strings.Index(filePath, "sakuya.nat.moe") > 0 {
+		rir = ORIGIN_RIR_ARIN
+		repo = "sakuya.nat.moe"
 	} else {
 		rir = "unknown"
-		tmp := strings.Replace(filePath, conf.VariableString("rsync::destpath")+osutil.GetPathSeparator(), "", -1)
-		tmp = strings.Replace(tmp, conf.VariableString("rrdp::destpath")+osutil.GetPathSeparator(), "", -1)
+		if strings.Index(filePath, "afrinic.net") > 0 {
+			rir = ORIGIN_RIR_AFRINIC
+		} else if strings.Index(filePath, "apnic.net") > 0 {
+			rir = ORIGIN_RIR_APNIC
+		} else if strings.Index(filePath, "arin.net") > 0 {
+			rir = ORIGIN_RIR_ARIN
+		} else if strings.Index(filePath, "lacnic.net") > 0 {
+			rir = ORIGIN_RIR_LACNIC
+		} else if strings.Index(filePath, "ripe.net") > 0 {
+			rir = ORIGIN_RIR_RIPE_NCC
+		}
+
+		tmp := strings.Replace(filePath, conf.VariableString("rsync::destPath")+osutil.GetPathSeparator(), "", -1)
+		tmp = strings.Replace(tmp, conf.VariableString("rrdp::destPath")+osutil.GetPathSeparator(), "", -1)
 		split := strings.Split(tmp, osutil.GetPathSeparator())
 		if len(split) == 0 {
 			repo = filePath

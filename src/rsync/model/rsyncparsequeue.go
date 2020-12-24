@@ -15,7 +15,7 @@ import (
 // queue for rsync url
 type RsyncParseQueue struct {
 
-	//rsync channel, store will rsync url and destpath
+	//rsync channel, store will rsync url and destPath
 	RsyncModelChan chan RsyncModelChan
 
 	// parse cer channel, store will parse filepathname

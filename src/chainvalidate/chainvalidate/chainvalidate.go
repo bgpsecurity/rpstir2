@@ -5,44 +5,37 @@ import (
 	"time"
 
 	belogs "github.com/astaxie/beego/logs"
-	conf "github.com/cpusoft/goutil/conf"
-	httpclient "github.com/cpusoft/goutil/httpclient"
 
 	"chainvalidate/db"
 	chainmodel "chainvalidate/model"
 )
 
-func ChainValidateStart() (err error) {
+func ChainValidateStart() (nextStep string, err error) {
+	start := time.Now()
+
 	belogs.Debug("ChainValidateStart(): start")
 	// save chain validate starttime to lab_rpki_sync_log
 	labRpkiSyncLogId, err := db.UpdateRsyncLogChainValidateStateStart("chainvalidating")
 	if err != nil {
 		belogs.Error("ChainValidateStart():UpdateRsyncLogChainValidateStart fail:", err)
-		return
+		return "", err
 	}
 	// build and validate chain all cert (include all)
 	err = ChainValidate()
 	if err != nil {
 		belogs.Error("ChainValidateStart():ChainValidateCerts fail:", err)
-		return
+		return "", err
 	}
 
 	// save  chain validate end time
 	err = db.UpdateRsyncLogChainValidateStateEnd(labRpkiSyncLogId, "chainvalidated")
 	if err != nil {
 		belogs.Error("ChainValidateStart():UpdateRsyncLogChainValidateStateEnd fail:", err)
-		return
+		return "", err
 	}
-	belogs.Info("ChainValidateStart(): end")
 
-	/////////////////////
-	// will call rtr
-	go func() {
-		httpclient.Post("http", conf.String("rtr::httpserver"), conf.Int("rtr::httpport"),
-			"/rtr/update", "")
-	}()
-	return nil
-
+	belogs.Info("ChainValidateStart(): end, will call rtr,  time(s):", time.Now().Sub(start).Seconds())
+	return "rtr", nil
 }
 
 func ChainValidate() (err error) {

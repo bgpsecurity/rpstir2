@@ -1,6 +1,7 @@
 package chainvalidate
 
 import (
+	"errors"
 	"strings"
 	"sync"
 	"time"
@@ -74,9 +75,12 @@ func validateRoa(chains *chainmodel.Chains, roaId uint64, wg *sync.WaitGroup, ch
 		belogs.Error("validateRoa(): GetRoa fail:", roaId, err)
 		return
 	}
+
 	chainRoa.ParentChainCerAlones, err = getRoaParentChainCers(chains, roaId)
 	if err != nil {
-		belogs.Error("validateRoa(): GetCerParentChainCers fail:", roaId, err)
+		belogs.Error("validateRoa(): getRoaParentChainCers fail:", roaId, err)
+		chainRoa.StateModel.JudgeState()
+		chains.UpdateFileTypeIdToRoa(&chainRoa)
 		return
 	}
 	belogs.Debug("validateRoa():chainCer.ParentChainCers, roaId, len(chainRoa.ParentChainCers):", roaId, len(chainRoa.ParentChainCerAlones))
@@ -156,7 +160,7 @@ func validateRoa(chains *chainmodel.Chains, roaId uint64, wg *sync.WaitGroup, ch
 	}
 
 	chainRoa.StateModel.JudgeState()
-	belogs.Debug("validateRoa(): stateModel:", chainRoa.StateModel)
+	belogs.Debug("validateRoa(): roaId, stateModel:", roaId, chainRoa.StateModel)
 	if chainRoa.StateModel.State != "valid" {
 		belogs.Info("validateRoa(): stateModel have errors or warnings, roaId :", roaId, "  stateModel:", jsonutil.MarshalJson(chainRoa.StateModel))
 	}
@@ -198,6 +202,10 @@ func getRoaParentChainCer(chains *chainmodel.Chains, roaId uint64) (chainCerAlon
 	belogs.Debug("getRoaParentChainCer(): roaId:", roaId, "  chainRoa.Id:", chainRoa.Id)
 
 	//get roa's aki --> parent cer's ski
+	if len(chainRoa.Aki) == 0 {
+		belogs.Error("getRoaParentChainCer(): chainRoa.Aki is empty, fail:", roaId)
+		return chainCerAlone, errors.New("roa's aki is empty")
+	}
 	aki := chainRoa.Aki
 	parentCerSki := aki
 	fileTypeId, ok := chains.SkiToFileTypeId[parentCerSki]

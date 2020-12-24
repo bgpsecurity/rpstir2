@@ -206,11 +206,11 @@ func NewChainCerAlone(chainCer *ChainCer) (chainCerAlone *ChainCerAlone) {
 }
 
 type ChainIpAddress struct {
-	Id            uint64 `json:"id" xorm:"id int"`
-	AddressFamily uint64 `json:"-"  xorm:"addressFamily int"`
+	Id uint64 `json:"id" xorm:"id int"`
+	//AddressFamily uint64 `json:"-"  xorm:"addressFamily int"`
 	//address prefix: 147.28.83.0/24 '
-	AddressPrefix string `json:"-"  xorm:"addressPrefix varchar(512)"`
-	MaxLength     uint64 `json:"-"  xorm:"maxLength int"`
+	//AddressPrefix string `json:"-"  xorm:"addressPrefix varchar(512)"`
+	//MaxLength     uint64 `json:"-"  xorm:"maxLength int"`
 
 	//min address range from addressPrefix or min/max, in hex:  63.60.00.00'
 	RangeStart string `json:"rangeStart" xorm:"rangeStart varchar(512)"`

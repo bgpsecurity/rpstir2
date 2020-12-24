@@ -2,30 +2,15 @@ package openssl
 
 import (
 	"bytes"
-	"os/exec"
 	"strconv"
 	"strings"
 
 	belogs "github.com/astaxie/beego/logs"
 	iputil "github.com/cpusoft/goutil/iputil"
 	jsonutil "github.com/cpusoft/goutil/jsonutil"
-	osutil "github.com/cpusoft/goutil/osutil"
 
 	"model"
 )
-
-func GetResultsByOpensslX509(certFile string) (results []string, err error) {
-	belogs.Debug("GetResultsByOpensslX509(): cmd:  openssl", "x509", "-noout", "-text", "-in", certFile, "--inform", "der")
-	cmd := exec.Command("openssl", "x509", "-noout", "-text", "-in", certFile, "--inform", "der")
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		belogs.Error("GetResultsByOpensslX509(): exec.Command: certFile:", certFile, "   err: ", err, ": "+string(output))
-		return nil, err
-	}
-	result := string(output)
-	results = strings.Split(result, osutil.GetNewLineSep())
-	return results, nil
-}
 
 func ParseCerIpAddressModelByOpensslResults(results []string) (cerIpAddressModel model.CerIpAddressModel, noCerIpAddress bool, err error) {
 	cerIpAddressModel.CerIpAddresses = make([]model.CerIpAddress, 0)

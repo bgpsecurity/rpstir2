@@ -31,12 +31,12 @@ func Start(syncUrls *model.SyncUrls) {
 	// start to rsync by sync url in tal, to get root cer
 	// first: remove all root cer, so can will rsync download and will trigger parse all cer files.
 	// otherwise, will have to load all root file manually
-	os.RemoveAll(conf.VariableString("rsync::destpath") + "/root/")
-	os.MkdirAll(conf.VariableString("rsync::destpath")+"/root/", os.ModePerm)
+	os.RemoveAll(conf.VariableString("rsync::destPath") + "/root/")
+	os.MkdirAll(conf.VariableString("rsync::destPath")+"/root/", os.ModePerm)
 	atomic.AddInt64(&rpQueue.RsyncingParsingCount, int64(len(syncUrls.RsyncUrls)))
 	belogs.Debug("Start():after RsyncingParsingCount:", atomic.LoadInt64(&rpQueue.RsyncingParsingCount))
 	for _, url := range syncUrls.RsyncUrls {
-		go rpQueue.AddRsyncUrl(url, conf.VariableString("rsync::destpath")+"/root/")
+		go rpQueue.AddRsyncUrl(url, conf.VariableString("rsync::destPath")+"/root/")
 	}
 
 }
@@ -84,7 +84,7 @@ func startRsyncServer() {
 			// will call sync to return result
 			go func(rsyncResultJson string) {
 				belogs.Debug("startRsyncServer():call /sync/rsyncresult: rsyncResultJson:", rsyncResultJson)
-				httpclient.Post("http", conf.String("rpstir2::rsyncserver"), conf.Int("rpstir2::httpport"),
+				httpclient.Post("https", conf.String("rpstir2::serverHost"), conf.Int("rpstir2::serverHttpsPort"),
 					"/sync/rsyncresult", rsyncResultJson)
 			}(rsyncResultJson)
 
@@ -96,4 +96,22 @@ func startRsyncServer() {
 			return
 		}
 	}
+}
+
+func LocalStart(syncUrls *model.SyncUrls) (rsyncResult model.SyncResult, err error) {
+	start := time.Now()
+	belogs.Info("LocalStart(): rsync: syncUrls:", jsonutil.MarshalJson(syncUrls))
+
+	rsyncResult.AddFilesLen, rsyncResult.DelFilesLen,
+		rsyncResult.UpdateFilesLen, rsyncResult.NoChangeFilesLen, err = FoundDiffFiles(syncUrls.SyncLogId)
+	if err != nil {
+		belogs.Error("LocalStart(): FoundDiffFiles fail:", err)
+		// no return
+	}
+	rsyncResult.EndTime = time.Now()
+
+	belogs.Info("LocalStart():end this rsync success: rsyncResultJson:", jsonutil.MarshalJson(rsyncResult),
+		"  time(s):", time.Now().Sub(start).Seconds())
+	return rsyncResult, nil
+
 }

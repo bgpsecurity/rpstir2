@@ -11,7 +11,7 @@ RPSTIR2 is a kind of RP software written in GO, which based on design idea of RP
 RPSTIR2 is capable of running on CentOS8(64bit)/Ubuntu18(64bit) or higher.
 &nbsp;
 
-## 2. Getting started
+## 2. Install RPSTIR2
 There are two ways to install RPSTIR2, including installing from source code and using docker.
 
 ### 2.1 Install from source code
@@ -59,7 +59,7 @@ $ source  /root/.bashrc
 ```
 
 #### 2.1.4 Create RPSTIR2 directories
-Before installing RPSTIR2, you should create directories in advance, one of which is for program and the other is for the cache data. The following documents are explained according to the configuration given in the following table, which can be modified in locations of your choice.
+Before installing RPSTIR2, you should create directories in advance, one of which is for program and the other is for the cache data. you can be modified in locations of your choice as shown in section 2.1.6. 
 
 ```shell
 $ mkdir -p /root/rpki/ /root/rpki/rpstir2  /root/rpki/data 
@@ -67,8 +67,8 @@ $ mkdir -p /root/rpki/ /root/rpki/rpstir2  /root/rpki/data
 
 | Directory  | Path                      |
 | :--------: | ------------------------- |
-| programdir | /root/rpki/rpstir2        |
-| datadir    | /root/rpki/data           |
+| programDir | /root/rpki/rpstir2        |
+| dataDir    | /root/rpki/data           |
 
 
 #### 2.1.5 Download RPSTIR2 
@@ -79,30 +79,8 @@ $ git clone https://github.com/bgpsecurity/rpstir2.git
 ```
 
 #### 2.1.6 Configure RPSTIR2
-You can modify configuration parameters of programdir, datadir, mysql, and tcpport of rtr in configuration file(/root/rpki/rpstir2/conf/project.conf). 
+You can modify configuration parameters of programDir, dataDir, mysql, and tcpport of rtr in configuration file(/root/rpki/rpstir2/conf/project.conf). 
 
-```shell
-$ cd /root/rpki/rpstir2/conf
-$ vim project.conf
-
-[rpstir2]
-programdir=/root/rpki/rpstir2
-datadir=/root/rpki/data
-httpport=8080
-httpsport=8081
-
-[mysql]
-server=127.0.0.1:3306
-user=rpstir2
-password=Rpstir-123
-database=rpstir2
-
-[rtr]
-httpserver=127.0.0.1
-httpport=8083
-tcpserver=127.0.0.1
-tcpport=8082
-```
 
 
 
@@ -117,7 +95,7 @@ $ ./rpstir2-service.sh update
 ```
 
 #### 2.1.8 Configure scheduled task
-You can use crontab to perform scheduled synchronization tasks. Then RPSTIR2 will download RPKI objects with rsync, and complete the subsequent validation procedure according to the schedule you set. 
+You can use crontab to perform scheduled synchronization tasks. Then RPSTIR2 will download RPKI objects, and complete the subsequent validation procedure according to the schedule you set. 
 
 ```shell
 $ crontab -e
@@ -126,8 +104,8 @@ $ crontab -e
 
 Note: The RPSTIR2 service must be started first as shown in section 2.3.1. 
 
-#### 2.2 Install from Docker
-##### 2.2.1 Pull RPSTIR2 MySQL docker image
+### 2.2 Install from Docker
+#### 2.2.1 Pull RPSTIR2 MySQL docker image
 You can pull mysql docker image and login in MySQL as root.
 
 ```shell
@@ -137,6 +115,7 @@ $ docker exec -it rpstir2_mysql /bin/bash
 $ mysql -uroot -p
 Rpstir-123
 ```
+
 
 After that, you should create user accounts and database of RPSTIR2 as shown in section 2.1.2. 
 
@@ -152,7 +131,7 @@ flush privileges;
 quit;
 ```
 
-##### 2.2.2 Pull RPSTIR2 docker image
+#### 2.2.2 Pull RPSTIR2 docker image
 On the host, the cache data is stored in "/root/rpki/rpstir2data/data/", and the logs of rpstir2 are saved in "/root/rpki/rpstir2data/log", and tcpport of rtr is 18082.
 
 ```shell
@@ -162,7 +141,7 @@ $ docker pull cpusoft/rpstir2_centos8
 $ docker run -itd --privileged -p 18080-18090:8080-8090   -v /root/rpki/rpstir2data/data:/root/rpki/data  -v /root/rpki/rpstir2data/log:/root/rpki/rpstir2/log --name rpstir2_centos8 cpusoft/rpstir2_centos8  /usr/sbin/init
 ```
 
-##### 2.2.3 Configure RPSTIR2
+#### 2.2.3 Configure RPSTIR2
 Then, you should login in RPSTIR2 container, and run deploy and update. 
 
 ```shell
@@ -172,16 +151,19 @@ $ chmod +x *.sh
 $ ./rpstir2-service.sh deploy
 $ ./rpstir2-service.sh update
 ```
-And you can change synchronization schedule task in crontab as shown in section 2.1.8.
-Now, the RPSTIR2 will automatically download and validate RPKI objects according to schedule task. 
+Note1: You can change synchronization schedule task in crontab as shown in section 2.1.8.
 
-Note: Because RPSTIR2 uses the docker's bridge network (172.17.0.1) to link MySQL in other container, the configuration of mysql server is changed to "172.17.0.1:13306" in /root/rpki/rpstir2/conf/project.conf.
+Note2: Because RPSTIR2 uses the docker's bridge network (172.17.0.1) to link MySQL in other container, the configuration of mysql server is changed to "172.17.0.1:13306" in /root/rpki/rpstir2/conf/project.conf.
 
 
-### 2.3 Running RPSTIR2
+## 3 Running RPSTIR2
 All functions of RPSTIR2 are accessible on the command line via sub-commands.
 
-#### 2.3.1 Start and stop the RPSTIR2 service
+(1) rpstir2-serverice.sh: Execute system commands such as system start stop and upgrade.
+
+(2) rpstir2-command.sh: To execute specific synchronization, view status and results, and other program commands.
+
+### 3.1 Start and stop the RPSTIR2 service
 To execute all RPSTIR2 commands, the RPSTIR2 service must be started first. 
 You can check for errors by looking at the log files in ./log/ directory.
 
@@ -191,31 +173,32 @@ $./rpstir2-serverice.sh start
 $./rpstir2-serverice.sh stop 
 ```
 
-#### 2.3.2 Download and validate RPKI objects
+### 3.2 Sync and validate RPKI objects
 You can download RPKI objects with rsync or RRDP protocol, and complete the subsequent validation procedure. Or when the parameter is sync, the system will automatically perform hybrid synchronization. 
 
-##### (1) rsync
+
+#### (1) rsync
 
 ```shell
 $ cd /root/rpki/rpstir2/bin
 $ ./rpstir2-command.sh rsync 
 ```
 
-##### (2) rrdp
+#### (2) rrdp
 
 ```shell
 $ cd /root/rpki/rpstir2/bin
 $ ./rpstir2-command.sh rrdp  
 ```
 
-##### (3) sync
+#### (3) sync
 
 ```shell
 $ cd /root/rpki/rpstir2/bin
 $ ./rpstir2-command.sh sync  
 ```
 
-#### 2.3.3 Get download and validation status
+### 3.3 Get sync and validation status
 Because rsync and RRDP take long time to run, they are executed in the background. So you need a command to determine if the synchronization and validation process is complete.
 
 ```shell
@@ -223,19 +206,21 @@ $ cd /root/rpki/rpstir2/bin
 $ ./rpstir2-command.sh states  
 ```
 
-When you get the following JSON message, it indicates that synchronization and validation of RPKI objects and information transmission via RPKI-RTR protocol to routers have been completed. And all cache data are stored in "/root/rpki/rpstir2data/", and tcpport of rtr is 8082.
+When you get the following JSON message, if "isRunning" is "true", it means that sync and validation are still running; if it is "false", sync and validation complete. At this time, the router can obtain rpki data through RTR port.
 
 ```JSON
-{ "result": "ok",
-  "msg": "",
-  "state":
-  	{ "endTime": "2019-12-19 14:07:11", 
-     	"startTime": "2019-12-18 16:29:06",
-     	"state": "end" 
-    } 
- }
+{
+	"result": "ok",
+	"msg": "",
+	"serviceState": {
+		"startTime": "2020-01-01 01:01:01 CST",
+		"isRunning": "false",
+		"runningState": "idle"
+	}
+}
+
 ```
-#### 2.3.4 Results
+### 3.4 Results
 You can get results of synchronization and validation. It shows the valid, warning and invalid number of cer, roa, mft and crl respectively.
 
 ```shell
@@ -273,14 +258,7 @@ $./rpstir2-command.sh results
 
 
 
-#### 2.3.5 Slurm
-
-```shell
-$ cd /root/rpki/rpstir2/bin
-$./rpstir2-command.sh slurm xxx.json  
-```
-
-#### 2.3.6 Help
+### 3.5 Help
 
 ```shell
 $ cd /root/rpki/rpstir2/bin
@@ -289,7 +267,7 @@ $./rpstir2-command.sh help
 ```
 
 
-## 3 Reporting bugs and getting help
+## 4 Reporting bugs and getting help
 Please open an issue on our [GitHub page](https://github.com/bgpsecurity/rpstir2/issues) or mail to [shaoqing@zdns.cn](mailto:shaoqing@zdns.cn) with any problems or bugs you encounter.
 
 

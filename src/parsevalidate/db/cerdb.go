@@ -69,7 +69,7 @@ func DelCers(delSyncLogFileModels []parsevalidatemodel.SyncLogFileModel, updateS
 		}
 	}
 
-	// only update del
+	// only update delSyncLogFileModels
 	err = UpdateSyncLogFilesJsonAllAndState(session, delSyncLogFileModels)
 	if err != nil {
 		belogs.Error("DelCers(): UpdateSyncLogFilesJsonAllAndState fail:", err)
@@ -105,6 +105,10 @@ func DelCerByFile(session *xorm.Session, filePath, fileName string) (err error) 
 func delCerById(session *xorm.Session, cerId uint64) (err error) {
 
 	belogs.Debug("delCerById():delete lab_rpki_cer_ by cerId:", cerId)
+	// rrdp may have id==0, just return nil
+	if cerId <= 0 {
+		return nil
+	}
 
 	//lab_rpki_cer_sia
 	_, err = session.Exec("delete from lab_rpki_cer_sia  where cerId = ?", cerId)

@@ -1,6 +1,7 @@
 package chainvalidate
 
 import (
+	"errors"
 	"strings"
 	"sync"
 	"time"
@@ -78,6 +79,8 @@ func validateCer(chains *chainmodel.Chains, cerId uint64, wg *sync.WaitGroup, ch
 	chainCer.ParentChainCerAlones, err = GetCerParentChainCers(chains, cerId)
 	if err != nil {
 		belogs.Error("validateCer(): GetCerParentChainCers fail:", cerId, err)
+		chainCer.StateModel.JudgeState()
+		chains.UpdateFileTypeIdToCer(&chainCer)
 		return
 	}
 	belogs.Debug("validateCer():chainCer.ParentChainCers, cerId, len(chainCer.ParentChainCers):", cerId, len(chainCer.ParentChainCerAlones))
@@ -86,6 +89,8 @@ func validateCer(chains *chainmodel.Chains, cerId uint64, wg *sync.WaitGroup, ch
 		chainCer.ChildChainMfts, chainCer.ChildChainRoas, err = getChildChainCersCrlsMftsRoas(chains, cerId)
 	if err != nil {
 		belogs.Error("validateCer(): getChildChainCersCrlsMftsRoas fail:", cerId, err)
+		chainCer.StateModel.JudgeState()
+		chains.UpdateFileTypeIdToCer(&chainCer)
 		return
 	}
 	belogs.Debug("validateCer():chainCer.ChildChains, cerId:", cerId, len(chainCer.ChildChainCerAlones),
@@ -325,7 +330,7 @@ func ipAddressesIncludeInParent(parents []chainmodel.ChainIpAddress, self []chai
 	return invalids
 }
 
-func GetCerParentChainCers(chains *chainmodel.Chains, cerId uint64) (chainCerAlones []chainmodel.ChainCerAlone, err error) {
+func GetCerParentChainCers(chains *chainmodel.Chains, cerId uint64) ([]chainmodel.ChainCerAlone, error) {
 
 	chainCer, err := chains.GetCerById(cerId)
 	if err != nil {
@@ -334,7 +339,7 @@ func GetCerParentChainCers(chains *chainmodel.Chains, cerId uint64) (chainCerAlo
 	}
 	belogs.Debug("GetCerParentChainCers(): cerId:", cerId, "  chainCer.Id:", chainCer.Id)
 
-	chainCerAlones = make([]chainmodel.ChainCerAlone, 0)
+	chainCerAlones := make([]chainmodel.ChainCerAlone, 0, 10)
 
 	// if is root, then just return
 	if chainCer.IsRoot {
@@ -357,6 +362,7 @@ func GetCerParentChainCers(chains *chainmodel.Chains, cerId uint64) (chainCerAlo
 		}
 		chainCerAlone := chainmodel.NewChainCerAlone(&parentChainCer)
 		chainCerAlones = append(chainCerAlones, *chainCerAlone)
+		belogs.Debug("GetCerParentChainCers(): cerId, len(chainCerAlones), added fileName:", cerId, len(chainCerAlones), chainCerAlone.FileName)
 		if parentChainCer.IsRoot {
 			belogs.Debug("GetCerParentChainCers(): IsRoot, cerId parentChainCer.Id :", cerId, parentChainCer.Id)
 			return chainCerAlones, nil
@@ -366,25 +372,29 @@ func GetCerParentChainCers(chains *chainmodel.Chains, cerId uint64) (chainCerAlo
 	belogs.Debug("GetCerParentChainCers(): cerId, len(chainCerAlones):", cerId, len(chainCerAlones))
 	return chainCerAlones, nil
 }
-func getCerParentChainCer(chains *chainmodel.Chains, cerId uint64) (chainCer chainmodel.ChainCer, err error) {
-	chainCer, err = chains.GetCerById(cerId)
+func getCerParentChainCer(chains *chainmodel.Chains, cerId uint64) (parentChainCer chainmodel.ChainCer, err error) {
+	chainCer, err := chains.GetCerById(cerId)
 	if err != nil {
 		belogs.Error("getCerParentChainCer(): GetCerById, cerId:", cerId, err)
-		return chainCer, err
+		return parentChainCer, err
 	}
 	belogs.Debug("getCerParentChainCer(): cerId:", cerId, "  chainCer.id", chainCer.Id)
 	if chainCer.IsRoot {
 		belogs.Debug("getCerParentChainCer(): GetCer  is root, cerId:", cerId, " chainCer.id:", chainCer.Id)
-		return chainCer, nil
+		return parentChainCer, nil
 	}
 
 	//get mft's aki --> parent cer's ski
+	if len(chainCer.Aki) == 0 {
+		belogs.Error("getCerParentChainCer(): chainCer.Aki is empty, fail:", cerId)
+		return parentChainCer, errors.New("cer's aki is empty")
+	}
 	aki := chainCer.Aki
 	parentCerSki := aki
 	fileTypeId, ok := chains.SkiToFileTypeId[parentCerSki]
 	belogs.Debug("getCerParentChainCer(): cerId,parentCerSki,fileTypeId, ok:", cerId, parentCerSki, fileTypeId, ok)
 	if ok {
-		parentChainCer, err := chains.GetCerByFileTypeId(fileTypeId)
+		parentChainCer, err = chains.GetCerByFileTypeId(fileTypeId)
 		belogs.Debug("getCerParentChainCer(): GetCerByFileTypeId, cerId, fileTypeId, parentChainCer.Id:", cerId, fileTypeId, parentChainCer.Id)
 		if err != nil {
 			belogs.Error("getCerParentChainCer(): GetCerByFileTypeId, cerId,fileTypeId, fail:", cerId, fileTypeId, err)
@@ -394,7 +404,7 @@ func getCerParentChainCer(chains *chainmodel.Chains, cerId uint64) (chainCer cha
 	}
 	//  not found parent ,is not error
 	belogs.Debug("getCerParentChainCer(): not found cer's parent cer:", cerId)
-	return chainCer, nil
+	return parentChainCer, nil
 }
 
 func getChildChainCersCrlsMftsRoas(chains *chainmodel.Chains, cerId uint64) (childChainCerAlones []chainmodel.ChainCerAlone,

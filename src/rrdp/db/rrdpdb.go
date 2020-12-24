@@ -40,13 +40,13 @@ func UpdateRrdpSnapshot(syncLogId uint64, notificationModel *rrdputil.Notificati
 			belogs.Error("UpdateRrdpSnapshot():Sha256File fail, file:", file, err)
 			return xormdb.RollbackAndLogError(session, "get file hash fail, file:"+file, err)
 		}
-		err = InsertRsyncLogFile(session,
+		err = InsertSyncLogFile(session,
 			syncLogId,
 			"add", snapshotDeltaResult.RrdpFiles[i].FilePath, snapshotDeltaResult.RrdpFiles[i].FileName,
 			fileHash,
 			rrdpTime)
 		if err != nil {
-			belogs.Error("UpdateRrdpSnapshot():InsertRsyncLogFile fail, syncLogId,rrdpFiles[i].FilePath, rrdpFiles[i].FileName:",
+			belogs.Error("UpdateRrdpSnapshot():InsertSyncLogFile fail, syncLogId,rrdpFiles[i].FilePath, rrdpFiles[i].FileName:",
 				syncLogId, snapshotDeltaResult.RrdpFiles[i].FilePath, snapshotDeltaResult.RrdpFiles[i].FileName, err)
 			return xormdb.RollbackAndLogError(session, "UpdateRrdpSnapshot(): InsertRsyncLogFile fail:", err)
 		}
@@ -126,13 +126,13 @@ func UpdateRrdpDelta(syncLogId uint64, deltaModels []rrdputil.DeltaModel, snapsh
 				return xormdb.RollbackAndLogError(session, "get file hash fail, file:"+file, err)
 			}
 		}
-		err = InsertRsyncLogFile(session,
+		err = InsertSyncLogFile(session,
 			syncLogId,
 			snapshotDeltaResult.RrdpFiles[i].SyncType, snapshotDeltaResult.RrdpFiles[i].FilePath,
 			snapshotDeltaResult.RrdpFiles[i].FileName, fileHash,
 			rrdpTime)
 		if err != nil {
-			belogs.Error("UpdateRrdpDelta():InsertRsyncLogFile fail, syncLogId,rrdpFiles[i].FilePath, rrdpFiles[i].FileName:",
+			belogs.Error("UpdateRrdpDelta():InsertSyncLogFile fail, syncLogId,rrdpFiles[i].FilePath, rrdpFiles[i].FileName:",
 				syncLogId, snapshotDeltaResult.RrdpFiles[i].FilePath, snapshotDeltaResult.RrdpFiles[i].FileName, err)
 			return xormdb.RollbackAndLogError(session, "UpdateRrdpDelta(): InsertRsyncLogFile fail:", err)
 		}

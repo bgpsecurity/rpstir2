@@ -114,7 +114,8 @@ func parseCerAndGetSubCaRepositoryUrl(cerFile string) (subCaRepositoryUrl string
 	// call parse, not need to save body to db
 	start := time.Now()
 	belogs.Debug("ParseCerAndGetSubCaRepositoryUrl():/parsevalidate/parsefilesimple cerFile:", cerFile)
-	resp, body, err := httpclient.PostFile("http", conf.String("rpstir2::parsevalidateserver"), conf.Int("rpstir2::httpport"),
+	// post file, still use http
+	resp, body, err := httpclient.PostFile("http", conf.String("rpstir2::serverHost"), conf.Int("rpstir2::serverHttpPort"),
 		"/parsevalidate/parsefilesimple", cerFile, "")
 	belogs.Debug("ParseCerAndGetSubCaRepositoryUrl():after /parsevalidate/parsefilesimple cerFile:", cerFile, len(body))
 
@@ -168,7 +169,7 @@ func addSubCaRepositoryUrlsToRpQueue(subCaRepositoryUrls []string) {
 			waitForRsyncUrl(i+curRsyncingCount, subCaRepositoryUrl)
 		}
 		belogs.Debug("AddSubCaRepositoryUrlsToRpQueue():will AddRsyncUrl subCaRepositoryUrl: ", subCaRepositoryUrl)
-		go rpQueue.AddRsyncUrl(subCaRepositoryUrl, conf.VariableString("rsync::destpath")+"/")
+		go rpQueue.AddRsyncUrl(subCaRepositoryUrl, conf.VariableString("rsync::destPath")+"/")
 	}
 }
 
@@ -212,7 +213,7 @@ func tryAgainFailRsyncUrls() bool {
 					" , will wait  curRsyncingCount+1:", curRsyncingCount+1)
 				waitForRsyncUrl(1+curRsyncingCount/2, failRsyncUrl)
 			}
-			go rpQueue.AddRsyncUrl(failRsyncUrl, conf.VariableString("rsync::destpath")+"/")
+			go rpQueue.AddRsyncUrl(failRsyncUrl, conf.VariableString("rsync::destPath")+"/")
 		}
 		return true
 	}

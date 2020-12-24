@@ -60,7 +60,7 @@ func DelRoas(delSyncLogFileModels []parsevalidatemodel.SyncLogFileModel, updateS
 	defer session.Close()
 
 	syncLogFileModels := append(delSyncLogFileModels, updateSyncLogFileModels...)
-	belogs.Debug("DelRoas(): len(syncLogFileModels):", len(syncLogFileModels))
+	belogs.Debug("DelRoas(): len(syncLogFileModels):", len(syncLogFileModels), jsonutil.MarshalJson(syncLogFileModels))
 	for i := range syncLogFileModels {
 		err = delRoaById(session, syncLogFileModels[i].CertId)
 		if err != nil {
@@ -69,7 +69,7 @@ func DelRoas(delSyncLogFileModels []parsevalidatemodel.SyncLogFileModel, updateS
 		}
 	}
 
-	// only update del
+	// only update delSyncLogFileModels
 	err = UpdateSyncLogFilesJsonAllAndState(session, delSyncLogFileModels)
 	if err != nil {
 		belogs.Error("DelRoas(): UpdateSyncLogFilesJsonAllAndState fail:", err)
@@ -105,6 +105,11 @@ func DelRoaByFile(session *xorm.Session, filePath, fileName string) (err error) 
 func delRoaById(session *xorm.Session, roaId uint64) (err error) {
 
 	belogs.Debug("delRoaById():delete lab_rpki_roa_ by roaId:", roaId)
+
+	// rrdp may have id==0, just return nil
+	if roaId <= 0 {
+		return nil
+	}
 
 	//lab_rpki_roa_ipaddress
 	_, err = session.Exec("delete from lab_rpki_roa_ipaddress  where roaId = ?", roaId)

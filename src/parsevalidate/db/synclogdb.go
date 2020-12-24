@@ -49,7 +49,7 @@ func UpdateRsyncLogParseValidateStateEnd(labRpkiSyncLogId uint64, state string,
 	session, err := xormdb.NewSession()
 	defer session.Close()
 
-	// get current rsyncState, the set new value
+	// get current parseValidateState, the set new value
 	var parseValidateState string
 	_, err = session.Table("lab_rpki_sync_log").Cols("parseValidateState").Where("id = ?", labRpkiSyncLogId).Get(&parseValidateState)
 	if err != nil {

@@ -67,7 +67,7 @@ func DelMfts(delSyncLogFileModels []parsevalidatemodel.SyncLogFileModel, updateS
 		}
 	}
 
-	// only update del
+	// only update delSyncLogFileModels
 	err = UpdateSyncLogFilesJsonAllAndState(session, delSyncLogFileModels)
 	if err != nil {
 		belogs.Error("DelMfts(): UpdateSyncLogFilesJsonAllAndState fail:", err)
@@ -103,6 +103,11 @@ func DelMftByFile(session *xorm.Session, filePath, fileName string) (err error) 
 
 func delMftById(session *xorm.Session, mftId uint64) (err error) {
 	belogs.Debug("delMftById():delete lab_rpki_mft_ by mftId:", mftId)
+
+	// rrdp may have id==0, just return nil
+	if mftId <= 0 {
+		return nil
+	}
 
 	//lab_rpki_mft_file_hash
 	_, err = session.Exec("delete from lab_rpki_mft_file_hash  where mftId = ?", mftId)

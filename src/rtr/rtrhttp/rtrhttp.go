@@ -5,19 +5,9 @@ import (
 	"github.com/cpusoft/go-json-rest/rest"
 	httpserver "github.com/cpusoft/goutil/httpserver"
 
-	"rtr/rtr"
 	"rtr/rtrtcpclient"
 	"rtr/rtrtcpserver"
 )
-
-// start to update db
-func RtrUpdate(w rest.ResponseWriter, req *rest.Request) {
-	belogs.Info("RtrUpdate(): start")
-
-	go rtr.RtrUpdate()
-
-	w.WriteJson(httpserver.GetOkHttpResponse())
-}
 
 // server send notify to client
 func ServerSendSerialNotify(w rest.ResponseWriter, req *rest.Request) {
