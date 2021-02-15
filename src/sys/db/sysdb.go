@@ -541,9 +541,10 @@ CREATE TABLE lab_rpki_analyse_roa_history (
 	syncLogId int(10) unsigned not null  COMMENT 'foreign key  references lab_rpki_sync_log(id)',
 	roas json,
 	updateTime datetime NOT NULL
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin comment='roa history info';
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin comment='roa history info'
+`,
 
-  
+	`
 CREATE TABLE lab_rpki_analyse_roa_compete (
 	id int(10) unsigned NOT NULL primary key auto_increment,
 	fileName varchar(128)  NOT NULL COMMENT 'roa file name',
@@ -568,14 +569,14 @@ select r.id AS id,
   i.maxLength AS maxLength,  
   r.syncLogId AS syncLogId, 
   r.syncLogFileId AS syncLogFileId, 
-  r.origin->>'$.rir' as rir, 
-  r.origin->>'$.repo' as repo   
+  r.origin>>'$.rir' as rir, 
+  r.origin>>'$.repo' as repo   
 from  lab_rpki_roa r join lab_rpki_roa_ipaddress i   
 where i.roaId = r.id and  
-  r.state->>'$.state' in ('valid','warning')  
+  r.state>>'$.state' in ('valid','warning')  
 order by  
-  r.origin->>'$.rir', 
-  r.origin->>'$.repo', 
+  r.origin>>'$.rir', 
+  r.origin>>'$.repo', 
   i.addressPrefix, 
   i.maxLength, 
   r.asn, 
@@ -792,9 +793,9 @@ func result(table, fileType string) (result sysmodel.Result, err error) {
 	sql :=
 		`select al.count as allCount, va.count as validCount, wa.count as warnigCount, ia.count as invalidCount , '` + fileType + `' as fileType  from 
 		(select count(*) as count from ` + table + ` c) al,
-		(select count(*) as count from ` + table + ` c where c.state->>"$.state" ='valid' ) va,
-		(select count(*) as count from ` + table + ` c where c.state->>"$.state" ='warning') wa,
-		(select count(*) as count from ` + table + ` c where c.state->>"$.state" ='invalid') ia`
+		(select count(*) as count from ` + table + ` c where c.state>>"$.state" ='valid' ) va,
+		(select count(*) as count from ` + table + ` c where c.state>>"$.state" ='warning') wa,
+		(select count(*) as count from ` + table + ` c where c.state>>"$.state" ='invalid') ia`
 	has, err := xormdb.XormEngine.Sql(sql).Get(&result)
 	if err != nil {
 		belogs.Error("result():select count, fail:", table, err)
