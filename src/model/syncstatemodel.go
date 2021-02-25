@@ -71,7 +71,7 @@ type ServiceState struct {
 	//  start time
 	StartTime string `json:"startTime"`
 
-	// is running: true/false
+	// is running: true/false. whether the whole sync is complete.
 	IsRunning string `json:"isRunning"`
 	// current state (only public model): idle/sync/parsevalidate/chainvalidate/rtr
 	RunningState  string `json:"runningState"`
@@ -96,7 +96,7 @@ func NewServiceState() *ServiceState {
 func (ss *ServiceState) EnterState(state string) (s *ServiceState, err error) {
 	ss.curStateMutex.Lock()
 	defer ss.curStateMutex.Unlock()
-	belogs.Debug("EnterState():state:", state, "   ss.isRunning :", ss.IsRunning, "  ss.runningState:", ss.RunningState)
+	belogs.Info("EnterState():state:", state, "   ss.isRunning :", ss.IsRunning, "  ss.runningState:", ss.RunningState)
 
 	if state == "sync" {
 		if ss.IsRunning == "true" || ss.RunningState != "idle" {
@@ -110,14 +110,14 @@ func (ss *ServiceState) EnterState(state string) (s *ServiceState, err error) {
 }
 
 // state: sync/parsevalidate/chainvalidate/rtr
-// only "rtr" will set isrunning is "false"
+// only "rtr/end" will set isrunning is "false"
 // others will not change isurnning, and runingState will set "idle".
 func (ss *ServiceState) LeaveState(state string) (s *ServiceState, err error) {
 	ss.curStateMutex.Lock()
 	defer ss.curStateMutex.Unlock()
 	belogs.Debug("LeaveState():state:", state, "   ss.isRunning :", ss.IsRunning, "  ss.runningState:", ss.RunningState)
 
-	if state == "rtr" {
+	if state == "rtr" || state == "end" {
 		ss.IsRunning = "false"
 	}
 	ss.RunningState = "idle"

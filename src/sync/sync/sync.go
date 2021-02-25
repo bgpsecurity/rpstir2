@@ -42,7 +42,7 @@ func SyncStart(syncStyle model.SyncStyle) (nextStep string, err error) {
 	// call tals , get all tals
 	talModels, err := getTals()
 	if err != nil {
-		belogs.Error("SyncStart(): GetTals failed, err:", err)
+		belogs.Error("SyncStart(): getTals failed, err:", err)
 		return "", err
 	}
 	belogs.Debug("SyncStart(): len(talModels):", len(talModels))
@@ -89,8 +89,8 @@ func SyncStart(syncStyle model.SyncStyle) (nextStep string, err error) {
 func getTals() ([]model.TalModel, error) {
 	start := time.Now()
 	// by /tal/gettals
-	resp, body, err := httpclient.Post("https", conf.String("rpstir2::serverHost"), conf.Int("rpstir2::serverHttpsPort"),
-		"/tal/gettals", "")
+	resp, body, err := httpclient.Post("https://"+conf.String("rpstir2::serverHost")+":"+conf.String("rpstir2::serverHttpsPort")+
+		"/tal/gettals", "", false)
 	belogs.Debug("getTals():after /tal/gettals len(body):", len(body))
 	if err != nil {
 		belogs.Error("getTals(): /tal/gettals connecteds failed, err:", err)
@@ -208,8 +208,8 @@ func callRrdpAndRsync(syncLogId uint64, syncLogSyncState *model.SyncLogSyncState
 	// will call rrdp and sync
 	if len(syncUrls.RrdpUrls) > 0 {
 		go func() {
-			httpclient.Post("https", conf.String("rpstir2::serverHost"), conf.Int("rpstir2::serverHttpsPort"),
-				"/rrdp/start", syncUrlsJson)
+			httpclient.Post("https://"+conf.String("rpstir2::serverHost")+":"+conf.String("rpstir2::serverHttpsPort")+
+				"/rrdp/start", syncUrlsJson, false)
 		}()
 	} else {
 		rrdpEnd = true
@@ -217,8 +217,8 @@ func callRrdpAndRsync(syncLogId uint64, syncLogSyncState *model.SyncLogSyncState
 
 	if len(syncUrls.RsyncUrls) > 0 {
 		go func() {
-			httpclient.Post("https", conf.String("rpstir2::serverHost"), conf.Int("rpstir2::serverHttpsPort"),
-				"/rsync/start", syncUrlsJson)
+			httpclient.Post("https://"+conf.String("rpstir2::serverHost")+":"+conf.String("rpstir2::serverHttpsPort")+
+				"/rsync/start", syncUrlsJson, false)
 		}()
 	} else {
 		rsyncEnd = true
@@ -287,14 +287,14 @@ func LocalStart() {
 	}
 
 	// leave serviceState
-	httpclient.Post("https", conf.String("rpstir2::serverHost"), conf.Int("rpstir2::serverHttpsPort"),
-		"/sys/servicestate", `{"operate":"leave","state":"sync"}`)
+	httpclient.Post("https://"+conf.String("rpstir2::serverHost")+":"+conf.String("rpstir2::serverHttpsPort")+
+		"/sys/servicestate", `{"operate":"leave","state":"sync"}`, false)
 
 	belogs.Info("LocalStart(): sync end , will call parsevalidate,  time(s):", time.Now().Sub(start).Seconds())
 	// will call parseValidate
 	go func() {
-		httpclient.Post("https", conf.String("rpstir2::serverHost"), conf.Int("rpstir2::serverHttpsPort"),
-			"/parsevalidate/start", "")
+		httpclient.Post("https://"+conf.String("rpstir2::serverHost")+":"+conf.String("rpstir2::serverHttpsPort")+
+			"/parsevalidate/start", "", false)
 	}()
 
 }
@@ -306,8 +306,8 @@ func callLocalRsync(syncLogId uint64, syncLogSyncState *model.SyncLogSyncState) 
 	syncUrlsJson := jsonutil.MarshalJson(syncUrls)
 	belogs.Debug("callLocalRsync(): syncUrlsJson:", syncUrlsJson)
 
-	resp, body, err := httpclient.Post("https", conf.String("rpstir2::serverHost"), conf.Int("rpstir2::serverHttpsPort"),
-		"/rsync/localstart", syncUrlsJson)
+	resp, body, err := httpclient.Post("https://"+conf.String("rpstir2::serverHost")+":"+conf.String("rpstir2::serverHttpsPort")+
+		"/rsync/localstart", syncUrlsJson, false)
 	belogs.Debug("callLocalRsync():after /rsync/localstart, syncUrlsJson:", syncUrlsJson, len(body))
 
 	if err != nil {

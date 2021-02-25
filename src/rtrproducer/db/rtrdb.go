@@ -46,7 +46,8 @@ func GetAllSlurms() (slurmToRtrFullLogs []model.SlurmToRtrFullLog, err error) {
 			substring_index( addressPrefix, '/', 1 ) AS address,
 			substring_index( addressPrefix, '/', -1 ) AS prefixLength,
 			maxLength, 
-		    slurmFileId 
+			slurmLogId,
+		    slurmLogFileId 
 	    from lab_rpki_slurm  
 		order by id `
 	err = xormdb.XormEngine.Sql(sql).Find(&slurmToRtrFullLogs)
@@ -120,7 +121,8 @@ func UpdateRtrFullLog(roaToRtrFullLogs []model.RoaToRtrFullLog,
 	}
 	for i := range slurmToRtrFullLogs {
 		sourceFrom.SlurmId = slurmToRtrFullLogs[i].SlurmId
-		sourceFrom.SlurmFileId = slurmToRtrFullLogs[i].SlurmFileId
+		sourceFrom.SlurmLogId = slurmToRtrFullLogs[i].SlurmLogId
+		sourceFrom.SlurmLogFileId = slurmToRtrFullLogs[i].SlurmLogFileId
 		sourceFromJson := jsonutil.MarshalJson(sourceFrom)
 		belogs.Debug("UpdateRtrFullLog():slurmToRtrFullLogs[i].Style:", slurmToRtrFullLogs[i].SlurmId,
 			slurmToRtrFullLogs[i].Style)

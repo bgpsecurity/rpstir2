@@ -84,8 +84,8 @@ func startRsyncServer() {
 			// will call sync to return result
 			go func(rsyncResultJson string) {
 				belogs.Debug("startRsyncServer():call /sync/rsyncresult: rsyncResultJson:", rsyncResultJson)
-				httpclient.Post("https", conf.String("rpstir2::serverHost"), conf.Int("rpstir2::serverHttpsPort"),
-					"/sync/rsyncresult", rsyncResultJson)
+				httpclient.Post("https://"+conf.String("rpstir2::serverHost")+":"+conf.String("rpstir2::serverHttpsPort")+
+					"/sync/rsyncresult", rsyncResultJson, false)
 			}(rsyncResultJson)
 
 			// close rpQueue

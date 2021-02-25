@@ -2,7 +2,7 @@ package rrdp
 
 import (
 	belogs "github.com/astaxie/beego/logs"
-	jsonutil "github.com/cpusoft/goutil/jsonutil"
+	"github.com/cpusoft/goutil/jsonutil"
 	rrdputil "github.com/cpusoft/goutil/rrdputil"
 
 	"rrdp/db"
@@ -73,7 +73,7 @@ func processRrdpDelta(syncLogId uint64, notificationModel *rrdputil.Notification
 	}
 	snapshotDeltaResult.RrdpFiles = rrdpFilesAll
 	belogs.Debug("processRrdpDelta():SaveRrdpDeltaToRrdpFiles notificationModel.Snapshot.Uri, snapshotDeltaResult.RrdpFiles, snapshotDeltaResult.DestPath:",
-		notificationModel.Snapshot.Uri, snapshotDeltaResult.RrdpFiles, snapshotDeltaResult.DestPath)
+		notificationModel.Snapshot.Uri, jsonutil.MarshalJson(snapshotDeltaResult.RrdpFiles), snapshotDeltaResult.DestPath)
 	belogs.Info("processRrdpDelta():SaveRrdpDeltaToRrdpFiles len(rrdpFiles), snapshotDeltaResult.DestPath:",
 		notificationModel.Snapshot.Uri, len(snapshotDeltaResult.RrdpFiles), snapshotDeltaResult.DestPath)
 

@@ -32,7 +32,7 @@ func InsertSyncLogFiles(labRpkiSyncLogId uint64,
 				fileHash.FileName, err)
 		}
 	}
-	belogs.Debug("InsertSyncLogFiles():rsync, after len(addFiles):", labRpkiSyncLogId, len(addFiles))
+	belogs.Debug("InsertSyncLogFiles():rsync, after len(addFiles):", labRpkiSyncLogId, len(addFiles), "   addFiles:", jsonutil.MarshalJson(addFiles))
 
 	rsyncType = "update"
 	for _, fileHash := range updateFiles {
@@ -42,7 +42,7 @@ func InsertSyncLogFiles(labRpkiSyncLogId uint64,
 				fileHash.FileName, err)
 		}
 	}
-	belogs.Debug("InsertSyncLogFiles():rsync, after len(updateFiles):", labRpkiSyncLogId, len(updateFiles))
+	belogs.Debug("InsertSyncLogFiles():rsync, after len(updateFiles):", labRpkiSyncLogId, len(updateFiles), "   updateFiles:", jsonutil.MarshalJson(updateFiles))
 
 	rsyncType = "del"
 	for _, fileHash := range delFiles {
@@ -52,7 +52,7 @@ func InsertSyncLogFiles(labRpkiSyncLogId uint64,
 				fileHash.FileName, err)
 		}
 	}
-	belogs.Debug("InsertSyncLogFiles():rsync, after len(delFiles):", labRpkiSyncLogId, len(delFiles))
+	belogs.Debug("InsertSyncLogFiles():rsync, after len(delFiles):", labRpkiSyncLogId, len(delFiles), "   delFiles:", jsonutil.MarshalJson(delFiles))
 
 	// commit
 	err = xormdb.CommitSession(session)

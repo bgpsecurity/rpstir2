@@ -81,8 +81,8 @@ func startRrdpServer() {
 			// will call sync to return result
 			go func(rrdpResultJson string) {
 				belogs.Debug("startRrdpServer():call /sync/rrdpresult: rrdpResultJson:", rrdpResultJson)
-				httpclient.Post("https", conf.String("rpstir2::serverHost"), conf.Int("rpstir2::serverHttpsPort"),
-					"/sync/rrdpresult", rrdpResultJson)
+				httpclient.Post("https://"+conf.String("rpstir2::serverHost")+":"+conf.String("rpstir2::serverHttpsPort")+
+					"/sync/rrdpresult", rrdpResultJson, false)
 			}(rrdpResultJson)
 
 			// close rrQueue
