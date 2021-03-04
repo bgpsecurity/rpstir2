@@ -15,7 +15,7 @@ import (
 	conf "github.com/cpusoft/goutil/conf"
 	fileutil "github.com/cpusoft/goutil/fileutil"
 	httpclient "github.com/cpusoft/goutil/httpclient"
-	jsonutil "github.com/cpusoft/goutil/jsonutil"
+	"github.com/cpusoft/goutil/jsonutil"
 	osutil "github.com/cpusoft/goutil/osutil"
 	"github.com/cpusoft/goutil/rrdputil"
 	rsyncutil "github.com/cpusoft/goutil/rsyncutil"
@@ -43,6 +43,7 @@ func GetTals() (passTalModels []model.TalModel, err error) {
 		belogs.Error("GetTals(): GetAllTalFile failed:", err)
 		return
 	}
+	belogs.Info("GetTals(): files:", jsonutil.MarshalJson(files), "     talModels:", jsonutil.MarshalJson(talModels))
 
 	// save tal files to local temp dir, and judge sync style(rrdp/rsync), and verify using subjectpublickeyinfo
 	passTalModels, err = syncToLocalAndParseValidateCers(talModels)
