@@ -104,7 +104,7 @@ func validateCer(chains *chainmodel.Chains, cerId uint64, wg *sync.WaitGroup, ch
 		desc := ""
 		if err != nil {
 			desc = err.Error()
-			belogs.Error("validateCer(): VerifyRootCerByOpenssl fail, cerId:", chainCer.Id, result, err)
+			belogs.Error("validateCer(): VerifyRootCerByOpenssl fail, fileName:", chainCer.FileName, result, err)
 		}
 		if result != "ok" {
 			stateMsg := model.StateMsg{Stage: "chainvalidate",
