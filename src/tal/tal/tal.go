@@ -15,8 +15,9 @@ import (
 	conf "github.com/cpusoft/goutil/conf"
 	fileutil "github.com/cpusoft/goutil/fileutil"
 	httpclient "github.com/cpusoft/goutil/httpclient"
-	jsonutil "github.com/cpusoft/goutil/jsonutil"
+	"github.com/cpusoft/goutil/jsonutil"
 	osutil "github.com/cpusoft/goutil/osutil"
+	"github.com/cpusoft/goutil/rrdputil"
 	rsyncutil "github.com/cpusoft/goutil/rsyncutil"
 	urlutil "github.com/cpusoft/goutil/urlutil"
 
@@ -42,6 +43,7 @@ func GetTals() (passTalModels []model.TalModel, err error) {
 		belogs.Error("GetTals(): GetAllTalFile failed:", err)
 		return
 	}
+	belogs.Info("GetTals(): files:", jsonutil.MarshalJson(files), "     talModels:", jsonutil.MarshalJson(talModels))
 
 	// save tal files to local temp dir, and judge sync style(rrdp/rsync), and verify using subjectpublickeyinfo
 	passTalModels, err = syncToLocalAndParseValidateCers(talModels)
@@ -275,19 +277,18 @@ func parseAndValidateCer(talUrl, subjectPublicKeyInfo, tmpDir string, talSyncUrl
 
 	// check rpkiNotify(rrdp)
 	if len(parseCerSimpleResponse.ParseCerSimple.RpkiNotify) > 0 {
+		start := time.Now()
 		belogs.Debug("parseAndValidateCer(): test rrdp is ok:", parseCerSimpleResponse.ParseCerSimple.RpkiNotify)
-		resp, _, err := httpclient.GetHttpsVerify(parseCerSimpleResponse.ParseCerSimple.RpkiNotify, true)
+		_, err = rrdputil.GetRrdpNotification(parseCerSimpleResponse.ParseCerSimple.RpkiNotify)
 		if err != nil {
-			belogs.Error("parseAndValidateCer(): GetHttpsVerify fail, err:", parseCerSimpleResponse.ParseCerSimple.RpkiNotify, err)
-			talSyncUrl.SupportRrdp = false
-
-		} else if resp.StatusCode != 200 {
-			belogs.Error("parseAndValidateCer(): GetHttpsVerify StatusCode != 200 :", parseCerSimpleResponse.ParseCerSimple.RpkiNotify, resp.StatusCode)
+			belogs.Error("GetRrdpSnapshot(): rrdputil.GetRrdpNotification fail:", parseCerSimpleResponse.ParseCerSimple.RpkiNotify,
+				"  time(s):", time.Now().Sub(start).Seconds(), err)
 			talSyncUrl.SupportRrdp = false
 		} else {
 			talSyncUrl.SupportRrdp = true
 			talSyncUrl.RrdpUrl = parseCerSimpleResponse.ParseCerSimple.RpkiNotify
 		}
+
 	}
 	belogs.Debug("parseAndValidateCer():after check rpkiNotify(rrdp),talUrl, rpkiNotify, talSyncUrl:",
 		talUrl, parseCerSimpleResponse.ParseCerSimple.RpkiNotify, jsonutil.MarshalJson(talSyncUrl))

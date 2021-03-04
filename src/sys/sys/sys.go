@@ -43,8 +43,8 @@ func InitReset(sysStyle sysmodel.SysStyle) (err error) {
 				syncStyle = sysStyle.SyncStyle
 			}
 			belogs.Info("InitReset():fullsync will call sync:", syncStyle)
-			httpclient.Post("https", conf.String("rpstir2::serverHost"), conf.Int("rpstir2::serverHttpsPort"),
-				"/sync/start", `{"syncStyle": "`+syncStyle+`"}`)
+			httpclient.Post("https://"+conf.String("rpstir2::serverHost")+":"+conf.String("rpstir2::serverHttpsPort")+
+				"/sync/start", `{"syncStyle": "`+syncStyle+`"}`, false)
 		}()
 	}
 	belogs.Info("InitReset():ok", sysStyle, "  time(s):", time.Now().Sub(start).Seconds())

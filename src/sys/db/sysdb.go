@@ -42,11 +42,11 @@ var intiSqls []string = []string{
 	`DROP TABLE IF EXISTS	lab_rpki_rtr_full_log`,
 	`DROP TABLE IF EXISTS	lab_rpki_rtr_incremental`,
 	`DROP TABLE IF EXISTS	lab_rpki_slurm`,
-	`DROP TABLE IF EXISTS	lab_rpki_slurm_file`,
+	`DROP TABLE IF EXISTS	lab_rpki_slurm_log`,
+	`DROP TABLE IF EXISTS	lab_rpki_slurm_log_file`,
+	`DROP TABLE IF EXISTS	lab_rpki_slurm_audit`,
 	`DROP TABLE IF EXISTS	lab_rpki_statistic`,
 	`DROP TABLE IF EXISTS	lab_rpki_stat_roa_competation`,
-	`DROP TABLE IF EXISTS	lab_rpki_transfer_target`,
-	`DROP TABLE IF EXISTS	lab_rpki_transfer_log`,
 	`DROP TABLE IF EXISTS	lab_rpki_statistic`,
 	`DROP TABLE IF EXISTS	lab_rpki_analyse_roa_history`,
 	`DROP TABLE IF EXISTS	lab_rpki_analyse_roa_compete`,
@@ -410,7 +410,7 @@ CREATE TABLE lab_rpki_rtr_full (
   address  varchar(512) not null COMMENT 'address : 147.28.83.0 ',
   prefixLength  int(10) unsigned not null,
   maxLength int(10) unsigned not null,
-  sourceFrom  json not null comment 'come from : {souce:sync/slurm/transfer,syncLogId/syncLogFileId/slurmId/slurmFileId/transferLogId}',
+  sourceFrom  json not null comment 'come from : {souce:sync/slurm/rush,syncLogId/syncLogFileId/slurmId/slurmFileId/rushDataLogId}',
   unique  rtrFullSerialNumberAsnAddressPrefixLengthMaxLength (serialNumber , asn,address,prefixLength,maxLength)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin comment='after every sync repo, will insert all full'
 `,
@@ -423,7 +423,7 @@ CREATE TABLE lab_rpki_rtr_full_log (
   address  varchar(512) not null COMMENT 'address : 147.28.83.0 ',
   prefixLength  int(10) unsigned not null,
   maxLength int(10) unsigned not null,
-  sourceFrom  json not null comment 'come from : {souce:sync/slurm/transfer,syncLogId/syncLogFileId/slurmId/slurmFileId/transferLogId}'
+  sourceFrom  json not null comment 'come from : {souce:sync/slurm/rush,syncLogId/syncLogFileId/slurmId/slurmFileId/rushDataLogId}'
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin comment='full rtr log history'
 `,
 
@@ -436,7 +436,7 @@ CREATE TABLE lab_rpki_rtr_incremental (
   address  varchar(512) not null COMMENT 'address : 147.28.83.0 ',
   prefixLength  int(10) unsigned not null,
   maxLength int(10) unsigned not null,
-  sourceFrom  json not null comment 'come from : {souce:sync/slurm/transfer,syncLogId/syncLogFileId/slurmId/slurmFileId/transferLogId}',
+  sourceFrom  json not null comment 'come from : {souce:sync/slurm/rush,syncLogId/syncLogFileId/slurmId/slurmFileId/rushDataLogId}',
   unique  rtrIncrementalSerialNumberAsnAddrPrefixMaxStyle (serialNumber , asn,address,prefixLength,maxLength,style)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin comment='after every sync repo, will insert all full'
 `,
@@ -455,21 +455,52 @@ CREATE TABLE lab_rpki_slurm (
   ski  varchar(256) COMMENT 'some base64 ski',
   routerPublicKey  varchar(256) COMMENT 'some base64 ski',  
   comment  varchar(256),
-  slurmFileId int(10) unsigned not null  COMMENT 'lab_rpki_slurm_file.id',
-  priority int(10) unsigned not null default 5  COMMENT '0-10, 0 is highest level, 10 is  lowest. default 5. the higher level users slurm will conver lower ',
+  slurmLogId int(10) unsigned not null  COMMENT 'lab_rpki_slurm_log.id',
+  slurmLogFileId int(10) unsigned not null  COMMENT 'lab_rpki_slurm_log_file.id',
   state json not null COMMENT '[rtr:notYet/finished]',
   unique  slurmAsnAddressPrefix_maxLength (asn,addressPrefix,maxLength)
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin comment='support different zone slurm file'
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin comment='valid slurms'
 `,
-
+	//one slurm_log is corresponding to one slurm
 	`
-CREATE TABLE lab_rpki_slurm_file (
+CREATE TABLE lab_rpki_slurm_log (
+	id int(10) unsigned not null primary key auto_increment,
+	version  int(10) unsigned default 1,
+	style varchar(128) NOT NULL COMMENT 'prefixFilter/bgpsecFilter/prefixAssertion/bgpsecAssertion',
+	asn bigint(20) signed ,
+	addressPrefix  varchar(512) COMMENT '198.51.100.0/24 or 2001:DB8::/32',
+	maxLength  int(10) unsigned ,
+	ski  varchar(256) COMMENT 'some base64 ski',
+	routerPublicKey  varchar(256) COMMENT 'some base64 ski',  
+	comment  varchar(256),
+	state json not null COMMENT '[state:unknown/valid/invalid]',
+	slurmLogFileId int(10) unsigned not null  COMMENT 'lab_rpki_slurm_log_file.id',
+	unique  slurmAsnAddressPrefix_maxLength (asn,addressPrefix,maxLength)
+  ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin comment='slurms from upload file, need audit'
+`,
+	//one slurm_log_file is corresponding to multi slurm_log and slurm
+	`
+CREATE TABLE lab_rpki_slurm_log_file (
   id int(10) unsigned not null primary key auto_increment,
-  jsonAll  json not null  COMMENT 'slurm content',
+  content  mediumtext  not null  COMMENT 'slurm content',
+  uploadUserId int(10) unsigned COMMENT 'user upload slurm',
   uploadTime  datetime NOT NULL,
-  filePath varchar(128) NOT NULL ,
+  filePath varchar(256) NOT NULL ,
   fileName varchar(128) NOT NULL   
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin comment='support different user upload different zone slurm file'
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin comment='upload file'
+`,
+	// 1) one slurm_audit is corresponding to one slurm_log and one slurm
+	// 2) if one slurm pass , and then be unpass, there are will two slurm_audits
+	// and will delete slurm and slurm_log will be invalid
+	`
+CREATE TABLE lab_rpki_slurm_audit (
+	id int(10) unsigned not null primary key auto_increment,
+	slurmId int(10) unsigned COMMENT 'lab_rpki_slurm.id',
+	slurmLogId int(10) unsigned not null  COMMENT 'lab_rpki_slurm_log.id',
+	auditUserId int(10) unsigned COMMENT 'user audit slurm',
+	auditTime datetime COMMENT 'audit time',
+	state json not null COMMENT '[state:unaudit/pass/unpass]'
+  ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin comment='audit to slurm_log'
 `,
 
 	`
@@ -489,31 +520,37 @@ CREATE TABLE lab_rpki_slurm_file (
 
 	`
 #####################
-####  transfer
+####  rush
 #####################
-CREATE TABLE lab_rpki_transfer_target (
+CREATE TABLE lab_rpki_rush_node (
   id int(10) unsigned NOT NULL primary key auto_increment,
-  protocol varchar(64) NOT NULL COMMENT 'http or https',
-  address varchar(64) NOT NULL COMMENT 'IP or domain ',
-  port    int(10) unsigned NOT NULL COMMENT 'port',
-  targetType   varchar(64) NOT NULL COMMENT 'vc/rp',
+  nodeName  varchar(256) NOT NULL COMMENT 'node name',
+  parentNodeId int(10) unsigned COMMENT 'if it is root, will be null',
+  url   varchar(256) NOT NULL COMMENT 'interface url: https://1.1.1.1:8080',
+  isSelfUrl varchar(8) COMMENT 'true/null: vc to identify itself. rp do not need this',
+  state json NOT NULL  COMMENT '{"state":"valid"}, valid/invalid',
+  note varchar(256)  COMMENT 'comments',
   updateTime datetime NOT NULL COMMENT 'update time',
-  state varchar(16) NOT NULL DEFAULT 'valid'  COMMENT 'valid/invalid'
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin comment='linked server, as target. so every server(rp/vc) may have different targets'
+  unique  nodeName(nodeName)  
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin comment='rush node conf'
 `,
 
 	`
-CREATE TABLE lab_rpki_transfer_log (
-  id int(10) unsigned NOT NULL primary key auto_increment,
-  transferTargetId int(10) unsigned NOT NULL  COMMENT 'lab_rpki_transfer_target.id',
-  operate   varchar(64) NOT NULL COMMENT 'all/update',
-  transferTime datetime NOT NULL COMMENT 'update time',
-  uuid varchar(64) NOT NULL COMMENT 'used to uniquely identify transfer data',
-  content longtext   COMMENT 'transfer content',
-  transferType varchar(64) NOT NULL COMMENT 'send/receive',
-  result   varchar(64) COMMENT 'ok/fail',
-  errMsg   varchar(256) COMMENT 'fail message'
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin comment='log distribute'
+CREATE TABLE lab_rpki_rush_transfer_log (
+	id int(10) unsigned NOT NULL primary key auto_increment,
+	uuid varchar(64) NOT NULL COMMENT 'used to uniquely identify every rush transfer',
+	sequence json NOT NULL  COMMENT 'identify transfer sequence, {seq:1, index:1}, to order',
+	nodeUrl varchar(256) NOT NULL COMMENT 'node url: https://1.1.1.1:8080, to idengity node, not use nodeid',
+	receiveRequestTime datetime(6)  COMMENT 'receive request time, it is start time of process' , 
+	sendResponseTime datetime(6)  COMMENT 'send response time, it is end time of process'  ,
+	updateType varchar(64) NOT NULL COMMENT 'requestfull/pushfull/pushincr',
+	dataNumber int(10) unsigned COMMENT 'the number of rpki data',
+	filePath varchar(256)  COMMENT 'saved file path',
+	fileName varchar(256)  COMMENT 'saved file name',
+	result  varchar(16) COMMENT 'ok/fail',
+	errMsg  varchar(256) COMMENT 'fail reason',
+	key  uuid (uuid)
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin comment='rush transfer log'
 `,
 
 	`
@@ -541,9 +578,10 @@ CREATE TABLE lab_rpki_analyse_roa_history (
 	syncLogId int(10) unsigned not null  COMMENT 'foreign key  references lab_rpki_sync_log(id)',
 	roas json,
 	updateTime datetime NOT NULL
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin comment='roa history info';
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin comment='roa history info'
+`,
 
-  
+	`  
 CREATE TABLE lab_rpki_analyse_roa_compete (
 	id int(10) unsigned NOT NULL primary key auto_increment,
 	fileName varchar(128)  NOT NULL COMMENT 'roa file name',
@@ -553,6 +591,23 @@ CREATE TABLE lab_rpki_analyse_roa_compete (
 	slurm json COMMENT 'slurm',
 	updateTime datetime NOT NULL COMMENT 'update time'
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin comment='roa compete'
+  
+
+`,
+
+	`  
+#####################
+####  conf
+#####################
+CREATE TABLE lab_rpki_conf (
+	id int(10) unsigned NOT NULL primary key auto_increment,
+	section varchar(128)  NOT NULL COMMENT 'section',
+	myKey varchar(128)  NOT NULL  COMMENT 'key',
+	myValue varchar(1024)  NOT NULL  COMMENT 'value',
+	defaultMyValue varchar(1024)  NOT NULL  COMMENT 'default value',
+	updateTime datetime NOT NULL COMMENT 'update time',
+	unique sectionMyKey (section,myKey)
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin comment='rpstir2 configuration'
   
 
 `,
@@ -623,20 +678,22 @@ var fullSyncSqls []string = []string{
 	`truncate  table  lab_rpki_roa_ipaddress  `,
 	`truncate  table  lab_rpki_roa_ee_ipaddress  `,
 	`truncate  table  lab_rpki_sync_rrdp_log  `,
+	`truncate  table  lab_rpki_sync_log_file  `,
+	`truncate  table  lab_rpki_sync_log  `,
 }
 var resetAllOtherSqls []string = []string{
 	`truncate  table  lab_rpki_statistic  `,
-	`truncate  table  lab_rpki_sync_log_file  `,
-	`truncate  table  lab_rpki_sync_log  `,
 	`truncate  table  lab_rpki_rtr_session  `,
 	`truncate  table  lab_rpki_rtr_serial_number  `,
 	`truncate  table  lab_rpki_rtr_full  `,
 	`truncate  table  lab_rpki_rtr_full_log  `,
 	`truncate  table  lab_rpki_rtr_incremental  `,
 	`truncate  table  lab_rpki_slurm  `,
-	`truncate  table  lab_rpki_slurm_file  `,
-	`truncate  table  lab_rpki_transfer_target  `,
-	`truncate  table  lab_rpki_transfer_log  `,
+	`truncate  table  lab_rpki_slurm_log `,
+	`truncate  table  lab_rpki_slurm_log_file `,
+	`truncate  table  lab_rpki_slurm_audit `,
+	`truncate  table  lab_rpki_rush_node `,
+	`truncate  table  lab_rpki_rush_transfer_log  `,
 	`truncate  table  lab_rpki_analyse_roa_history  `,
 	`truncate  table  lab_rpki_analyse_roa_compete  `,
 }
@@ -668,11 +725,13 @@ var optimizeSqls []string = []string{
 	`optimize  table  lab_rpki_rtr_full_log  `,
 	`optimize  table  lab_rpki_rtr_incremental  `,
 	`optimize  table  lab_rpki_slurm  `,
-	`optimize  table  lab_rpki_slurm_file  `,
+	`optimize  table  lab_rpki_slurm_log  `,
+	`optimize  table  lab_rpki_slurm_log_file  `,
+	`optimize  table  lab_rpki_slurm_audit  `,
 	`optimize  table  lab_rpki_statistic  `,
 	//	`optimize  table  lab_rpki_stat_roa_competation  `,
-	`optimize  table  lab_rpki_transfer_target  `,
-	`optimize  table  lab_rpki_transfer_log  `,
+	`optimize  table  lab_rpki_rush_node  `,
+	`optimize  table  lab_rpki_rush_transfer_log  `,
 	`optimize  table  lab_rpki_analyse_roa_history  `,
 	`optimize  table  lab_rpki_analyse_roa_compete `}
 
@@ -732,8 +791,9 @@ func initResetDb(session *xorm.Session, sysStyle sysmodel.SysStyle) error {
 		}
 	}
 
-	// when resetall,  generate new session random, insert lab_rpki_rtr_session
+	// when resetall,
 	if sysStyle.SysStyle == "resetall" {
+		// generate new session random, insert lab_rpki_rtr_session
 		rand.Seed(time.Now().UnixNano())
 		rtrSession := model.LabRpkiRtrSession{}
 		rtrSession.SessionId = uint64(rand.Intn(999) + 99)
@@ -744,6 +804,17 @@ func initResetDb(session *xorm.Session, sysStyle sysmodel.SysStyle) error {
 			return err
 		}
 	}
+	if sysStyle.SysStyle == "init" {
+		// insert lab_rpki_conf
+		sql = `insert lab_rpki_conf ( section, myKey, myValue, defaultMyValue, updateTime) 
+			values(?,?,?,?,?) `
+		_, err := session.Exec(sql, "rpOperate", "cacheUpdateType", "manual", "manual", time.Now())
+		if err != nil {
+			belogs.Error("initUserRoleAuth(): insert lab_rpki_conf fail", err)
+			return err
+		}
+	}
+
 	return nil
 }
 

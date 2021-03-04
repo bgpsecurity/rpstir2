@@ -282,12 +282,13 @@ type LabRpkiRtrIncremental struct {
 }
 
 type LabRpkiRtrSourceFrom struct {
-	Source        string `json:"source"`
-	SyncLogId     uint64 `json:"syncLogId"`
-	SyncLogFileId uint64 `json:"syncLogFileId"`
-	SlurmId       uint64 `json:"slurmId"`
-	SlurmFileId   uint64 `json:"slurmFileId"`
-	TransferLogId uint64 `json:"transferLogId"`
+	Source         string `json:"source"`
+	SyncLogId      uint64 `json:"syncLogId"`
+	SyncLogFileId  uint64 `json:"syncLogFileId"`
+	SlurmId        uint64 `json:"slurmId"`
+	SlurmLogId     uint64 `json:"slurmLogId"`
+	SlurmLogFileId uint64 `json:"slurmLogFileId"`
+	TransferLogId  uint64 `json:"transferLogId"`
 }
 
 //////////////////
@@ -296,61 +297,17 @@ type LabRpkiRtrSourceFrom struct {
 
 // because asn may be nil or be 0, so using  sql.NullInt64
 type SlurmToRtrFullLog struct {
-	Id           uint64        `json:"id" xorm:"id int"`
-	Style        string        `json:"style" xorm:"style varchar(128)"`
-	Asn          sql.NullInt64 `json:"asn" xorm:"asn int"`
-	Address      string        `json:"address" xorm:"address varchar(256)"`
-	PrefixLength uint64        `json:"prefixLength" xorm:"prefixLength int"`
-	MaxLength    uint64        `json:"maxLength" xorm:"maxLength int"`
-	SlurmFileId  uint64        `json:"slurmFileId" xorm:"slurmFileId int"`
-	SlurmId      uint64        `json:"slurmId" xorm:"slurmId int"`
+	Id             uint64        `json:"id" xorm:"id int"`
+	Style          string        `json:"style" xorm:"style varchar(128)"`
+	Asn            sql.NullInt64 `json:"asn" xorm:"asn int"`
+	Address        string        `json:"address" xorm:"address varchar(256)"`
+	PrefixLength   uint64        `json:"prefixLength" xorm:"prefixLength int"`
+	MaxLength      uint64        `json:"maxLength" xorm:"maxLength int"`
+	SlurmId        uint64        `json:"slurmId" xorm:"slurmId int"`
+	SlurmLogId     uint64        `json:"slurmLogId" xorm:"slurmLogId int"`
+	SlurmLogFileId uint64        `json:"slurmLogFileId" xorm:"slurmLogFileId int"`
 }
 
-//lab_rpki_slurm_file
-type LabRpkiSlurmFile struct {
-	Id         uint64    `json:"id" xorm:"id int"`
-	JsonAll    string    `json:"jsonAll" xorm:"jsonAll json"`
-	UploadTime time.Time `json:"uploadTime" xorm:"uploadTime datetime"`
-	FilePath   string    `json:"filePath" xorm:"filePath varchar(128)"`
-	FileName   string    `json:"fileName" xorm:"fileName varchar(128)"`
-}
-
-//////////////////
-//  rp transfer
-//////////////////
-//lab_rpki_transfer_target
-type LabRpkiTransferTarget struct {
-	Id uint64 `json:"id" xorm:"id int"`
-	//http/https
-	Protocol string `json:"protocol" xorm:"protocol varchar(64)"`
-	//IP or domain
-	Address string `json:"address" xorm:"address  varchar(64)"`
-	Port    uint64 `json:"port" xorm:"port  int"`
-	//vc/rp
-	TargetType string `json:"targetType" xorm:"targetType varchar(64)"`
-	//update time
-	UpdateTime time.Time `json:"updateTime" xorm:"updateTime datetime"`
-	//valid/invalid
-	State string `json:"state" xorm:"state varchar(64)"`
-}
-
-//lab_rpki_transfer_log
-type LabRpkiTransferLog struct {
-	Id uint64 `json:"id" xorm:"id int"`
-	//lab_rpki_transfer_target.id
-	TransferTargetId uint64 `json:"transferTargetId" xorm:"transferTargetId int"`
-	//all/update',
-	Operate string `json:"operate" xorm:"operate varchar(64)"`
-	//transfer time
-	TransferTime time.Time `json:"transferTime" xorm:"transferTime datetime"`
-	Uuid         string    `json:"uuid" xorm:"uuid  varchar(64)"`
-	Content      string    `json:"content" xorm:"content longtext"`
-	//send/receive
-	TransferType string `json:"transferType" xorm:"transferType varchar(64)"`
-	//ok/fail
-	Result string `json:"result" xorm:"result varchar(64)"`
-	ErrMsg string `json:"errMsg" xorm:"errMsg varchar(256)"`
-}
 ////////////////////////////////////
 // rrdp
 ///////////////////////////////////

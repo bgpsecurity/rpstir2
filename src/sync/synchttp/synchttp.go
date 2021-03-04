@@ -34,8 +34,8 @@ func SyncStart(w rest.ResponseWriter, req *rest.Request) {
 	belogs.Debug("SyncStart(): syncStyle:", syncStyle)
 
 	//check serviceState
-	resp, body, err := httpclient.Post("https", conf.String("rpstir2::serverHost"), conf.Int("rpstir2::serverHttpsPort"),
-		"/sys/servicestate", `{"operate":"enter","state":"sync"}`)
+	resp, body, err := httpclient.Post("https://"+conf.String("rpstir2::serverHost")+":"+conf.String("rpstir2::serverHttpsPort")+
+		"/sys/servicestate", `{"operate":"enter","state":"sync"}`, false)
 	if err != nil {
 		belogs.Error("SyncStart(): /sys/servicestate connecteds failed, err:", err)
 		w.WriteJson(httpserver.GetFailHttpResponse(err))
@@ -58,21 +58,25 @@ func SyncStart(w rest.ResponseWriter, req *rest.Request) {
 		if err != nil {
 			// will end this whole sync
 			belogs.Error("SyncStart(): SyncStart fail,  syncStyle is :", syncStyle, err)
-			httpclient.Post("https", conf.String("rpstir2::serverHost"), conf.Int("rpstir2::serverHttpsPort"),
-				"/sys/servicestate", `{"operate":"leave","state":"end"}`)
+			httpclient.Post("https://"+conf.String("rpstir2::serverHost")+":"+conf.String("rpstir2::serverHttpsPort")+
+				"/sys/servicestate", `{"operate":"leave","state":"end"}`, false)
 		} else {
-
-			// will end sync ,and will start next step
-			httpclient.Post("https", conf.String("rpstir2::serverHost"), conf.Int("rpstir2::serverHttpsPort"),
-				"/sys/servicestate", `{"operate":"leave","state":"sync"}`)
 
 			// will go next step
 			if nextStep == "fullsync" {
-				go httpclient.Post("https", conf.String("rpstir2::serverHost"), conf.Int("rpstir2::serverHttpsPort"),
-					"/sys/initreset", `{"sysStyle":"fullsync", "syncStyle":"`+syncStyle.SyncStyle+`"}`)
+				// leave current sync now, and start new fullsync
+				httpclient.Post("https://"+conf.String("rpstir2::serverHost")+":"+conf.String("rpstir2::serverHttpsPort")+
+					"/sys/servicestate", `{"operate":"leave","state":"end"}`, false)
+
+				go httpclient.Post("https://"+conf.String("rpstir2::serverHost")+":"+conf.String("rpstir2::serverHttpsPort")+
+					"/sys/initreset", `{"sysStyle":"fullsync", "syncStyle":"`+syncStyle.SyncStyle+`"}`, false)
 			} else if nextStep == "parsevalidate" {
-				go httpclient.Post("https", conf.String("rpstir2::serverHost"), conf.Int("rpstir2::serverHttpsPort"),
-					"/parsevalidate/start", "")
+				// will end sync ,and will start next step
+				httpclient.Post("https://"+conf.String("rpstir2::serverHost")+":"+conf.String("rpstir2::serverHttpsPort")+
+					"/sys/servicestate", `{"operate":"leave","state":"sync"}`, false)
+
+				go httpclient.Post("https://"+conf.String("rpstir2::serverHost")+":"+conf.String("rpstir2::serverHttpsPort")+
+					"/parsevalidate/start", "", false)
 			}
 			belogs.Info("SyncStart():  sync.Start end,  nextStep is :", nextStep)
 		}

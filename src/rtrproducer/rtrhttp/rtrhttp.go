@@ -14,8 +14,8 @@ import (
 func RtrUpdate(w rest.ResponseWriter, req *rest.Request) {
 	belogs.Info("RtrUpdate(): start")
 	//check serviceState
-	httpclient.Post("https", conf.String("rpstir2::serverHost"), conf.Int("rpstir2::serverHttpsPort"),
-		"/sys/servicestate", `{"operate":"enter","state":"rtr"}`)
+	httpclient.Post("https://"+conf.String("rpstir2::serverHost")+":"+conf.String("rpstir2::serverHttpsPort")+
+		"/sys/servicestate", `{"operate":"enter","state":"rtr"}`, false)
 
 	go func() {
 		nextStep, err := rtr.RtrUpdate()
@@ -24,16 +24,16 @@ func RtrUpdate(w rest.ResponseWriter, req *rest.Request) {
 		if err != nil {
 			// will end this whole sync
 			belogs.Error("RtrUpdate():  RtrUpdate fail", err)
-			httpclient.Post("https", conf.String("rpstir2::serverHost"), conf.Int("rpstir2::serverHttpsPort"),
-				"/sys/servicestate", `{"operate":"leave","state":"end"}`)
+			httpclient.Post("https://"+conf.String("rpstir2::serverHost")+":"+conf.String("rpstir2::serverHttpsPort")+
+				"/sys/servicestate", `{"operate":"leave","state":"end"}`, false)
 		} else {
 			// leave serviceState
-			httpclient.Post("https", conf.String("rpstir2::serverHost"), conf.Int("rpstir2::serverHttpsPort"),
-				"/sys/servicestate", `{"operate":"leave","state":"rtr"}`)
+			httpclient.Post("https://"+conf.String("rpstir2::serverHost")+":"+conf.String("rpstir2::serverHttpsPort")+
+				"/sys/servicestate", `{"operate":"leave","state":"rtr"}`, false)
 
 			// call serial notify to rtr client
-			go httpclient.Post("https", conf.String("rpstir2::serverHost"), conf.Int("rpstir2::serverHttpsPort"),
-				"/rtr/server/sendserialnotify", "")
+			go httpclient.Post("https://"+conf.String("rpstir2::serverHost")+":"+conf.String("rpstir2::serverHttpsPort")+
+				"/rtr/server/sendserialnotify", "", false)
 
 			belogs.Info("RtrUpdate():  RtrUpdate end,  nextStep is :", nextStep)
 		}

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
@@ -32,6 +33,7 @@ func main() {
 	err := xormdb.InitMySql()
 	if err != nil {
 		belogs.Error("main(): start InitMySql failed:", err)
+		fmt.Println("rpstir2 failed to start when connecting to MySQL, the error is ", err)
 		return
 	}
 

@@ -106,6 +106,11 @@ func (r *RrdpParseQueue) PreCheckRrdpUrl(url string) (ok bool) {
 		belogs.Error("PreCheckRrdpUrl():url is localhost:", url)
 		return false
 	}
+	if strings.Index(url, "chloe.sobornost.net/rpki/news-public.xml") > 0 {
+		belogs.Error("PreCheckRrdpUrl():this url is not rrdp url, so just ignore:", url)
+		return false
+	}
+
 	e := r.rrdpAddedUrls.Front()
 	for e != nil {
 		if strings.Contains(url, e.Value.(RrdpModelChan).Url) {

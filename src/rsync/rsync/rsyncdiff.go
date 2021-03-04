@@ -94,11 +94,11 @@ func diffFiles(filesFromDb, filesFromDisk map[string]rsyncmodel.RsyncFileHash) (
 		}
 	}
 	addFiles = filesFromDisk
-	belogs.Debug("diffFiles(): len(addFiles):", len(addFiles), jsonutil.MarshalJson(addFiles),
-		"  len(delFiles):", len(delFiles), jsonutil.MarshalJson(delFiles),
-		"  len(updateFiles):", len(updateFiles), jsonutil.MarshalJson(updateFiles),
-		"  len(noChangeFiles):", len(noChangeFiles), jsonutil.MarshalJson(noChangeFiles),
-		"  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Debug("diffFiles(): len(addFiles):", len(addFiles), jsonutil.MarshalJson(addFiles))
+	belogs.Debug("diffFiles(): len(delFiles):", len(delFiles), jsonutil.MarshalJson(delFiles))
+	belogs.Debug("diffFiles(): len(updateFiles):", len(updateFiles), jsonutil.MarshalJson(updateFiles))
+	belogs.Debug("diffFiles(): len(noChangeFiles):", len(noChangeFiles), jsonutil.MarshalJson(noChangeFiles))
+	belogs.Debug("diffFiles(): time(s):", time.Now().Sub(start).Seconds())
 	belogs.Info("diffFiles(): len(addFiles):", len(addFiles), "  len(delFiles):", len(delFiles),
 		"  len(updateFiles):", len(updateFiles), "  len(noChangeFiles):", len(noChangeFiles), "  time(s):", time.Now().Sub(start).Seconds())
 
@@ -111,9 +111,10 @@ func getFilesHashFromDb() (files map[string]rsyncmodel.RsyncFileHash, err error)
 
 	// init cap
 	cerFileHashs := make([]rsyncmodel.RsyncFileHash, 0, 25000)
-	err = xormdb.XormEngine.Table("lab_rpki_cer").
-		Select("filePath , fileName, fileHash, jsonAll as lastJsonAll, 'cer' as fileType").
-		Asc("id").Find(&cerFileHashs)
+	sql := `select c.filePath , c.fileName, c.fileHash, c.jsonAll as lastJsonAll,  'cer' as fileType  
+			from lab_rpki_cer c , lab_rpki_sync_log_file f  
+			where c.syncLogFileId = f.id   and f.syncStyle='rsync' order by c.id `
+	err = xormdb.XormEngine.Sql(sql).Find(&cerFileHashs)
 	if err != nil {
 		belogs.Error("GetFilesHashFromDb(): get lab_rpki_cer fail:", err)
 		return nil, nil
@@ -122,9 +123,10 @@ func getFilesHashFromDb() (files map[string]rsyncmodel.RsyncFileHash, err error)
 
 	// init cap
 	roaFileHashs := make([]rsyncmodel.RsyncFileHash, 0, 25000)
-	err = xormdb.XormEngine.Table("lab_rpki_roa").
-		Select("filePath , fileName, fileHash, jsonAll as lastJsonAll, 'roa' as fileType").
-		Asc("id").Find(&roaFileHashs)
+	sql = `select c.filePath , c.fileName, c.fileHash, c.jsonAll as lastJsonAll,  'roa' as fileType  
+			from lab_rpki_roa c , lab_rpki_sync_log_file f  
+			where c.syncLogFileId = f.id   and f.syncStyle='rsync' order by c.id `
+	err = xormdb.XormEngine.Sql(sql).Find(&roaFileHashs)
 	if err != nil {
 		belogs.Error("GetFilesHashFromDb(): get lab_rpki_roa fail:", err)
 		return nil, nil
@@ -133,9 +135,10 @@ func getFilesHashFromDb() (files map[string]rsyncmodel.RsyncFileHash, err error)
 
 	// init cap
 	crlFileHashs := make([]rsyncmodel.RsyncFileHash, 0, 25000)
-	err = xormdb.XormEngine.Table("lab_rpki_crl").
-		Select("filePath,fileName,fileHash,jsonAll as 'lastJsonAll','crl' as fileType").
-		Asc("id").Find(&crlFileHashs)
+	sql = `select c.filePath , c.fileName, c.fileHash, c.jsonAll as lastJsonAll,  'roa' as fileType  
+			from lab_rpki_crl c , lab_rpki_sync_log_file f  
+			where c.syncLogFileId = f.id   and f.syncStyle='rsync' order by c.id `
+	err = xormdb.XormEngine.Sql(sql).Find(&crlFileHashs)
 	if err != nil {
 		belogs.Error("GetFilesHashFromDb(): get lab_rpki_crl fail:", err)
 		return nil, nil
@@ -144,9 +147,10 @@ func getFilesHashFromDb() (files map[string]rsyncmodel.RsyncFileHash, err error)
 
 	// init cap
 	mftFileHashs := make([]rsyncmodel.RsyncFileHash, 0, 25000)
-	err = xormdb.XormEngine.Table("lab_rpki_mft").
-		Select("filePath,fileName,fileHash,jsonAll as 'lastJsonAll','mft' as fileType").
-		Asc("id").Find(&mftFileHashs)
+	sql = `select c.filePath , c.fileName, c.fileHash, c.jsonAll as lastJsonAll,  'roa' as fileType  
+			from lab_rpki_mft c , lab_rpki_sync_log_file f  
+			where c.syncLogFileId = f.id   and f.syncStyle='rsync' order by c.id `
+	err = xormdb.XormEngine.Sql(sql).Find(&mftFileHashs)
 	if err != nil {
 		belogs.Error("GetFilesHashFromDb(): get lab_rpki_mft fail:", err)
 		return nil, nil

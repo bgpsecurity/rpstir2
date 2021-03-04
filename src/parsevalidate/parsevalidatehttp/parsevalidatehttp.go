@@ -19,8 +19,8 @@ func ParseValidateStart(w rest.ResponseWriter, req *rest.Request) {
 	belogs.Debug("ParseValidateStart(): start: ")
 
 	//check serviceState
-	httpclient.Post("https", conf.String("rpstir2::serverHost"), conf.Int("rpstir2::serverHttpsPort"),
-		"/sys/servicestate", `{"operate":"enter","state":"parsevalidate"}`)
+	httpclient.Post("https://"+conf.String("rpstir2::serverHost")+":"+conf.String("rpstir2::serverHttpsPort")+
+		"/sys/servicestate", `{"operate":"enter","state":"parsevalidate"}`, false)
 
 	go func() {
 		nextStep, err := parsevalidate.ParseValidateStart()
@@ -29,14 +29,14 @@ func ParseValidateStart(w rest.ResponseWriter, req *rest.Request) {
 		if err != nil {
 			// will end this whole sync
 			belogs.Error("ParseValidateStart():  ParseValidateStart fail", err)
-			httpclient.Post("https", conf.String("rpstir2::serverHost"), conf.Int("rpstir2::serverHttpsPort"),
-				"/sys/servicestate", `{"operate":"leave","state":"end"}`)
+			httpclient.Post("https://"+conf.String("rpstir2::serverHost")+":"+conf.String("rpstir2::serverHttpsPort")+
+				"/sys/servicestate", `{"operate":"leave","state":"end"}`, false)
 		} else {
-			httpclient.Post("https", conf.String("rpstir2::serverHost"), conf.Int("rpstir2::serverHttpsPort"),
-				"/sys/servicestate", `{"operate":"leave","state":"parsevalidate"}`)
+			httpclient.Post("https://"+conf.String("rpstir2::serverHost")+":"+conf.String("rpstir2::serverHttpsPort")+
+				"/sys/servicestate", `{"operate":"leave","state":"parsevalidate"}`, false)
 			// will call ChainValidate
-			go httpclient.Post("https", conf.String("rpstir2::serverHost"), conf.Int("rpstir2::serverHttpsPort"),
-				"/chainvalidate/start", "")
+			go httpclient.Post("https://"+conf.String("rpstir2::serverHost")+":"+conf.String("rpstir2::serverHttpsPort")+
+				"/chainvalidate/start", "", false)
 			belogs.Info("ParseValidateStart():  sync.Start end,  nextStep is :", nextStep)
 		}
 
