@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 
 
@@ -134,7 +134,7 @@ function helpFunc()
 {
     echo "rpstir2-service.sh help:"
     echo "1) ./rpstir2-service.sh deploy: deploy rpstir2, just run once"
-    echo "2) ./rpstir2-service.sh update: update rpstir2. It will stop rpstir2, and update source code (not update project.conf) and rebuild, then restart rpstir2"     
+    echo "2) ./rpstir2-service.sh update: update rpstir2. It will stop rpstir2, update source code (not update project.conf) , and rebuild. But it does not start rpstir2 automatically."     
     echo "3) ./rpstir2-service.sh start:  start rpstir2 service"
     echo "4) ./rpstir2-service.sh stop:   stop rpstir2 service" 
     echo "*) ./rpstir2-service.sh:        it will show this help"
