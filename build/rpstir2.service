@@ -5,7 +5,7 @@ After=mysqld.service
 [Service]
 Type=forking
 WorkingDirectory=/root/rpki/rpstir2/bin
-ExecStart=/root/rpki/rpstir2/bin/rpstir2-service.sh start
+ExecStart=/root/rpki/rpstir2/bin/rpstir2.sh start
 #Restart=always
 [Install]
 WantedBy=multi-user.target
