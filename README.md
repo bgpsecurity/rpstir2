@@ -58,7 +58,6 @@ Before installing RPSTIR2, you should create directories in advance, one of whic
 
 ```shell
 $ mkdir -p /root/rpki/ /root/rpki/rpstir2  /root/rpki/data  /root/rpki/data/rrdprepo  /root/rpki/data/rsyncrepo /root/rpki/data/tal
-$ cp /root/rpki/rpstir2/build/tal/*  /root/rpki/data/tal/
 ```
 
 ### 2.5 Download RPSTIR2 
@@ -68,6 +67,7 @@ $ cd /root/rpki/
 $ git clone https://github.com/bgpsecurity/rpstir2.git 
 $ cd /root/rpki/rpstir2/bin
 $ chmod +x *
+$ cp /root/rpki/rpstir2/build/tal/*  /root/rpki/data/tal/
 ```
 
 ### 2.6 Configure RPSTIR2
