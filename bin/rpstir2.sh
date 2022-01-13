@@ -7,8 +7,7 @@ programDir=`ReadINIfile "$configFile" "rpstir2-rp" "programDir" `
 serverHost=`ReadINIfile "$configFile" "rpstir2-rp" "serverHost" `
 serverHttpsPort=`ReadINIfile "$configFile" "rpstir2-rp" "serverHttpsPort" `
 serverHttpPort=`ReadINIfile "$configFile" "rpstir2-rp" "serverHttpPort" `
-#echo  ${serverHost}
-#echo  ${serverHttpsPort}
+echo  ${serverHost}":"${serverHttpsPort}
 
 function startFunc()
 {
@@ -54,18 +53,18 @@ function buildSrc()
 function helpFunc()
 {
     echo "rpstir2.sh help:"
-    echo -e "./rpstir2.sh start\t\t\tstart rpstir2."
-    echo -e "./rpstir2.sh stop\t\t\tstop rpstir2."  
-    echo -e "./rpstir2.sh rebuild\t\t\trebuild rpstir2 by yourself(need have Go language compilation environment)."
+    echo -e "./rpstir2.sh start\t\tstart rpstir2."
+    echo -e "./rpstir2.sh stop\t\tstop rpstir2."  
+    echo -e "./rpstir2.sh rebuild\t\trebuild rpstir2 by yourself(need have Go language compilation environment)."
 
-    echo -e "./rpstir2.sh init\t\t\t(need start first) (re)initialize database."
-    echo -e "./rpstir2.sh sync\t\t\t(need start first) download rpki data by sync or rrdp, and need use 'states' to get result."
-    echo -e "./rpstir2.sh fullsync\t\t\t(need start first) force full sync data, other functions are similar to sync." 
-    echo -e "./rpstir2.sh state\t\t\t(need start first) when it shows 'isRunning:false', it means that synchronization and validation processes are completed." 
-    echo -e "./rpstir2.sh results\t\t\t(need start first) shows the valid, warning and invalid number of cer, roa, mft and crl respectively."
+    echo -e "./rpstir2.sh init\t\t(need start first) (re)initialize database."
+    echo -e "./rpstir2.sh sync\t\t(need start first) download rpki data by sync or rrdp, and need use 'states' to get result."
+    echo -e "./rpstir2.sh fullsync\t\t(need start first) force full sync data, other functions are similar to sync." 
+    echo -e "./rpstir2.sh state\t\t(need start first) when it shows 'isRunning:false', it means that synchronization and validation processes are completed." 
+    echo -e "./rpstir2.sh results\t\t(need start first) shows the valid, warning and invalid number of cer, roa, mft and crl respectively."
     echo -e "./rpstir2.sh exportroas\t\t(need start first) export all roas which are valid or warning."
     echo -e "./rpstir2.sh parse {file}\t(need start first) parse uploads file(*.cer/*.crl/*.mft/*.roa/*.sig)"
-    echo -e "./rpstir2.sh help\t\t\tshow this help."
+    echo -e "./rpstir2.sh help\t\tshow this help."
 }
 
 case $1 in
@@ -80,8 +79,7 @@ case $1 in
   
   init)
     echo "initialize rpstir2 database"
-    echo ${serverHost}
-    echo ${serverHttpsPort}
+    echo ${serverHost}":"${serverHttpsPort}
     curl -s -k -d '{"sysStyle": "init"}'  -H "Content-type: application/json" -X POST https://${serverHost}:${serverHttpsPort}/sys/initreset
     echo -e "\n"
     ;;
@@ -93,8 +91,7 @@ case $1 in
 
   sync)
     echo "start rpstir2 sync"
-    echo ${serverHost}
-    echo ${serverHttpsPort}
+    echo ${serverHost}":"${serverHttpsPort}
     curl -s -k -d '{"syncStyle": "sync"}'  -H "Content-type: application/json" -X POST https://${serverHost}:${serverHttpsPort}/entiresync/syncstart
     echo -e "\n"
     ;;
@@ -102,37 +99,39 @@ case $1 in
     source /etc/profile
     source /root/.bashrc
     echo "start rpstir2 crontab sync"
-    echo ${serverHost}
-    echo ${serverHttpsPort}
+    echo ${serverHost}":"${serverHttpsPort}
     curl -s -k -d '{"syncStyle": "sync"}'  -H "Content-type: application/json" -X POST https://${serverHost}:${serverHttpsPort}/entiresync/syncstart
     echo -e "\n"
     ;; 
   fullsync ) 
     echo "start rpstir2 fullsync"
-    echo ${serverHost}
-    echo ${serverHttpsPort}
+    echo ${serverHost}":"${serverHttpsPort}
     echo "POST https://www.baidu.com/"
     curl -v -k -d '{"sysStyle": "fullsync","syncPolicy":"entire"}'  -H "Content-type: application/json" -X POST https://${serverHost}:${serverHttpsPort}/sys/initreset
     echo -e "\n"
     ;;  
    
   state )    
-    #echo "get rpstir2 states"
+    echo "get rpstir2 states"
+    echo ${serverHost}":"${serverHttpsPort}
     curl -s -k -d '{"operate":"get"}'  -H "Content-type: application/json" -X POST https://${serverHost}:${serverHttpsPort}/sys/servicestate
     echo -e "\n"
     ;;   
   results )    
-    #echo "get rpstir2 results"
+    echo "get rpstir2 results"
+    echo ${serverHost}":"${serverHttpsPort}
     curl -s -k -d "" -X POST https://${serverHost}:${serverHttpsPort}/sys/results
     echo -e "\n"
     ;;     
   exportroas)
-    #echo "export all roas which are valid or warning"
+    echo "export all roas which are valid or warning"
+    echo ${serverHost}":"${serverHttpsPort}
     curl -s -k -d '' -H "Content-type: application/json" -X POST https://$serverHost:$serverHttpsPort/sys/exportroas
     echo -e "\n"
     ;;  
   parse) 
-    #echo "parse upload file"
+    echo "parse upload file"
+    echo ${serverHost}":"${serverHttpsPort}
     checkFile $2
     curl -s -k -F "file=@${2}" http://$serverHost:$serverHttpPort/parsevalidate/parsefile
     echo -e "\n"
