@@ -7,7 +7,7 @@ programDir=`ReadINIfile "$configFile" "rpstir2-rp" "programDir" `
 serverHost=`ReadINIfile "$configFile" "rpstir2-rp" "serverHost" `
 serverHttpsPort=`ReadINIfile "$configFile" "rpstir2-rp" "serverHttpsPort" `
 serverHttpPort=`ReadINIfile "$configFile" "rpstir2-rp" "serverHttpPort" `
-echo  ${serverHost}":"${serverHttpsPort}
+#echo  ${serverHost}":"${serverHttpsPort}
 
 function startFunc()
 {
@@ -124,26 +124,26 @@ case $1 in
     ;;  
    
   state )    
-    echo "get rpstir2 states"
-    echo ${serverHost}":"${serverHttpsPort}
+    #echo "get rpstir2 states"
+    #echo ${serverHost}":"${serverHttpsPort}
     curl -s -k -d '{"operate":"get"}'  -H "Content-type: application/json" -X POST https://${serverHost}:${serverHttpsPort}/sys/servicestate
     echo -e "\n"
     ;;   
   results )    
-    echo "get rpstir2 results"
-    echo ${serverHost}":"${serverHttpsPort}
+    #echo "get rpstir2 results"
+    #echo ${serverHost}":"${serverHttpsPort}
     curl -s -k -d "" -X POST https://${serverHost}:${serverHttpsPort}/sys/results
     echo -e "\n"
     ;;     
   exportroas)
-    echo "export all roas which are valid or warning"
-    echo ${serverHost}":"${serverHttpsPort}
+    #echo "export all roas which are valid or warning"
+    #echo ${serverHost}":"${serverHttpsPort}
     curl -s -k -d '' -H "Content-type: application/json" -X POST https://$serverHost:$serverHttpsPort/sys/exportroas
     echo -e "\n"
     ;;  
   parse) 
-    echo "parse upload file"
-    echo ${serverHost}":"${serverHttpsPort}
+    #echo "parse upload file"
+    #echo ${serverHost}":"${serverHttpsPort}
     checkFile $2
     curl -s -k -F "file=@${2}" http://$serverHost:$serverHttpPort/parsevalidate/parsefile
     echo -e "\n"
