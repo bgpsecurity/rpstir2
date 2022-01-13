@@ -181,6 +181,24 @@ You can get all valid roas after sync.
 $ cd /root/rpki/rpstir2/bin
 $./rpstir2.sh exportroas | jq .
 ```
+```
+[
+  {
+    "repo": "rpki.afrinic.net",
+    "rir": "AFRINIC",
+    "maxLength": 20,
+    "addressPrefix": "102.128.144/20",
+    "asn": 328210
+  },
+  {
+    "repo": "rpki.afrinic.net",
+    "rir": "AFRINIC",
+    "maxLength": 24,
+    "addressPrefix": "102.128.144/20",
+    "asn": 328210
+  },
+  ....
+```  
 
 
 ### 3.8 Parse file
