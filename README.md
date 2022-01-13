@@ -190,6 +190,92 @@ You can parse cer/mft/crl/roa/sig file.
 $ cd /root/rpki/rpstir2/bin
 $./rpstir2.sh parse /tmp/checklist.sig | jq .
 ```
+```
+{
+  "data": {
+    "signerInfoModel": {
+      "messageDigest": "BD32690504277FE2D1CCEF127174F0ACA0A1785170452C472BE631839425400D",
+      "signingTime": "2021-02-10T14:50:25Z",
+      "contentType": "1.3.6.1.4.1.41948.49",
+      "digestAlgorithm": "sha256",
+      "version": 3
+    },
+    "eeCertModel": {
+      "eeCertEnd": 1279,
+      "eeCertStart": 224,
+      "crldpModel": {
+        "critical": false,
+        "crldps": [
+          "rsync://chloe.sobornost.net/rpki/RIPE-nljobsnijders/LMq8Kl3LkWGqticaaLl6IAGSsJ4.crl"
+        ]
+      },
+      "cerIpAddressModel": {
+        "critical": false,
+        "cerIpAddresses": null
+      },
+      "siaModel": {
+        "critical": false,
+        "signedObject": "",
+        "caRepository": "",
+        "rpkiNotify": "",
+        "rpkiManifest": ""
+      },
+      "issuerAll": "CN=2ccabc2a5dcb9161aab6271a68b97a200192b09e",
+      "subjectAll": "CN=EE",
+      "isCa": false,
+      "version": 3,
+      "digestAlgorithm": "SHA256-RSA",
+      "sn": "9",
+      "notBefore": "2021-02-10T22:50:10+08:00",
+      "notAfter": "2022-02-10T22:50:10+08:00",
+      "keyUsageModel": {
+        "keyUsageValue": "Digital Signature",
+        "critical": true,
+        "keyUsage": 1
+      },
+      "extKeyUsages": [],
+      "basicConstraintsValid": false
+    },
+    "aiaModel": {
+      "critical": false,
+      "caIssuers": "rsync://rpki.ripe.net/repository/DEFAULT/LMq8Kl3LkWGqticaaLl6IAGSsJ4.cer"
+    },
+    "version": 0,
+    "ski": "41ca827f3de666e9f7323f3059f6a7bb8b671175",
+    "aki": "2ccabc2a5dcb9161aab6271a68b97a200192b09e",
+    "filePath": "",
+    "fileName": "checklist.sig",
+    "fileHash": "fe44eb4ef1e389c1879f000f31485bac43e3c51a66040337625aa887a20d9556",
+    "rpkiSignedChecklist": {
+      "fileHashModels": [
+        {
+          "hash": "9516dd64be7c1725b9fca117120e58e8d842a5206873399b3ddffc91c4b6acf0",
+          "file": "b42_ipv6_loa.png"
+        },
+        {
+          "hash": "0ae1394722005cd92f4c6aa024d5d6b3e2e67d629f11720d9478a633a117a1c7",
+          "file": "b42_service_definition.json"
+        }
+      ],
+      "digestAlgorithm": "2.16.840.1.101.3.4.2.1",
+      "cerIpAddresses": [
+        {
+          "addressPrefixRange": "",
+          "rangeEnd": "",
+          "rangeStart": "",
+          "max": "",
+          "min": "",
+          "addressPrefix": "2001:67c:208c::/48",
+          "addressFamily": 2
+        }
+      ]
+    },
+    "eContentType": "1.3.6.1.4.1.41948.49"
+  },
+  "msg": "",
+  "result": "ok"
+}
+```
 
 ### 3.9 Rebuild
 You can compile the program by yourself if you have installed GoLang.
