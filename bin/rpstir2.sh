@@ -119,12 +119,12 @@ case $1 in
     ;;  
    
   state )    
-    echo "start rpstir2 states"
+    #echo "get rpstir2 states"
     curl -s -k -d '{"operate":"get"}'  -H "Content-type: application/json" -X POST https://${serverHost}:${serverHttpsPort}/sys/servicestate
     echo -e "\n"
     ;;   
   results )    
-    echo "start rpstir2 results"
+    #echo "get rpstir2 results"
     curl -s -k -d "" -X POST https://${serverHost}:${serverHttpsPort}/sys/results
     echo -e "\n"
     ;;     
