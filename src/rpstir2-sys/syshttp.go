@@ -110,7 +110,7 @@ func ExportRoas(c *gin.Context) {
 		return
 	}
 	belogs.Info("ExportRoas():exportRoas:", jsonutil.MarshalJson(r))
-	c.JSON(http.StatusOK, jsonutil.MarshallJsonIndent(r))
+	c.JSON(http.StatusOK, r)
 }
 
 func ExportRtrForManrs(c *gin.Context) {
