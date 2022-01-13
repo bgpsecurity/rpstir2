@@ -10,14 +10,12 @@ serverHttpPort=`ReadINIfile "$configFile" "rpstir2-rp" "serverHttpPort" `
 #echo  ${serverHost}
 #echo  ${serverHttpsPort}
 
-
 function startFunc()
 {
   nohup ./rpstir2  >> ../log/nohup.log 2>&1 &
   echo -e "\nyou can view the running status through the log files in ../log/.\n"
   return 0
 }
-
 
 function stopFunc()
 {
