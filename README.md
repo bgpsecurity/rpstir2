@@ -44,7 +44,7 @@ flush privileges;
 Note: You also can use docker to run MySQL. 
 
 ### 2.3 Install GoLang(Optional)
-If you plan to compile the program by yourself, you need to install a version of Golang higher than 1.13. Otherwise you don't need to install it.
+If you plan to compile the program by yourself, you need to install a version of Golang higher than 1.17. Otherwise you don't need to install it.
 
 
 ### 2.4 Create RPSTIR2 directories
