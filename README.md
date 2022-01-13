@@ -73,7 +73,30 @@ $ cp /root/rpki/rpstir2/build/tal/*  /root/rpki/data/tal/
 ### 2.6 Configure RPSTIR2
 You can modify configuration parameters of programDir, dataDir, mysql, and  port in configuration file(/root/rpki/rpstir2/conf/project.conf). 
 
-### 2.7 Configure scheduled task
+## 3 Running RPSTIR2
+
+### 3.1 Initialize the RPSTIR2
+
+```shell
+$ cd /root/rpki/rpstir2/bin
+$./rpstir2.sh start 
+$./rpstir2.sh init 
+```
+
+### 3.2 Start and stop the RPSTIR2
+The RPSTIR2 must be started first, you can check for errors by looking at the log files in ./log/ directory.
+
+```shell
+$ cd /root/rpki/rpstir2/bin
+$./rpstir2.sh start 
+```
+
+```shell
+$ cd /root/rpki/rpstir2/bin
+$./rpstir2.sh stop 
+```
+
+### 3.3 Configure scheduled task
 You can use crontab to perform scheduled synchronization tasks. Then RPSTIR2 will download RPKI objects, and complete the subsequent validation procedure according to the schedule you set. 
 
 ```shell
@@ -82,26 +105,7 @@ $ crontab -e
 ```
 Note: The RPSTIR2 service must be started first. 
 
-## 3 Running RPSTIR2
-
-### 3.1 Start and stop the RPSTIR2
-The RPSTIR2 must be started first, you can check for errors by looking at the log files in ./log/ directory.
-
-```shell
-$ cd /root/rpki/rpstir2/bin
-$./rpstir2.sh start 
-$./rpstir2.sh stop 
-```
-
-### 3.2 Initialize the RPSTIR2
-
-```shell
-$ cd /root/rpki/rpstir2/bin
-$./rpstir2.sh start 
-$./rpstir2.sh init 
-```
-
-### 3.2 Sync and validate RPKI objects
+### 3.4 Sync and validate RPKI objects
 You can download RPKI objects with rsync or RRDP protocol, and complete the subsequent validation procedure. 
 
 ```shell
@@ -109,7 +113,7 @@ $ cd /root/rpki/rpstir2/bin
 $ ./rpstir2.sh sync  
 ```
 
-### 3.3 Get sync and validation status
+### 3.5 Get sync and validation status
 Because rsync and RRDP take long time to run, they are executed in the background. So you need a command to determine if the synchronization and validation process is complete.
 
 ```shell
@@ -131,7 +135,7 @@ When you get the following JSON message, if "isRunning" is "true", it means that
 }
 
 ```
-### 3.4 Get sync results
+### 3.6 Get sync results
 You can get results of synchronization and validation. It shows the valid, warning and invalid number of cer, roa, mft and crl respectively.
 
 ```shell
@@ -166,7 +170,7 @@ $./rpstir2.sh results
     }
 }
 ```
-### 3.6 Export Roas
+### 3.7 Export Roas
 You can get all valid roas after sync.
 
 ```shell
@@ -175,7 +179,7 @@ $./rpstir2.sh exportroas | jq .
 ```
 Note: jq can format JSON for output
 
-### 3.7 Parse file
+### 3.8 Parse file
 You can parse cer/mft/crl/roa/sig file.
 
 ```shell
@@ -183,7 +187,7 @@ $ cd /root/rpki/rpstir2/bin
 $./rpstir2.sh parse /tmp/checklist.sig | jq .
 ```
 
-### 3.8 Rebuild
+### 3.9 Rebuild
 You can compile the program by yourself if you have installed GoLang.
 
 ```shell
@@ -191,8 +195,7 @@ $ cd /root/rpki/rpstir2/bin
 $./rpstir2.sh rebuild
 ```
 
-
-### 3.6 Help
+### 3.10 Help
 
 ```shell
 $ cd /root/rpki/rpstir2/bin
