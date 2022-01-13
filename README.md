@@ -118,7 +118,7 @@ Because rsync and RRDP take long time to run, they are executed in the backgroun
 
 ```shell
 $ cd /root/rpki/rpstir2/bin
-$ ./rpstir2.sh state  
+$ ./rpstir2.sh state   | jq .
 ```
 
 When you get the following JSON message, if "isRunning" is "true", it means that sync and validation are still running; if it is "false", sync and validation complete. At this time, the router can obtain rpki data through RTR port.
@@ -133,8 +133,9 @@ When you get the following JSON message, if "isRunning" is "true", it means that
 		"runningState": "idle"
 	}
 }
-
 ```
+Note: jq can format JSON for output
+
 ### 3.6 Get sync results
 You can get results of synchronization and validation. It shows the valid, warning and invalid number of cer, roa, mft and crl respectively.
 
@@ -170,7 +171,7 @@ $./rpstir2.sh results  | jq .
     }
 }
 ```
-Note: jq can format JSON for output
+
 
 
 ### 3.7 Export Roas
