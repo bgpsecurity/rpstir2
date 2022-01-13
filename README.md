@@ -140,7 +140,7 @@ You can get results of synchronization and validation. It shows the valid, warni
 
 ```shell
 $ cd /root/rpki/rpstir2/bin
-$./rpstir2.sh results  
+$./rpstir2.sh results  | jq .
 ```
 ```JSON
 {
@@ -170,6 +170,9 @@ $./rpstir2.sh results
     }
 }
 ```
+Note: jq can format JSON for output
+
+
 ### 3.7 Export Roas
 You can get all valid roas after sync.
 
@@ -177,7 +180,7 @@ You can get all valid roas after sync.
 $ cd /root/rpki/rpstir2/bin
 $./rpstir2.sh exportroas | jq .
 ```
-Note: jq can format JSON for output
+
 
 ### 3.8 Parse file
 You can parse cer/mft/crl/roa/sig file.
