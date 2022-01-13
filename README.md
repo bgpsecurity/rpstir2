@@ -131,7 +131,7 @@ When you get the following JSON message, if "isRunning" is "true", it means that
 }
 
 ```
-### 3.4 Results
+### 3.4 Get sync results
 You can get results of synchronization and validation. It shows the valid, warning and invalid number of cer, roa, mft and crl respectively.
 
 ```shell
@@ -166,8 +166,24 @@ $./rpstir2.sh results
     }
 }
 ```
+### 3.6 Export Roas
+You can get all valid roas after sync.
 
-### 3.5 Rebuild
+```shell
+$ cd /root/rpki/rpstir2/bin
+$./rpstir2.sh exportroas | jq .
+```
+Note: jq can format JSON for output
+
+### 3.7 Parse file
+You can parse cer/mft/crl/roa/sig file.
+
+```shell
+$ cd /root/rpki/rpstir2/bin
+$./rpstir2.sh parse /tmp/checklist.sig | jq .
+```
+
+### 3.8 Rebuild
 You can compile the program by yourself if you have installed GoLang.
 
 ```shell

@@ -7,8 +7,8 @@ programDir=`ReadINIfile "$configFile" "rpstir2-rp" "programDir" `
 serverHost=`ReadINIfile "$configFile" "rpstir2-rp" "serverHost" `
 serverHttpsPort=`ReadINIfile "$configFile" "rpstir2-rp" "serverHttpsPort" `
 serverHttpPort=`ReadINIfile "$configFile" "rpstir2-rp" "serverHttpPort" `
-echo  ${serverHost}
-echo  ${serverHttpsPort}
+#echo  ${serverHost}
+#echo  ${serverHttpsPort}
 
 
 function startFunc()
@@ -65,8 +65,8 @@ function helpFunc()
     echo -e "./rpstir2.sh fullsync\t\t\t(need start first) force full sync data, other functions are similar to sync." 
     echo -e "./rpstir2.sh state\t\t\t(need start first) when it shows 'isRunning:false', it means that synchronization and validation processes are completed." 
     echo -e "./rpstir2.sh results\t\t\t(need start first) shows the valid, warning and invalid number of cer, roa, mft and crl respectively."
-    echo -e "./rpstir2.sh exportroas\t\t\t(need start first) exports all roas which are valid or warning."
-    echo -e "./rpstir2.sh parse *.cer/crl/mft/roa\t(need start first) uploads file(*.cer/*.crl/*.mft/*.roa) to parse."
+    echo -e "./rpstir2.sh exportroas\t\t(need start first) export all roas which are valid or warning."
+    echo -e "./rpstir2.sh parse {file}\t(need start first) parse uploads file(*.cer/*.crl/*.mft/*.roa/*.sig)"
     echo -e "./rpstir2.sh help\t\t\tshow this help."
 }
 
@@ -128,18 +128,17 @@ case $1 in
     curl -s -k -d "" -X POST https://${serverHost}:${serverHttpsPort}/sys/results
     echo -e "\n"
     ;;     
-  exportroas )    
-    echo "start rpstir2 export roas"
-    curl -s -k -d "" -X POST https://${serverHost}:${serverHttpsPort}/sys/exportroas
+  exportroas)
+    #echo "export all roas which are valid or warning"
+    curl -s -k -d '' -H "Content-type: application/json" -X POST https://$serverHost:$serverHttpsPort/sys/exportroas
     echo -e "\n"
-    ;;     
-   
+    ;;  
   parse) 
-    echo "start rpstir2 parse"
+    #echo "parse upload file"
     checkFile $2
-    curl -s -k -F  "file=@${2}" http://${serverHost}:${serverHttpPort}/parsevalidate/parsefile
+    curl -s -k -F "file=@${2}" http://$serverHost:$serverHttpPort/parsevalidate/parsefile
     echo -e "\n"
-    ;;   
+    ;;  
 
   help)
     helpFunc

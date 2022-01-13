@@ -215,13 +215,13 @@ func validateRoaModel(roaModel *model.RoaModel, stateModel *model.StateModel) (e
 	if roaModel.Asn < 0 {
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
 			Fail:   "ASN is negative",
-			Detail: fmt.Sprint("Asn is %d", roaModel.Asn)}
+			Detail: fmt.Sprintf("Asn is %d", roaModel.Asn)}
 		stateModel.AddError(&stateMsg)
 	}
 	if roaModel.Asn > 0xffffffff {
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
 			Fail:   "ASN is too large",
-			Detail: fmt.Sprint("Asn is %d", roaModel.Asn)}
+			Detail: fmt.Sprintf("Asn is %d", roaModel.Asn)}
 		stateModel.AddError(&stateMsg)
 	}
 
@@ -266,7 +266,7 @@ func validateRoaModel(roaModel *model.RoaModel, stateModel *model.StateModel) (e
 		if one.AddressFamily != 1 && one.AddressFamily != 2 {
 			stateMsg := model.StateMsg{Stage: "parsevalidate",
 				Fail:   "IP address is neither IPv4 nor IPv6",
-				Detail: fmt.Sprint("family is %d", one.AddressFamily)}
+				Detail: fmt.Sprintf("family is %d", one.AddressFamily)}
 			stateModel.AddError(&stateMsg)
 		}
 		if !iputil.IsAddressPrefix(one.AddressPrefix) {

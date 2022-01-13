@@ -10,6 +10,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/cpusoft/goutil/asn1util"
+	"github.com/cpusoft/goutil/asn1util/asn1base"
+	"github.com/cpusoft/goutil/asn1util/asn1cert"
+	"github.com/cpusoft/goutil/asn1util/asn1node"
 	"github.com/cpusoft/goutil/belogs"
 	"github.com/cpusoft/goutil/convert"
 	"github.com/cpusoft/goutil/datetime"
@@ -17,8 +21,6 @@ import (
 	"github.com/cpusoft/goutil/jsonutil"
 	"github.com/cpusoft/goutil/opensslutil"
 	"github.com/cpusoft/goutil/osutil"
-
-	"github.com/cpusoft/goutil/asn1util"
 
 	model "rpstir2-model"
 )
@@ -82,7 +84,7 @@ func ParseMftModelByOpensslResults(results []string, mftModel *model.MftModel) (
 	}
 	if len(mftHex) == 0 {
 		belogs.Error("ParseMftModelByOpensslResults():len(mftHex) == 0")
-		return errors.New("not found roa hex")
+		return errors.New("not found mft hex")
 	}
 
 	mftByte, err := hex.DecodeString(mftHex)
@@ -563,4 +565,152 @@ func ParseCrlModelByOpensslResults(results []string, crlModel *model.CrlModel) (
 		return errors.New("not found crl number")
 	}
 	return nil
+}
+
+func ParseSigModelByOpensslResults(results []string, sigModel *model.SigModel) (err error) {
+	// openssl asn1parse  -in checklist.sig --inform der
+	// the first HEX DUMP
+	/*
+	    0:d=0  hl=4 l=1703 cons: SEQUENCE
+	    4:d=1  hl=2 l=   9 prim: OBJECT            :pkcs7-signedData
+	   15:d=1  hl=4 l=1688 cons: cont [ 0 ]
+	   19:d=2  hl=4 l=1684 cons: SEQUENCE
+	   23:d=3  hl=2 l=   1 prim: INTEGER           :03
+	   26:d=3  hl=2 l=  13 cons: SET
+	   28:d=4  hl=2 l=  11 cons: SEQUENCE
+	   30:d=5  hl=2 l=   9 prim: OBJECT            :sha256
+	   41:d=3  hl=3 l= 176 cons: SEQUENCE
+	   44:d=4  hl=2 l=   9 prim: OBJECT            :1.3.6.1.4.1.41948.49
+	   55:d=4  hl=3 l= 162 cons: cont [ 0 ]
+	   58:d=5  hl=3 l= 159 prim: OCTET STRING      [HEX DUMP]:30819C3014A1123010300E04010230090307002001067C208C300B06096086480165030402013077303416106234325F697076365F6C6F612E706E6704209516DD64BE7C1725B9FCA117120E58E8D842A5206873399B3DDFFC91C4B6ACF0303F161B6234325F736572766963655F646566696E6974696F6E2E6A736F6E04200AE1394722005CD92F4C6AA024D5D6B3E2E67D629F11720D9478A633A117A1C7	*/
+	var sigHex string
+	foundAllSigHex := false
+	keyword := "[HEX DUMP]:"
+	for i, one := range results {
+		if strings.Contains(one, keyword) {
+			index := strings.Index(one, keyword)
+			sigHex = string(one[index+len(keyword):])
+			belogs.Debug("ParseSigModelByOpensslResults(): len(sigHex):", len(sigHex))
+
+			if !strings.Contains(results[i+1], keyword) {
+				foundAllSigHex = true
+				belogs.Debug("ParseSigModelByOpensslResults(): foundAllSigHex:", foundAllSigHex)
+				break
+			}
+			// one [HEX DUMP] length is more than 10000,  will have many [HEX DUMP],
+			// just one loop to break
+			for ii := i + 1; ii < len(results); ii++ {
+				if strings.Contains(results[ii], keyword) {
+					indexii := strings.Index(results[ii], keyword)
+					sigHexii := string(results[ii][indexii+len(keyword):])
+					sigHex = sigHex + sigHexii
+				} else {
+					foundAllSigHex = true
+					break
+				}
+			}
+		}
+		if foundAllSigHex {
+			break
+		}
+	}
+	belogs.Debug("ParseSigModelByOpensslResults():all len(sigHex):", len(sigHex), sigHex)
+	belogs.Info("ParseSigModelByOpensslResults():len(sigHex):", len(sigHex))
+
+	if len(sigHex) == 0 {
+		belogs.Error("ParseSigModelByOpensslResults():len(sigHex) == 0")
+		return errors.New("not found sig hex")
+	}
+	sigBytes, err := hex.DecodeString(sigHex)
+	if err != nil {
+		belogs.Error("ParseSigModelByOpensslResults():DecodeString err:", err)
+		return err
+	}
+	node, err := asn1node.ParseBytes(sigBytes)
+	if err != nil {
+		belogs.Error("ParseSigModelByOpensslResults():ParseBytes err, sigHex:", sigHex, err)
+		return err
+	}
+	if node == nil {
+		belogs.Error("ParseRoaModelByOpensslResults():ParseBytes node==nil,  sigHex:", sigHex)
+		return errors.New("parse sig hex error")
+	}
+	belogs.Debug("ParseSigModelByOpensslResults():node:", jsonutil.MarshalJson(node))
+
+	// get address
+	if len(node.Nodes) > 0 && len(node.Nodes[0].Nodes) > 0 && len(node.Nodes[0].Nodes[0].Data) > 0 {
+		belogs.Debug("ParseSigModelByOpensslResults():get address :", convert.PrintBytesOneLine(node.Nodes[0].Nodes[0].Data))
+
+		data := node.Nodes[0].Nodes[0].Data
+		ipAddrBlocks, err := asn1cert.ParseToIpAddressBlocks(data)
+		if err != nil {
+			belogs.Error("ParseSigModelByOpensslResults():ParseToIpAddressBlocks err :", convert.PrintBytesOneLine(data), err)
+			return err
+		}
+		belogs.Debug("ParseSigModelByOpensslResults(): ipAddrBlocks:", jsonutil.MarshalJson(ipAddrBlocks))
+		sigModel.RpkiSignedChecklist.CerIpAddresses = make([]model.CerIpAddress, 0)
+		for i := range ipAddrBlocks {
+			cerIpAddress := model.CerIpAddress{
+				AddressFamily: ipAddrBlocks[i].AddressFamily,
+				AddressPrefix: ipAddrBlocks[i].AddressPrefix,
+				Min:           ipAddrBlocks[i].Min,
+				Max:           ipAddrBlocks[i].Max,
+			}
+			sigModel.RpkiSignedChecklist.CerIpAddresses = append(sigModel.RpkiSignedChecklist.CerIpAddresses,
+				cerIpAddress)
+			belogs.Debug("ParseSigModelByOpensslResults(): cerIpAddress:", jsonutil.MarshalJson(cerIpAddress))
+		}
+	}
+	// get oid
+	if len(node.Nodes) > 1 && len(node.Nodes[1].Nodes) > 0 {
+		belogs.Debug("ParseSigModelByOpensslResults():get oid :", convert.PrintBytesOneLine(node.Nodes[1].Nodes[0].Data))
+
+		data := node.Nodes[1].Nodes[0].Data
+		oid, err := asn1base.ParseObjectIdentifier(data)
+		if err != nil {
+			belogs.Error("ParseSigModelByOpensslResults():ParseObjectIdentifier err :", convert.PrintBytesOneLine(data), err)
+			return err
+		}
+
+		sigModel.RpkiSignedChecklist.DigestAlgorithmIdentifier = oid.String()
+		belogs.Debug("ParseSigModelByOpensslResults(): DigestAlgorithmIdentifier:", oid.String())
+	}
+
+	// get filehash
+	if len(node.Nodes) > 2 {
+		belogs.Debug("ParseSigModelByOpensslResults():get filehash :", convert.PrintBytesOneLine(node.Nodes[2].FullData))
+
+		data := node.Nodes[2].FullData
+		fileAndHashs, err := asn1cert.ParseToFileAndHashs(data)
+		if err != nil {
+			belogs.Error("ParseSigModelByOpensslResults():ParseToFileAndHashs err :", convert.PrintBytesOneLine(data), err)
+			return err
+		}
+		sigModel.RpkiSignedChecklist.FileHashModels = make([]model.FileHashModel, 0)
+		for i := range fileAndHashs {
+			fh := model.FileHashModel{
+				File: fileAndHashs[i].File,
+				Hash: strings.Replace(convert.PrintBytesOneLine(fileAndHashs[i].Hash), " ", "", -1),
+			}
+			sigModel.RpkiSignedChecklist.FileHashModels = append(sigModel.RpkiSignedChecklist.FileHashModels, fh)
+			belogs.Debug("ParseSigModelByOpensslResults(): FileHashModel:", jsonutil.MarshalJson(fh))
+		}
+	}
+
+	return nil
+}
+func ParseSigEContentTypeByOpensslResults(results []string) (eContentType string, err error) {
+	// get 1.3.6.1.4.1.41948.49
+	/*
+		1329:d=7  hl=2 l=   9 prim: OBJECT            :contentType
+		1340:d=7  hl=2 l=  11 cons: SET
+		1342:d=8  hl=2 l=   9 prim: OBJECT            :1.3.6.1.4.1.41948.49
+	*/
+	oid := "1.3.6.1.4.1.41948.49"
+	for _, one := range results {
+		if strings.Contains(one, oid) {
+			return oid, nil
+		}
+	}
+	return "", errors.New("invalid content type")
 }

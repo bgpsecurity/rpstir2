@@ -139,10 +139,10 @@ func rrdpByUrl(rrdpModelChan RrdpModelChan) {
 
 	if err != nil {
 		rrQueue.RrdpResult.FailUrls.Store(rrdpModelChan.Url, err.Error())
-		belogs.Error("RrdpByUrl():RrdpQuiet fail, rrdpModelChan.Url:", rrdpModelChan.Url, "   err:", err, "  time(s):", time.Now().Sub(start).Seconds())
-		belogs.Debug("RrdpByUrl():RrdpQuiet fail, before RrdpingParsingCount-1:", atomic.LoadInt64(&rrQueue.RrdpingParsingCount))
+		belogs.Error("RrdpByUrl():RrdpByUrlImpl fail, rrdpModelChan.Url:", rrdpModelChan.Url, "   err:", err, "  time(s):", time.Now().Sub(start).Seconds())
+		belogs.Debug("RrdpByUrl():RrdpByUrlImpl fail, before RrdpingParsingCount-1:", atomic.LoadInt64(&rrQueue.RrdpingParsingCount))
 		atomic.AddInt64(&rrQueue.RrdpingParsingCount, -1)
-		belogs.Debug("RrdpByUrl():RrdpQuiet fail, after RrdpingParsingCount-1:", atomic.LoadInt64(&rrQueue.RrdpingParsingCount))
+		belogs.Debug("RrdpByUrl():RrdpByUrlImpl fail, after RrdpingParsingCount-1:", atomic.LoadInt64(&rrQueue.RrdpingParsingCount))
 		return
 	}
 	if len(rrdpFiles) == 0 {
@@ -207,14 +207,18 @@ func parseCerFiles(parseModelChan ParseModelChan) {
 		}
 	}
 
+	// need sub this cer file, so -1
 	var rrdpingParsingCountSub int64
 	if len(rpkiNotifies) == 0 {
 		rrdpingParsingCountSub = -1
 	} else {
 		rrdpingParsingCountSub = int64(len(rpkiNotifies)) - 1
 	}
-	belogs.Info("parseCerFiles(): FilePathNames:", parseModelChan.FilePathNames,
-		"   rpkiNotifies", rpkiNotifies,
+	belogs.Debug("parseCerFiles(): FilePathNames:", parseModelChan.FilePathNames,
+		"   rpkiNotifies:", rpkiNotifies,
+		"   rrdpingParsingCountSub:", rrdpingParsingCountSub)
+	belogs.Info("parseCerFiles(): len(FilePathNames):", len(parseModelChan.FilePathNames),
+		"   len(rpkiNotifies):", len(rpkiNotifies),
 		"   rrdpingParsingCountSub:", rrdpingParsingCountSub)
 
 	// the father rrdpingparsingcount -1 ,and the children rrdpingparsingcount + len()

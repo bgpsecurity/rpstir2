@@ -25,7 +25,7 @@ func ParseValidateMft(certFile string) (mftModel model.MftModel, stateModel mode
 	stateModel = model.NewStateModel()
 	err = parseMftModel(certFile, &mftModel, &stateModel)
 	if err != nil {
-		belogs.Error("ParseValidateMft():parseMftByOpenssl err:", certFile, err)
+		belogs.Error("ParseValidateMft():parseMftModel err:", certFile, err)
 		return mftModel, stateModel, nil
 	}
 	belogs.Debug("ParseValidateMft(): mftModel:", jsonutil.MarshalJson(mftModel))

@@ -251,20 +251,24 @@ func parseValidateFile(certFile string) (certType string, certModel interface{},
 
 	if strings.HasSuffix(certFile, ".cer") {
 		cerModel, stateModel, err := ParseValidateCer(certFile)
-		belogs.Debug("parseValidateFile():  after ParseCer():certFile, stateModel:", certFile, stateModel, "  err:", err)
+		belogs.Debug("parseValidateFile():  after ParseValidateCer():certFile, stateModel:", certFile, stateModel, "  err:", err)
 		return "cer", cerModel, stateModel, err
 	} else if strings.HasSuffix(certFile, ".crl") {
 		crlModel, stateModel, err := ParseValidateCrl(certFile)
-		belogs.Debug("parseValidateFile(): after ParseCrl(): certFile,stateModel:", certFile, stateModel, "  err:", err)
+		belogs.Debug("parseValidateFile(): after ParseValidateCrl(): certFile,stateModel:", certFile, stateModel, "  err:", err)
 		return "crl", crlModel, stateModel, err
 	} else if strings.HasSuffix(certFile, ".mft") {
 		mftModel, stateModel, err := ParseValidateMft(certFile)
-		belogs.Debug("parseValidateFile(): after ParseMft():certFile,stateModel:", certFile, stateModel, "  err:", err)
+		belogs.Debug("parseValidateFile(): after ParseValidateMft():certFile,stateModel:", certFile, stateModel, "  err:", err)
 		return "mft", mftModel, stateModel, err
 	} else if strings.HasSuffix(certFile, ".roa") {
 		roaModel, stateModel, err := ParseValidateRoa(certFile)
-		belogs.Debug("parseValidateFile():after ParseRoa(): certFile,stateModel:", certFile, stateModel, "  err:", err)
+		belogs.Debug("parseValidateFile():after ParseValidateRoa(): certFile,stateModel:", certFile, stateModel, "  err:", err)
 		return "roa", roaModel, stateModel, err
+	} else if strings.HasSuffix(certFile, ".sig") {
+		sigModel, stateModel, err := ParseValidateSig(certFile)
+		belogs.Debug("parseValidateFile():after ParseValidateSig(): certFile,stateModel:", certFile, stateModel, "  err:", err)
+		return "sig", sigModel, stateModel, err
 	} else {
 		return "", nil, stateModel, errors.New("unknown file type")
 	}
@@ -311,6 +315,16 @@ func parseFile(certFile string) (certModel interface{}, err error) {
 		roaModel.FilePath = ""
 		belogs.Debug("parseFile(): certFile, roaModel:", certFile, roaModel)
 		return roaModel, nil
+
+	} else if strings.HasSuffix(certFile, ".sig") {
+		sigModel, _, err := ParseValidateSig(certFile)
+		if err != nil {
+			belogs.Error("parseFile(): ParseValidateSig:", certFile, "  err:", err)
+			return nil, err
+		}
+		sigModel.FilePath = ""
+		belogs.Debug("parseFile(): certFile, sigModel:", certFile, sigModel)
+		return sigModel, nil
 
 	} else {
 		return nil, errors.New("unknown file type")

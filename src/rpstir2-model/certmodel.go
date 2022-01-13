@@ -393,3 +393,29 @@ type SignerInfoModel struct {
 	// 1.2.840.113549.1.9.4
 	MessageDigest string `json:"messageDigest"`
 }
+
+///////////////////////////////////////////////////////////////////////////////
+// SIG(checklist SRC)
+type SigModel struct {
+
+	// must be 0, or no in file
+	//  The version number of the RpkiSignedChecklist MUST be 0.
+	Version  int    `json:"version"`
+	Ski      string `json:"ski" xorm:"ski varchar(128)"`
+	Aki      string `json:"aki" xorm:"aki varchar(128)"`
+	FilePath string `json:"filePath" xorm:"filePath varchar(512)"`
+	FileName string `json:"fileName" xorm:"fileName varchar(128)"`
+	FileHash string `json:"fileHash" xorm:"fileHash varchar(512)"`
+
+	RpkiSignedChecklist RpkiSignedChecklist `json:"rpkiSignedChecklist"`
+	//OID: 1.2.840.113549.1.9.16.1.26
+	EContentType    string          `json:"eContentType"`
+	AiaModel        AiaModel        `json:"aiaModel"`
+	EeCertModel     EeCertModel     `json:"eeCertModel"`
+	SignerInfoModel SignerInfoModel `json:"signerInfoModel"`
+}
+type RpkiSignedChecklist struct {
+	CerIpAddresses            []CerIpAddress  `json:"cerIpAddresses"`
+	DigestAlgorithmIdentifier string          `json:"digestAlgorithm"`
+	FileHashModels            []FileHashModel `json:"fileHashModels"`
+}

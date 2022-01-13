@@ -4,8 +4,9 @@ import (
 	"strings"
 
 	"github.com/cpusoft/goutil/belogs"
-	conf "github.com/cpusoft/goutil/conf"
-	osutil "github.com/cpusoft/goutil/osutil"
+	"github.com/cpusoft/goutil/conf"
+	"github.com/cpusoft/goutil/jsonutil"
+	"github.com/cpusoft/goutil/osutil"
 )
 
 const (
@@ -85,6 +86,9 @@ func JudgeOrigin(filePath string) (originModel OriginModel) {
 	} else if strings.Index(filePath, "rpki.rand.apnic.net") > 0 {
 		rir = ORIGIN_RIR_APNIC
 		repo = "rpki.rand.apnic.net"
+	} else if strings.Index(filePath, "rpki.sub.apnic.net") > 0 {
+		rir = ORIGIN_RIR_APNIC
+		repo = "rpki.sub.apnic.net"
 	} else if strings.Index(filePath, "krill.heficed.net") > 0 {
 		rir = ORIGIN_RIR_RIPE_NCC
 		repo = "krill.heficed.net"
@@ -210,6 +214,34 @@ func JudgeOrigin(filePath string) (originModel OriginModel) {
 	} else if strings.Index(filePath, "rpki.dataplane.org") > 0 {
 		rir = ORIGIN_RIR_ARIN
 		repo = "rpki.dataplane.org"
+	} else if strings.Index(filePath, "magellan.ipxo.com") > 0 {
+		// include r.magellan.ipxo.com
+		rir = ORIGIN_RIR_ARIN
+		repo = "magellan.ipxo.com"
+	} else if strings.Index(filePath, "rpki.akrn.net") > 0 {
+		rir = ORIGIN_RIR_APNIC
+		repo = "rpki.akrn.net"
+	} else if strings.Index(filePath, "0.sb") > 0 {
+		rir = ORIGIN_RIR_RIPE_NCC
+		repo = "0.sb"
+	} else if strings.Index(filePath, "rpki.owl.net") > 0 {
+		rir = ORIGIN_RIR_RIPE_NCC
+		repo = "rpki.owl.net"
+	} else if strings.Index(filePath, "krill.cloud") > 0 {
+		rir = ORIGIN_RIR_RIPE_NCC
+		repo = "krill.cloud"
+	} else if strings.Index(filePath, "rrdp.taaa.eu") > 0 {
+		rir = ORIGIN_RIR_RIPE_NCC
+		repo = "rrdp.taaa.eu"
+	} else if strings.Index(filePath, "rpki-rsync.e15f.net") > 0 {
+		rir = ORIGIN_RIR_RIPE_NCC
+		repo = "rpki-rsync.e15f.net"
+	} else if strings.Index(filePath, "rpki.caramelfox.net") > 0 {
+		rir = ORIGIN_RIR_RIPE_NCC
+		repo = "rpki.caramelfox.net"
+	} else if strings.Index(filePath, "rpki.roa.net") > 0 {
+		rir = ORIGIN_RIR_RIPE_NCC
+		repo = "rpki.roa.net"
 	} else {
 		rir = "unknown"
 		if strings.Index(filePath, "afrinic.net") > 0 {
@@ -232,8 +264,9 @@ func JudgeOrigin(filePath string) (originModel OriginModel) {
 		} else {
 			repo = split[0]
 		}
+		belogs.Info("JudgeOrigin():rir is unknown, filePath:", filePath, "   rir:", rir, "  repo:", repo)
 	}
 	originModel = OriginModel{Rir: rir, Repo: repo}
-	belogs.Debug("JudgeOrigin(): filePath:", filePath, "   originModel:", originModel)
+	belogs.Debug("JudgeOrigin(): filePath:", filePath, "   originModel:", jsonutil.MarshalJson(originModel))
 	return originModel
 }
