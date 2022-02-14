@@ -202,7 +202,7 @@ $./rpstir2.sh exportroas | jq .
 
 
 ### 3.8 Parse file
-You can parse cer/mft/crl/roa/sig file.
+You can parse cer/mft/crl/roa/sig/asa file.
 
 ```shell
 $ cd /root/rpki/rpstir2/bin
