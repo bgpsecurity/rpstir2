@@ -75,7 +75,7 @@ function helpFunc()
     echo -e "./rpstir2.sh state\t\t(need start first) when it shows 'isRunning:false', it means that synchronization and validation processes are completed." 
     echo -e "./rpstir2.sh results\t\t(need start first) shows the valid, warning and invalid number of cer, roa, mft and crl respectively."
     echo -e "./rpstir2.sh exportroas\t\t(need start first) export all roas which are valid or warning."
-    echo -e "./rpstir2.sh parse {file}\t(need start first) parse uploads file(*.cer/*.crl/*.mft/*.roa/*.sig)"
+    echo -e "./rpstir2.sh parse {file}\t(need start first) parse uploads file(*.cer/*.crl/*.mft/*.roa/*.sig/*.asa)"
     echo -e "./rpstir2.sh help\t\tshow this help."
 }
 

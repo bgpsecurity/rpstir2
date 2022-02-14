@@ -208,7 +208,7 @@ You can parse cer/mft/crl/roa/sig file.
 $ cd /root/rpki/rpstir2/bin
 $./rpstir2.sh parse /tmp/checklist.sig | jq .
 ```
-```
+```JSON
 {
   "data": {
     "signerInfoModel": {
@@ -289,6 +289,100 @@ $./rpstir2.sh parse /tmp/checklist.sig | jq .
       ]
     },
     "eContentType": "1.3.6.1.4.1.41948.49"
+  },
+  "msg": "",
+  "result": "ok"
+}
+```
+
+
+```shell
+$ cd /root/rpki/rpstir2/bin
+$./rpstir2.sh parse /tmp/AS211321.asa | jq .
+```
+```JSON
+{
+  "data": {
+    "signerInfoModel": {
+      "messageDigest": "C7388599A2D43808F7BB13A0D095FFCFBBA880AE850C2699F67B764538E66CA0",
+      "signingTime": "2021-11-11T11:19:00Z",
+      "contentType": "1.2.840.113549.1.9.16.1.49",
+      "digestAlgorithm": "sha256",
+      "version": 3
+    },
+    "eeCertModel": {
+      "eeCertEnd": 1308,
+      "eeCertStart": 102,
+      "crldpModel": {
+        "critical": false,
+        "crldps": [
+          "rsync://rsync.accept.krill.cloud/repo/accept/0/7088BE00CA85327CA016C9074ED007C3FA919991.crl"
+        ]
+      },
+      "cerIpAddressModel": {
+        "critical": false,
+        "cerIpAddresses": null
+      },
+      "siaModel": {
+        "critical": false,
+        "signedObject": "rsync://rsync.accept.krill.cloud/repo/accept/0/AS211321.asa",
+        "caRepository": "",
+        "rpkiNotify": "",
+        "rpkiManifest": ""
+      },
+      "issuerAll": "CN=7088be00ca85327ca016c9074ed007c3fa919991",
+      "subjectAll": "CN=37CA1DDE4D094734AB3B048269E12FDDAEAA691B",
+      "isCa": false,
+      "version": 3,
+      "digestAlgorithm": "SHA256-RSA",
+      "sn": "2de71e5b974c86a28d6bb3c1e1b4ece5091f12c",
+      "notBefore": "2021-11-11T19:14:00+08:00",
+      "notAfter": "2022-11-10T19:19:00+08:00",
+      "keyUsageModel": {
+        "keyUsageValue": "Digital Signature",
+        "critical": true,
+        "keyUsage": 1
+      },
+      "extKeyUsages": [],
+      "basicConstraintsValid": false
+    },
+    "siaModel": {
+      "critical": false,
+      "signedObject": "rsync://rsync.accept.krill.cloud/repo/accept/0/AS211321.asa",
+      "caRepository": "",
+      "rpkiNotify": "",
+      "rpkiManifest": ""
+    },
+    "aiaModel": {
+      "critical": false,
+      "caIssuers": "rsync://localcert.ripe.net/repository/DEFAULT/cIi-AMqFMnygFskHTtAHw_qRmZE.cer"
+    },
+    "version": 0,
+    "ski": "37ca1dde4d094734ab3b048269e12fddaeaa691b",
+    "aki": "7088be00ca85327ca016c9074ed007c3fa919991",
+    "filePath": "",
+    "fileName": "AS211321.asa",
+    "fileHash": "e2f896d37de277e93309ef52f01fe3131b762b1383e86cd7933887ad7eaf1257",
+    "asProviderAttestations": [
+      {
+        "ProviderAsIds": [
+          {
+            "addressFamilyIdentifier": "",
+            "providerAsId": 65000
+          },
+          {
+            "addressFamilyIdentifier": "0x0001",
+            "providerAsId": 65001
+          },
+          {
+            "addressFamilyIdentifier": "0x0002",
+            "providerAsId": 65002
+          }
+        ],
+        "customerAsId": 211321
+      }
+    ],
+    "eContentType": "1.2.840.113549.1.9.16.1.49"
   },
   "msg": "",
   "result": "ok"
