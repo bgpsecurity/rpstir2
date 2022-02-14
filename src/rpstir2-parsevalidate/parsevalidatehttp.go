@@ -70,7 +70,7 @@ func ParseValidateFile(c *gin.Context) {
 	certType, certModel, stateModel, err := parseValidateFile(receiveFile)
 	stateModel.JudgeState()
 	if err != nil {
-		belogs.Error("ParseValidateFiles(): ParseValidateFile: err:", err)
+		belogs.Error("ParseValidateFile(): parseValidateFile: err:", receiveFile, err)
 		ginserver.ResponseFail(c, err, "")
 		return
 	}
@@ -110,7 +110,7 @@ func ParseFile(c *gin.Context) {
 
 	certModel, err := parseFile(receiveFile)
 	if err != nil {
-		belogs.Error("ParseValidateFiles(): ParseValidateFile: err:", err)
+		belogs.Error("ParseFile(): parseFile: err:", receiveFile, err)
 		ginserver.ResponseFail(c, err, "")
 		return
 	}

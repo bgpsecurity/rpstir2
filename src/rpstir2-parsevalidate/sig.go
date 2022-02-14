@@ -88,7 +88,7 @@ func parseSigModel(certFile string, sigModel *model.SigModel, stateModel *model.
 
 	sigModel.EContentType, err = openssl.ParseSigEContentTypeByOpensslResults(results)
 	if err != nil {
-		belogs.Error("parseSigModel():ParseEContentTypeByOpensslResults  certFile:", certFile, "  err:", err)
+		belogs.Error("parseSigModel():ParseSigEContentTypeByOpensslResults  certFile:", certFile, "  err:", err)
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
 			Fail:   "Fail to parse file",
 			Detail: err.Error()}

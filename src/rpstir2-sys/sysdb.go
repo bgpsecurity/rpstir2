@@ -601,6 +601,8 @@ var resetAllOtherSqls []string = []string{
 	`truncate  table  lab_rpki_rtr_full_log`,
 	`truncate  table  lab_rpki_rtr_incremental`,
 	`truncate  table  lab_rpki_slurm`,
+	`truncate  table  lab_rpki_analyse_roa_history`,
+	`truncate  table  lab_rpki_analyse_roa_compete`,
 }
 
 var optimizeSqls []string = []string{
@@ -630,8 +632,7 @@ var optimizeSqls []string = []string{
 	`optimize  table  lab_rpki_rtr_full`,
 	`optimize  table  lab_rpki_rtr_full_log`,
 	`optimize  table  lab_rpki_rtr_incremental`,
-	`optimize  table  lab_rpki_slurm`,
-}
+	`optimize  table  lab_rpki_slurm`}
 
 // when isInit is true, then init all db. otherwise will reset all db
 func InitResetDb(sysStyle SysStyle) error {

@@ -714,3 +714,91 @@ func ParseSigEContentTypeByOpensslResults(results []string) (eContentType string
 	}
 	return "", errors.New("invalid content type")
 }
+
+func ParseAsaModelByOpensslResults(results []string, asaModel *model.AsaModel) (err error) {
+	// openssl asn1parse  -in checklist.asa --inform der
+	// the first HEX DUMP
+	/*
+			openssl asn1parse -in AS211321.asa  -inform DER
+			    0:d=0  hl=4 l=1734 cons: SEQUENCE
+			    4:d=1  hl=2 l=   9 prim: OBJECT            :pkcs7-signedData
+			    15:d=1  hl=4 l=1719 cons: cont [ 0 ]
+			    19:d=2  hl=4 l=1715 cons: SEQUENCE
+			    23:d=3  hl=2 l=   1 prim: INTEGER           :03
+			    26:d=3  hl=2 l=  13 cons: SET
+			    28:d=4  hl=2 l=  11 cons: SEQUENCE
+			    30:d=5  hl=2 l=   9 prim: OBJECT            :sha256
+			    41:d=3  hl=2 l=  55 cons: SEQUENCE
+		 	    43:d=4  hl=2 l=  11 prim: OBJECT            :1.2.840.113549.1.9.16.1.49
+				56:d=4  hl=2 l=  40 cons: cont [ 0 ]
+				58:d=5  hl=2 l=  38 prim: OCTET STRING      [HEX DUMP]:30240203033979301D3005020300FDE83009020300FDE9040200013009020300FDEA04020002
+	*/
+	var asaHex string
+	foundAllAsaHex := false
+	keyword := "[HEX DUMP]:"
+	for i, one := range results {
+		if strings.Contains(one, keyword) {
+			index := strings.Index(one, keyword)
+			asaHex = string(one[index+len(keyword):])
+			belogs.Debug("ParseAsaModelByOpensslResults(): len(asaHex):", len(asaHex))
+
+			if !strings.Contains(results[i+1], keyword) {
+				foundAllAsaHex = true
+				belogs.Debug("ParseAsaModelByOpensslResults(): foundAllAsaHex:", foundAllAsaHex)
+				break
+			}
+			// one [HEX DUMP] length is more than 10000,  will have many [HEX DUMP],
+			// just one loop to break
+			for ii := i + 1; ii < len(results); ii++ {
+				if strings.Contains(results[ii], keyword) {
+					indexii := strings.Index(results[ii], keyword)
+					asaHexii := string(results[ii][indexii+len(keyword):])
+					asaHex = asaHex + asaHexii
+				} else {
+					foundAllAsaHex = true
+					break
+				}
+			}
+		}
+		if foundAllAsaHex {
+			break
+		}
+	}
+	belogs.Debug("ParseAsaModelByOpensslResults():all len(asaHex):", len(asaHex), asaHex)
+	belogs.Info("ParseAsaModelByOpensslResults():len(asaHex):", len(asaHex))
+
+	if len(asaHex) == 0 {
+		belogs.Error("ParseAsaModelByOpensslResults():len(asaHex) == 0")
+		return errors.New("not found asa hex")
+	}
+	asaBytes, err := hex.DecodeString(asaHex)
+	if err != nil {
+		belogs.Error("ParseAsaModelByOpensslResults():DecodeString err:", err)
+		return err
+	}
+	asProviderAttestation := model.AsProviderAttestation{}
+	_, err = asn1.Unmarshal(asaBytes, &asProviderAttestation)
+	if err != nil {
+		belogs.Error("ParseAsaModelByOpensslResults():asn1.Unmarshal err:", err)
+		return err
+	}
+	belogs.Info("ParseAsaModelByOpensslResults(): asProviderAttestation:", jsonutil.MarshalJson(asProviderAttestation))
+	asaModel.AsProviderAttestations = make([]model.AsProviderAttestation, 0)
+	asaModel.AsProviderAttestations = append(asaModel.AsProviderAttestations, asProviderAttestation)
+	return nil
+}
+func ParseAsaEContentTypeByOpensslResults(results []string) (eContentType string, err error) {
+	// get 1.2.840.113549.1.9.16.1.49
+	/*
+		1358:d=7  hl=2 l=   9 prim: OBJECT            :contentType
+		1369:d=7  hl=2 l=  13 cons: SET
+		1371:d=8  hl=2 l=  11 prim: OBJECT            :1.2.840.113549.1.9.16.1.49
+	*/
+	oid := "1.2.840.113549.1.9.16.1.49"
+	for _, one := range results {
+		if strings.Contains(one, oid) {
+			return oid, nil
+		}
+	}
+	return "", errors.New("invalid content type")
+}

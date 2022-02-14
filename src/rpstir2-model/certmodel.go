@@ -2,6 +2,7 @@ package model
 
 import (
 	"crypto/x509/pkix"
+	"fmt"
 	"time"
 )
 
@@ -408,14 +409,53 @@ type SigModel struct {
 	FileHash string `json:"fileHash" xorm:"fileHash varchar(512)"`
 
 	RpkiSignedChecklist RpkiSignedChecklist `json:"rpkiSignedChecklist"`
-	//OID: 1.2.840.113549.1.9.16.1.26
+
 	EContentType    string          `json:"eContentType"`
 	AiaModel        AiaModel        `json:"aiaModel"`
 	EeCertModel     EeCertModel     `json:"eeCertModel"`
 	SignerInfoModel SignerInfoModel `json:"signerInfoModel"`
 }
+
 type RpkiSignedChecklist struct {
 	CerIpAddresses            []CerIpAddress  `json:"cerIpAddresses"`
 	DigestAlgorithmIdentifier string          `json:"digestAlgorithm"`
 	FileHashModels            []FileHashModel `json:"fileHashModels"`
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Asa
+type AsaModel struct {
+
+	// must be 0, or no in file
+	//  The version be 0.
+	Version  int    `json:"version"`
+	Ski      string `json:"ski" xorm:"ski varchar(128)"`
+	Aki      string `json:"aki" xorm:"aki varchar(128)"`
+	FilePath string `json:"filePath" xorm:"filePath varchar(512)"`
+	FileName string `json:"fileName" xorm:"fileName varchar(128)"`
+	FileHash string `json:"fileHash" xorm:"fileHash varchar(512)"`
+
+	AsProviderAttestations []AsProviderAttestation `json:"asProviderAttestations"`
+
+	EContentType    string          `json:"eContentType"`
+	AiaModel        AiaModel        `json:"aiaModel"`
+	SiaModel        SiaModel        `json:"siaModel"`
+	EeCertModel     EeCertModel     `json:"eeCertModel"`
+	SignerInfoModel SignerInfoModel `json:"signerInfoModel"`
+}
+
+//  1.2.840.113549.1.9.16.1.49
+type AsProviderAttestation struct {
+	CustomerAsId  int            `json:"customerAsId"`
+	ProviderAsIds []ProviderAsId `json:"ProviderAsIds"`
+}
+type ProviderAsId struct {
+	ProviderAsId            int `json:"providerAsId"`
+	AddressFamilyIdentifier Afi `json:"addressFamilyIdentifier" asn1:"optional"`
+}
+type Afi []byte
+
+func (a Afi) MarshalText() ([]byte, error) {
+	//return []byte(`[` + convert.PrintBytesOneLine(a) + `]`), nil
+	return []byte(fmt.Sprintf("%#x", a)), nil
 }

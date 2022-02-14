@@ -269,6 +269,10 @@ func parseValidateFile(certFile string) (certType string, certModel interface{},
 		sigModel, stateModel, err := ParseValidateSig(certFile)
 		belogs.Debug("parseValidateFile():after ParseValidateSig(): certFile,stateModel:", certFile, stateModel, "  err:", err)
 		return "sig", sigModel, stateModel, err
+	} else if strings.HasSuffix(certFile, ".asa") {
+		asaModel, stateModel, err := ParseValidateAsa(certFile)
+		belogs.Debug("parseValidateFile():after ParseValidateAsa(): certFile,stateModel:", certFile, stateModel, "  err:", err)
+		return "asa", asaModel, stateModel, err
 	} else {
 		return "", nil, stateModel, errors.New("unknown file type")
 	}
@@ -325,6 +329,16 @@ func parseFile(certFile string) (certModel interface{}, err error) {
 		sigModel.FilePath = ""
 		belogs.Debug("parseFile(): certFile, sigModel:", certFile, sigModel)
 		return sigModel, nil
+
+	} else if strings.HasSuffix(certFile, ".asa") {
+		asaModel, _, err := ParseValidateAsa(certFile)
+		if err != nil {
+			belogs.Error("parseFile(): ParseValidateAsa:", certFile, "  err:", err)
+			return nil, err
+		}
+		asaModel.FilePath = ""
+		belogs.Debug("parseFile(): certFile, asaModel:", certFile, asaModel)
+		return asaModel, nil
 
 	} else {
 		return nil, errors.New("unknown file type")
