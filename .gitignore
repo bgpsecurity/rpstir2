@@ -1,5 +1,6 @@
 
 /.settings/*.prefs
 /pkg
-/log
 *.sum
+/.vscode/settings.json
+/bin/*.bat

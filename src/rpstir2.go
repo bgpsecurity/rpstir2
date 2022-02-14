@@ -4,27 +4,27 @@ import (
 	"fmt"
 	"net/http"
 	_ "net/http/pprof"
-	"os"
-	"runtime"
+	"time"
 
-	belogs "github.com/astaxie/beego/logs"
-	"github.com/cpusoft/go-json-rest/rest"
-	conf "github.com/cpusoft/goutil/conf"
-	"github.com/cpusoft/goutil/httpserver"
+	chainvalidate "rpstir2-chainvalidate"
+	clear "rpstir2-clear"
+	parsevalidate "rpstir2-parsevalidate"
+	rtrclient "rpstir2-rtrclient"
+	rtrproducer "rpstir2-rtrproducer"
+	rtrserver "rpstir2-rtrserver"
+	entirerrdp "rpstir2-sync-entire/rrdp"
+	entirersync "rpstir2-sync-entire/rsync"
+	entiresync "rpstir2-sync-entire/sync"
+	tal "rpstir2-sync-tal"
+	sys "rpstir2-sys"
+
+	"github.com/cpusoft/goutil/belogs"
+	"github.com/cpusoft/goutil/conf"
 	_ "github.com/cpusoft/goutil/logs"
 	"github.com/cpusoft/goutil/osutil"
-	xormdb "github.com/cpusoft/goutil/xormdb"
-
-	"chainvalidate/chainvalidatehttp"
-	"parsevalidate/parsevalidatehttp"
-	"rrdp/rrdphttp"
-	"rsync/rsynchttp"
-	rtrhttp "rtr/rtrhttp"
-	"rtr/rtrtcpserver"
-	rtrproducerhttp "rtrproducer/rtrhttp"
-	"sync/synchttp"
-	"sys/syshttp"
-	"tal/talhttp"
+	"github.com/cpusoft/goutil/xormdb"
+	"github.com/gin-gonic/gin"
+	"golang.org/x/sync/errgroup"
 )
 
 func main() {
@@ -33,111 +33,162 @@ func main() {
 	err := xormdb.InitMySql()
 	if err != nil {
 		belogs.Error("main(): start InitMySql failed:", err)
-		fmt.Println("rpstir2 failed to start when connecting to MySQL, the error is ", err)
+		fmt.Println("rpstir2 failed to start, ", err)
 		return
 	}
-
 	defer xormdb.XormEngine.Close()
+	// start rp server
+	go startRpServer()
 
-	// start server
-	startPprof()
-	startTcpServer()
-	startServer()
-	// block the main thread, to sleep
+	go startVcServer()
+	go startTcpServer()
+
 	select {}
 }
 
-func startPprof() {
+// start server
+func startRpServer() {
+	start := time.Now()
+	var g errgroup.Group
+
+	serverHttpPort := conf.String("rpstir2-rp::serverHttpPort")
+	serverHttpsPort := conf.String("rpstir2-rp::serverHttpsPort")
+	serverCrt := conf.String("rpstir2-rp::serverCrt")
+	serverKey := conf.String("rpstir2-rp::serverKey")
+	belogs.Info("startRpServer(): start server, serverHttpPort:", serverHttpPort,
+		"    serverHttpsPort:", serverHttpsPort, "   serverCrt:", serverCrt,
+		"    serverKey:", serverKey)
+
+	//gin.SetMode(gin.DebugMode)
+	gin.SetMode(gin.ReleaseMode)
+	engine := gin.New()
+	engine.Use(gin.Recovery())
+
+	engine.POST("/tal/gettals", tal.GetTals)
+
+	engine.POST("/entiresync/syncstart", entiresync.SyncStart)
+	engine.POST("/entiresync/rrdpresult", entiresync.RrdpResult)
+	engine.POST("/entiresync/rsyncresult", entiresync.RsyncResult)
+	engine.POST("/entiresync/rrdpstart", entirerrdp.RrdpStart)
+	engine.POST("/entiresync/rsyncstart", entirersync.RsyncStart)
+	engine.POST("/parsevalidate/start", parsevalidate.ParseValidateStart)
+	engine.POST("/parsevalidate/file", parsevalidate.ParseValidateFile)
+	engine.POST("/parsevalidate/parsefile", parsevalidate.ParseFile)
+	engine.POST("/parsevalidate/parsefilesimple", parsevalidate.ParseFileSimple)
+	engine.POST("/chainvalidate/start", chainvalidate.ChainValidateStart)
+	engine.POST("/clear/start", clear.ClearStart)
+	engine.POST("/sys/initreset", sys.InitReset)
+	engine.POST("/sys/servicestate", sys.ServiceState)
+	engine.POST("/sys/results", sys.Results)
+	engine.POST("/sys/exportroas", sys.ExportRoas)
+
+	/////////////////////
+
+	if serverHttpPort != "" {
+		belogs.Info("startRpServer(): http on :", serverHttpPort)
+		g.Go(func() error {
+			belogs.Info("startRpServer(): server run http on :", serverHttpPort)
+			err := engine.Run(":" + serverHttpPort)
+			if err != nil {
+				belogs.Error("startRpServer(): http fail, will exit, err:", serverHttpPort, err)
+			}
+			return err
+		})
+	}
+
+	if serverHttpsPort != "" {
+		belogs.Info("startRpServer(): https on :", serverHttpsPort)
+		g.Go(func() error {
+			certsPath := osutil.GetParentPath() + "/conf/cert/"
+			belogs.Info("startRpServer(): server run https on :", serverHttpsPort, certsPath+serverCrt, certsPath+serverKey)
+			err := engine.RunTLS(":"+serverHttpsPort, certsPath+serverCrt, certsPath+serverKey)
+			if err != nil {
+				belogs.Error("startRpServer(): https fail, will exit, err:", serverHttpsPort, err)
+			}
+			return err
+		})
+	}
+
 	go func() {
-		pprofport := conf.String("rpstir2::pprofHttpPort")
+		pprofport := conf.String("rpstir2-rp::pprofHttpPort")
 		belogs.Info(http.ListenAndServe(":"+pprofport, nil))
 	}()
+
+	if err := g.Wait(); err != nil {
+		belogs.Error("startRpServer(): fail, will exit, err:", err)
+	}
+	belogs.Info("startRpServer(): server end, time(s):", time.Now().Sub(start).Seconds())
+
 }
+
+// start vc server
+func startVcServer() {
+	start := time.Now()
+	var g errgroup.Group
+
+	serverHttpPort := conf.String("rpstir2-vc::serverHttpPort")
+	serverHttpsPort := conf.String("rpstir2-vc::serverHttpsPort")
+	serverCrt := conf.String("rpstir2-vc::serverCrt")
+	serverKey := conf.String("rpstir2-vc::serverKey")
+	belogs.Info("startVcServer(): start server, serverHttpPort:", serverHttpPort,
+		"    serverHttpsPort:", serverHttpsPort, "   serverCrt:", serverCrt,
+		"    serverKey:", serverKey)
+	//gin.SetMode(gin.DebugMode)
+	gin.SetMode(gin.ReleaseMode)
+	engine := gin.New()
+	engine.Use(gin.Recovery())
+
+	engine.POST("/rtrproducer/updatefromsync", rtrproducer.RtrUpdateFromSync)
+	engine.POST("/sys/initreset", sys.InitReset)
+	engine.POST("/rtr/server/sendserialnotify", rtrserver.ServerSendSerialNotify)
+	engine.POST("/rtr/client/start", rtrclient.ClientStart)
+	engine.POST("/rtr/client/stop", rtrclient.ClientStop)
+	engine.POST("/rtr/client/sendserialquery", rtrclient.ClientSendSerialQuery)
+	engine.POST("/rtr/client/sendresetquery", rtrclient.ClientSendResetQuery)
+
+	/////////////////////
+
+	if serverHttpPort != "" {
+		belogs.Info("startVcServer(): http on :", serverHttpsPort)
+		g.Go(func() error {
+			belogs.Info("startVcServer(): server run http on :", serverHttpPort)
+			err := engine.Run(":" + serverHttpPort)
+			if err != nil {
+				belogs.Error("startVcServer(): http fail, will exit, err:", serverHttpPort, err)
+			}
+			return err
+		})
+	}
+
+	if serverHttpsPort != "" {
+		belogs.Info("startVcServer(): https on :", serverHttpsPort)
+		g.Go(func() error {
+			certsPath := osutil.GetParentPath() + "/conf/cert/"
+			belogs.Info("startVcServer(): server run https on :", serverHttpsPort, certsPath+serverCrt, certsPath+serverKey)
+			err := engine.RunTLS(":"+serverHttpsPort, certsPath+serverCrt, certsPath+serverKey)
+			if err != nil {
+				belogs.Error("startVcServer(): https fail, will exit, err:", serverHttpsPort, err)
+			}
+			return err
+		})
+	}
+
+	go func() {
+		pprofport := conf.String("rpstir2-vc::pprofHttpPort")
+		belogs.Info(http.ListenAndServe(":"+pprofport, nil))
+	}()
+
+	if err := g.Wait(); err != nil {
+		belogs.Error("startVcServer(): fail, will exit, err:", err)
+	}
+	belogs.Info("startVcServer(): server end, time(s):", time.Now().Sub(start).Seconds())
+
+}
+
 func startTcpServer() {
-	belogs.Debug("startTcpServer():will start tcp server")
-	rtrtcpserver.Start()
-}
+	// rtrtcp
+	tcpPort := conf.String("rpstir2-vc::serverTcpPort")
+	belogs.Debug("startTcpServer():will start tcp server:", tcpPort)
+	rtrserver.RtrServerStart(tcpPort)
 
-// start server
-func startServer() {
-	belogs.Info("startServer(): start server, runtime.NumCPU():", runtime.NumCPU())
-
-	runtime.GOMAXPROCS(2 * runtime.NumCPU())
-
-	routes := make([]*rest.Route, 0)
-
-	// tal
-	routes = append(routes, rest.Post("/tal/gettals", talhttp.GetTals))
-	//sync
-	routes = append(routes, rest.Post("/sync/start", synchttp.SyncStart))
-	routes = append(routes, rest.Post("/sync/rrdpresult", synchttp.RrdpResult))
-	routes = append(routes, rest.Post("/sync/rsyncresult", synchttp.RsyncResult))
-	// rrdp(delta)
-	routes = append(routes, rest.Post("/rrdp/start", rrdphttp.RrdpStart))
-	// rsync
-	routes = append(routes, rest.Post("/rsync/start", rsynchttp.RsyncStart))
-
-	// parsevalidate
-	routes = append(routes, rest.Post("/parsevalidate/start", parsevalidatehttp.ParseValidateStart))
-	routes = append(routes, rest.Post("/parsevalidate/file", parsevalidatehttp.ParseValidateFile))
-	routes = append(routes, rest.Post("/parsevalidate/parsefile", parsevalidatehttp.ParseFile))
-	routes = append(routes, rest.Post("/parsevalidate/parsefilesimple", parsevalidatehttp.ParseFileSimple))
-
-	// chainvalidate
-	routes = append(routes, rest.Post("/chainvalidate/start", chainvalidatehttp.ChainValidateStart))
-
-	// sys
-	routes = append(routes, rest.Post("/sys/initreset", syshttp.InitReset))
-	routes = append(routes, rest.Post("/sys/servicestate", syshttp.ServiceState))
-	routes = append(routes, rest.Post("/sys/results", syshttp.Results))
-	routes = append(routes, rest.Post("/sys/exportroas", syshttp.ExportRoas))
-
-	// rtr Update
-	routes = append(routes, rest.Post("/rtrproducer/update", rtrproducerhttp.RtrUpdate))
-
-	// rtr
-	routes = append(routes, rest.Post("/rtr/server/sendserialnotify", rtrhttp.ServerSendSerialNotify))
-	routes = append(routes, rest.Post("/rtr/client/start", rtrhttp.ClientStart))
-	routes = append(routes, rest.Post("/rtr/client/stop", rtrhttp.ClientStop))
-	routes = append(routes, rest.Post("/rtr/client/sendserialquery", rtrhttp.ClientSendSerialQuery))
-	routes = append(routes, rest.Post("/rtr/client/sendresetquery", rtrhttp.ClientSendResetQuery))
-
-	/////////////////////
-
-	// make router
-	router, err := rest.MakeRouter(
-		routes...,
-	)
-
-	if err != nil {
-		belogs.Error("startServer(): failed: err:", err)
-		return
-	}
-	// if have http port, then sart http server, default is off
-	httpport := conf.String("rpstir2::serverHttpPort")
-	if httpport != "" {
-		go func() {
-			belogs.Info("startServer():start http on: ", ":"+httpport)
-			httpserver.ListenAndServe(":"+httpport, &router)
-		}()
-	}
-
-	/////////////////////
-	// Advanced functions
-	/////////////////////
-	// if have https port, then start https server, default is on
-	httpsport := conf.String("rpstir2::serverHttpsPort")
-	if httpsport != "" {
-		go func() {
-			belogs.Info("startServer():start https on: ", ":"+httpsport)
-			confPath, _ := osutil.GetCurrentOrParentAbsolutePath("conf")
-			path := confPath + string(os.PathSeparator) + "cert" +
-				string(os.PathSeparator) + "rpstir2" +
-				string(os.PathSeparator)
-			crtFile := path + conf.String("rpstir2::serverCrt")
-			keyFile := path + conf.String("rpstir2::serverKey")
-			httpserver.ListenAndServeTLS(":"+httpsport, crtFile, keyFile, &router)
-		}()
-	}
-	/////////////////////
 }

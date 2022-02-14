@@ -1,6 +1,6 @@
 #!/bin/bash
 function ReadINIfile()  
-{   
+{    
   Configfile=$1
   Section=$2
   Key=$3
