@@ -206,7 +206,7 @@ You can parse cer/mft/crl/roa/sig file.
 
 ```shell
 $ cd /root/rpki/rpstir2/bin
-$./rpstir2.sh parse /tmp/checklist.sig | jq .
+$./rpstir2.sh parse ../doc/checklist.sig | jq .
 ```
 ```JSON
 {
@@ -298,7 +298,7 @@ $./rpstir2.sh parse /tmp/checklist.sig | jq .
 
 ```shell
 $ cd /root/rpki/rpstir2/bin
-$./rpstir2.sh parse /tmp/AS211321.asa | jq .
+$./rpstir2.sh parse ../doc/AS211321.asa | jq .
 ```
 ```JSON
 {
