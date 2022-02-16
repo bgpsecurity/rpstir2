@@ -175,13 +175,13 @@ var CerExtensionOids = map[string]string{
 	"2.5.29.14":          "Ski",              //subjectKeyIdentifier
 	"2.5.29.35":          "Aki",              //authorityKeyIdentifier
 	"2.5.29.15":          "KeyUsage",         //keyUsage
-	"2.5.29.19":          "basicConstraints", //basicConstraints
+	"2.5.29.19":          "BasicConstraints", //basicConstraints
 	"2.5.29.31":          "Crldp",            //CRL Distribution Points
-	"1.3.6.1.5.5.7.1.1":  "Aia",              // Authority Information Access
+	"1.3.6.1.5.5.7.1.1":  "Aia",              //Authority Information Access
 	"1.3.6.1.5.5.7.1.11": "Sia",              //Subject Information Access
 	"2.5.29.32":          "CertPolicy",       //Certificate Policies
 	"1.3.6.1.5.5.7.1.7":  "CerIpAddress",     //sbgp-ipAddrBlock
-	"1.3.6.1.5.5.7.1.8":  "Asn",              //  sbgp-autonomousSysNum
+	"1.3.6.1.5.5.7.1.8":  "Asn",              //sbgp-autonomousSysNum
 }
 
 // extensionModel

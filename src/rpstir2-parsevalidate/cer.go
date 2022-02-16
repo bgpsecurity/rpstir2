@@ -711,25 +711,87 @@ func validateCerlModel(cerModel *model.CerModel, stateModel *model.StateModel) (
 
 	//  myssl.c P3901  rescert_extensions_chk
 	for _, ext := range cerModel.ExtensionModels {
-		/*
-			id_basicConstraints,
-			id_subjectKeyIdentifier,
-			id_authKeyId,
-			id_keyUsage,
-			id_extKeyUsage,         // allowed in future BGPSEC EE certs
-			id_cRLDistributionPoints,
-			id_pkix_authorityInfoAccess,
-			id_pe_subjectInfoAccess,
-			id_certificatePolicies,
-			id_pe_ipAddrBlock,
-			id_pe_autonomousSysNum,
+		belogs.Debug("validateCerlModel():ext:", cerModel.FilePath, cerModel.FileName, jsonutil.MarshalJson(ext))
+
+		/*https://datatracker.ietf.org/doc/html/rfc6487#section-4.8
+		{"oid":"2.5.29.32","critical":true,"name":"CertPolicy"} //Certificate Policies:MUST be present /  critical
+		{"oid":"2.5.29.19","critical":true,"name":"BasicConstraints"}  //Basic Constraints:  MUST be present/  critical
+		{"oid":"2.5.29.15","critical":true,"name":"KeyUsage"} //Key Usage: MUST be present/  critical
+		{"oid":"1.3.6.1.5.5.7.1.8","critical":true,"name":"Asn"}  //AS Resources: MUST be present / critical
+		{"oid":"1.3.6.1.5.5.7.1.7","critical":true,"name":"CerIpAddress"} //IP Resources: MUST be present/critical
+
+		{"oid":"2.5.29.14","critical":false,"name":"Ski"} //Subject Key Identifier: MUST appear / non-critical
+		{"oid":"1.3.6.1.5.5.7.1.11","critical":false,"name":"Sia"} //Subject Information Access: MUST be present / non-critical
+
+		{"oid":"1.3.6.1.5.5.7.1.1","critical":false,"name":"Aia"} //Authority Information Access:  MUST be present or self-signed/ non-critical
+		{"oid":"2.5.29.35","critical":false,"name":"Aki"} //Authority Key Identifier:MUST appear or self-signed/ non-critical
+		{"oid":"2.5.29.31","critical":false,"name":"Crldp"} //CRL Distribution Points: MUST be present or self-signed  / non-critical
+		// Extended Key Usage: MUST NOT appear no-critical
 		*/
+		// shoud not present in cer, check by cermodel.CerExtensionOids
 		if len(ext.Name) == 0 {
 			stateMsg := model.StateMsg{Stage: "parsevalidate",
-				Fail:   "One name of the Extensions is empty",
+				Fail:   "name is empty, so this extension should not be present",
 				Detail: ext.Oid}
 			stateModel.AddError(&stateMsg)
+			continue
 		}
+
+		// check Critical value
+		switch ext.Name {
+		case "CertPolicy":
+			fallthrough
+		case "BasicConstraints":
+			fallthrough
+		case "KeyUsage":
+			fallthrough
+		case "Asn":
+			fallthrough
+		case "CerIpAddress":
+			if !ext.Critical {
+				belogs.Error("validateCerlModel():ext should Critical, but now is non-Critical:", cerModel.FilePath, cerModel.FileName,
+					jsonutil.MarshalJson(ext))
+				stateMsg := model.StateMsg{Stage: "parsevalidate",
+					Fail:   "this Extension must be critical",
+					Detail: ext.Name}
+				stateModel.AddError(&stateMsg)
+			}
+
+		case "Ski":
+			fallthrough
+		case "Sia":
+			if ext.Critical {
+				belogs.Error("validateCerlModel():ext should not Critical, but now is Critical:", cerModel.FilePath, cerModel.FileName,
+					jsonutil.MarshalJson(ext))
+				stateMsg := model.StateMsg{Stage: "parsevalidate",
+					Fail:   "this Extension must be none-critical",
+					Detail: ext.Name}
+				stateModel.AddError(&stateMsg)
+			}
+
+		case "Aia":
+			fallthrough
+		case "Aki":
+			fallthrough
+		case "Crldp":
+			if !cerModel.IsRoot && ext.Critical {
+				belogs.Error("validateCerlModel():cer is not root, and ext should not Critical, but now is Critical:", cerModel.FilePath, cerModel.FileName,
+					jsonutil.MarshalJson(ext), " is root:", cerModel.IsRoot)
+				stateMsg := model.StateMsg{Stage: "parsevalidate",
+					Fail:   "this Extension must be none-critical",
+					Detail: jsonutil.MarshalJson(ext)}
+				stateModel.AddError(&stateMsg)
+			}
+
+		default:
+			belogs.Error("validateCerlModel():in default,ext should not present:", cerModel.FilePath, cerModel.FileName,
+				jsonutil.MarshalJson(ext), " is root:", cerModel.IsRoot)
+			stateMsg := model.StateMsg{Stage: "parsevalidate",
+				Fail:   "name is not found, so this extension should not be present",
+				Detail: jsonutil.MarshalJson(ext)}
+			stateModel.AddError(&stateMsg)
+		}
+
 	}
 	belogs.Debug("validateCerlModel():filePath, fileName, stateModel ", cerModel.FilePath, cerModel.FileName,
 		jsonutil.MarshalJson(stateModel))

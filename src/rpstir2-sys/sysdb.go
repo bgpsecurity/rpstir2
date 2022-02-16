@@ -601,8 +601,6 @@ var resetAllOtherSqls []string = []string{
 	`truncate  table  lab_rpki_rtr_full_log`,
 	`truncate  table  lab_rpki_rtr_incremental`,
 	`truncate  table  lab_rpki_slurm`,
-	`truncate  table  lab_rpki_analyse_roa_history`,
-	`truncate  table  lab_rpki_analyse_roa_compete`,
 }
 
 var optimizeSqls []string = []string{
