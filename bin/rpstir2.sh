@@ -100,7 +100,6 @@ case $1 in
     buildSrc
     ;;
 
-
   sync)
     echo "start rpstir2 sync"
     echo ${serverHost}":"${serverHttpsPort}

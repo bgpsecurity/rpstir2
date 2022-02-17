@@ -37,5 +37,6 @@ require (
 	rpstir2-sync-entire v0.0.0-00010101000000-000000000000
 	rpstir2-sync-tal v0.0.0-00010101000000-000000000000
 	rpstir2-sys v0.0.0-00010101000000-000000000000
+	xorm.io/xorm v1.2.5 // indirect
 
 )
