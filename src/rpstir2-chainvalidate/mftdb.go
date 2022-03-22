@@ -13,7 +13,7 @@ import (
 	"xorm.io/xorm"
 )
 
-func GetChainMftSqls() (chainCertSqls []ChainCertSql, err error) {
+func getChainMftSqlsDb() (chainCertSqls []ChainCertSql, err error) {
 	start := time.Now()
 	chainCertSqls = make([]ChainCertSql, 0, 50000)
 	// if add "order by ***", the sort_mem may not enough
@@ -23,10 +23,10 @@ func GetChainMftSqls() (chainCertSqls []ChainCertSql, err error) {
 			group by c.id, c.jsonAll, c.state, v.fileName, v.revocationTime `
 	err = xormdb.XormEngine.SQL(sql).Find(&chainCertSqls)
 	if err != nil {
-		belogs.Error("GetChainMftSqls(): lab_rpki_mft id fail:", err)
+		belogs.Error("getChainMftSqlsDb(): lab_rpki_mft id fail:", err)
 		return nil, err
 	}
-	belogs.Info("GetChainMftSqls(): len(chainCertSqls):", len(chainCertSqls), "  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Info("getChainMftSqlsDb(): len(chainCertSqls):", len(chainCertSqls), "  time(s):", time.Now().Sub(start).Seconds())
 	return chainCertSqls, nil
 }
 
@@ -50,7 +50,7 @@ func GetChainFileHashs(mftId uint64) (chainFileHashs []ChainFileHash, err error)
 	return chainFileHashs, nil
 }
 
-func UpdateMfts(chains *Chains, wg *sync.WaitGroup) {
+func updateMftsDb(chains *Chains, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	start := time.Now()
@@ -63,28 +63,28 @@ func UpdateMfts(chains *Chains, wg *sync.WaitGroup) {
 	mftIds := chains.MftIds
 	for _, mftId := range mftIds {
 
-		err = updateMft(session, chains, mftId)
+		err = updateMftDb(session, chains, mftId)
 		if err != nil {
-			belogs.Error("UpdateMfts(): updateMft fail, mftId:", mftId, err)
-			xormdb.RollbackAndLogError(session, "UpdateMfts(): updateMft fail: "+convert.ToString(mftId), err)
+			belogs.Error("updateMftsDb(): updateMftDb fail, mftId:", mftId, err)
+			xormdb.RollbackAndLogError(session, "updateMftsDb(): updateMftDb fail: "+convert.ToString(mftId), err)
 			return
 		}
 	}
 
 	err = xormdb.CommitSession(session)
 	if err != nil {
-		belogs.Error("UpdateMfts(): CommitSession fail :", err)
+		belogs.Error("updateMftsDb(): CommitSession fail :", err)
 		return
 	}
-	belogs.Debug("UpdateMfts(): len(mftIds):", len(mftIds), "  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Debug("updateMftsDb(): len(mftIds):", len(mftIds), "  time(s):", time.Now().Sub(start).Seconds())
 
 }
 
-func updateMft(session *xorm.Session, chains *Chains, mftId uint64) (err error) {
+func updateMftDb(session *xorm.Session, chains *Chains, mftId uint64) (err error) {
 	start := time.Now()
 	chainMft, err := chains.GetMftById(mftId)
 	if err != nil {
-		belogs.Error("updateMft(): GetMft fail :", mftId, err)
+		belogs.Error("updateMftDb(): GetMft fail :", mftId, err)
 		return err
 	}
 
@@ -94,13 +94,13 @@ func updateMft(session *xorm.Session, chains *Chains, mftId uint64) (err error) 
 	chainCerts := jsonutil.MarshalJson(*chainDbMftModel)
 	state := jsonutil.MarshalJson(chainMft.StateModel)
 	origin := jsonutil.MarshalJson(originModel)
-	belogs.Debug("updateMft():mftId:", mftId, "   chainCerts:", chainCerts, "  origin:", origin, " state:", chainCerts, state)
+	belogs.Debug("updateMftDb():mftId:", mftId, "   chainCerts:", chainCerts, "  origin:", origin, " state:", chainCerts, state)
 	sqlStr := `UPDATE lab_rpki_mft set chainCerts=?, state=?, origin=?   where id=? `
 	_, err = session.Exec(sqlStr, chainCerts, state, origin, mftId)
 	if err != nil {
-		belogs.Error("updateMft(): UPDATE lab_rpki_mft fail :", mftId, err)
+		belogs.Error("updateMftDb(): UPDATE lab_rpki_mft fail :", mftId, err)
 		return err
 	}
-	belogs.Debug("updateMft():mftId:", mftId, "  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Debug("updateMftDb():mftId:", mftId, "  time(s):", time.Now().Sub(start).Seconds())
 	return nil
 }

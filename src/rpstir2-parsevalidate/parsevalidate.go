@@ -12,6 +12,7 @@ import (
 	"github.com/cpusoft/goutil/conf"
 	"github.com/cpusoft/goutil/jsonutil"
 	"github.com/cpusoft/goutil/osutil"
+	"golang.org/x/sync/errgroup"
 )
 
 // ParseValidateStart: start
@@ -20,37 +21,45 @@ func parseValidateStart() (nextStep string, err error) {
 	start := time.Now()
 	belogs.Info("parseValidateStart(): start")
 	// save starttime to lab_rpki_sync_log
-	labRpkiSyncLogId, err := UpdateRsyncLogParseValidateStart("parsevalidating")
+	labRpkiSyncLogId, err := updateRsyncLogParseValidateStartDb("parsevalidating")
 	if err != nil {
-		belogs.Error("parseValidateStart():InsertRsyncLogRsyncStat fail:", err)
+		belogs.Error("parseValidateStart():updateRsyncLogParseValidateStartDb fail:", err)
 		return "", err
 	}
-	belogs.Debug("parseValidateStart(): labRpkiSyncLogId:", labRpkiSyncLogId)
+	belogs.Debug("parseValidateStart():updateRsyncLogParseValidateStartDb, labRpkiSyncLogId:", labRpkiSyncLogId)
 
 	// get all need rsyncLogFile
-	syncLogFileModels, err := GetSyncLogFileModelsBySyncLogId(labRpkiSyncLogId)
+	syncLogFileModels, err := getSyncLogFileModelsBySyncLogIdDb(labRpkiSyncLogId)
 	if err != nil {
-		belogs.Error("parseValidateStart():GetSyncLogFileModelsBySyncLogId fail:", labRpkiSyncLogId, err)
+		belogs.Error("parseValidateStart():getSyncLogFileModelsBySyncLogIdDb fail:", labRpkiSyncLogId, err)
 		return "", err
 	}
-	belogs.Debug("parseValidateStart(): GetSyncLogFileModelsBySyncLogId, syncLogFileModels.SyncLogId:", labRpkiSyncLogId, syncLogFileModels.SyncLogId)
+	belogs.Debug("parseValidateStart(): getSyncLogFileModelsBySyncLogIdDb, syncLogFileModels.SyncLogId:", labRpkiSyncLogId, syncLogFileModels.SyncLogId)
 
 	//process "del" and "update" rsyncLogFile
-	err = DelCertByDelAndUpdate(syncLogFileModels)
+	err = delCertByDelAndUpdate(syncLogFileModels)
 	if err != nil {
-		belogs.Error("parseValidateStart():DelCertByDelAndUpdate fail:", err)
+		belogs.Error("parseValidateStart():delCertByDelAndUpdate fail:", err)
 		return "", err
 	}
-	belogs.Debug("parseValidateStart(): after DelCertByDelAndUpdate, syncLogFileModels.SyncLogId:", syncLogFileModels.SyncLogId)
+	belogs.Debug("parseValidateStart(): after delCertByDelAndUpdate, syncLogFileModels.SyncLogId:", syncLogFileModels.SyncLogId)
 
 	// process "add" and "update" rsyncLogFile
-	err = InsertCertByAddAndUpdate(syncLogFileModels)
+	err = insertCertByAddAndUpdate(syncLogFileModels)
 	if err != nil {
 		belogs.Error("parseValidateStart():InsertCertByInsertAndUpdate fail:", err)
 		return "", err
 	}
+
+	// will check all certs, not only this rsyncLogFiles : expire
+	err = updateCertByCheckAll()
+	if err != nil {
+		belogs.Error("parseValidateStart():updateCertByCheckAll fail:", err)
+		return "", err
+	}
+
 	// save to db
-	err = UpdateRsyncLogParseValidateStateEnd(labRpkiSyncLogId, "parsevalidated", make([]string, 0))
+	err = updateRsyncLogParseValidateStateEndDb(labRpkiSyncLogId, "parsevalidated", make([]string, 0))
 	if err != nil {
 		belogs.Debug("parseValidateStart(): UpdateRsyncLogAndCert fail: ", err)
 		return "", err
@@ -62,53 +71,61 @@ func parseValidateStart() (nextStep string, err error) {
 
 // get del;
 // get update, because "update" should del first
-func DelCertByDelAndUpdate(syncLogFileModels *SyncLogFileModels) (err error) {
+func delCertByDelAndUpdate(syncLogFileModels *SyncLogFileModels) (err error) {
 	start := time.Now()
 
-	belogs.Debug("DelCertByDelAndUpdate(): syncLogFileModels.SyncLogId.:", syncLogFileModels.SyncLogId)
+	belogs.Debug("delCertByDelAndUpdate(): syncLogFileModels.SyncLogId.:", syncLogFileModels.SyncLogId)
 
 	var wg sync.WaitGroup
 
 	// get "del" and "update" cer synclog files to del
-	belogs.Debug("DelCertByDelAndUpdate(): len(syncLogFileModels.DelCerSyncLogFileModels):", len(syncLogFileModels.DelCerSyncLogFileModels),
+	belogs.Debug("delCertByDelAndUpdate(): len(syncLogFileModels.DelCerSyncLogFileModels):", len(syncLogFileModels.DelCerSyncLogFileModels),
 		"       len(syncLogFileModels.UpdateCerSyncLogFileModels):", len(syncLogFileModels.UpdateCerSyncLogFileModels))
 	if len(syncLogFileModels.DelCerSyncLogFileModels) > 0 || len(syncLogFileModels.UpdateCerSyncLogFileModels) > 0 {
 		wg.Add(1)
-		go DelCers(syncLogFileModels.DelCerSyncLogFileModels, syncLogFileModels.UpdateCerSyncLogFileModels, &wg)
+		go delCersDb(syncLogFileModels.DelCerSyncLogFileModels, syncLogFileModels.UpdateCerSyncLogFileModels, &wg)
 	}
 
 	// get "del" and "update" crl synclog files to del
-	belogs.Debug("DelCertByDelAndUpdate(): len(syncLogFileModels.DelCrlSyncLogFileModels):", len(syncLogFileModels.DelCrlSyncLogFileModels),
+	belogs.Debug("delCertByDelAndUpdate(): len(syncLogFileModels.DelCrlSyncLogFileModels):", len(syncLogFileModels.DelCrlSyncLogFileModels),
 		"       len(syncLogFileModels.UpdateCrlSyncLogFileModels):", len(syncLogFileModels.UpdateCrlSyncLogFileModels))
 	if len(syncLogFileModels.DelCrlSyncLogFileModels) > 0 || len(syncLogFileModels.UpdateCrlSyncLogFileModels) > 0 {
 		wg.Add(1)
-		go DelCrls(syncLogFileModels.DelCrlSyncLogFileModels, syncLogFileModels.UpdateCrlSyncLogFileModels, &wg)
+		go delCrlsDb(syncLogFileModels.DelCrlSyncLogFileModels, syncLogFileModels.UpdateCrlSyncLogFileModels, &wg)
 	}
 
 	// get "del" and "update" mft synclog files to del
-	belogs.Debug("DelCertByDelAndUpdate(): len(syncLogFileModels.DelMftSyncLogFileModels):", len(syncLogFileModels.DelMftSyncLogFileModels),
+	belogs.Debug("delCertByDelAndUpdate(): len(syncLogFileModels.DelMftSyncLogFileModels):", len(syncLogFileModels.DelMftSyncLogFileModels),
 		"       len(syncLogFileModels.UpdateMftSyncLogFileModels):", len(syncLogFileModels.UpdateMftSyncLogFileModels))
 	if len(syncLogFileModels.DelMftSyncLogFileModels) > 0 || len(syncLogFileModels.UpdateMftSyncLogFileModels) > 0 {
 		wg.Add(1)
-		go DelMfts(syncLogFileModels.DelMftSyncLogFileModels, syncLogFileModels.UpdateMftSyncLogFileModels, &wg)
+		go delMftsDb(syncLogFileModels.DelMftSyncLogFileModels, syncLogFileModels.UpdateMftSyncLogFileModels, &wg)
 	}
 
 	// get "del" and "update" roa synclog files to del
-	belogs.Debug("DelCertByDelAndUpdate(): len(syncLogFileModels.DelRoaSyncLogFileModels):", len(syncLogFileModels.DelRoaSyncLogFileModels),
+	belogs.Debug("delCertByDelAndUpdate(): len(syncLogFileModels.DelRoaSyncLogFileModels):", len(syncLogFileModels.DelRoaSyncLogFileModels),
 		"       len(syncLogFileModels.UpdateRoaSyncLogFileModels):", len(syncLogFileModels.UpdateRoaSyncLogFileModels))
 	if len(syncLogFileModels.DelRoaSyncLogFileModels) > 0 || len(syncLogFileModels.UpdateRoaSyncLogFileModels) > 0 {
 		wg.Add(1)
-		go DelRoas(syncLogFileModels.DelRoaSyncLogFileModels, syncLogFileModels.UpdateRoaSyncLogFileModels, &wg)
+		go delRoasDb(syncLogFileModels.DelRoaSyncLogFileModels, syncLogFileModels.UpdateRoaSyncLogFileModels, &wg)
+	}
+
+	// get "del" and "update" asa synclog files to del
+	belogs.Debug("delCertByDelAndUpdate(): len(syncLogFileModels.DelAsaSyncLogFileModels):", len(syncLogFileModels.DelAsaSyncLogFileModels),
+		"       len(syncLogFileModels.UpdateAsaSyncLogFileModels):", len(syncLogFileModels.UpdateAsaSyncLogFileModels))
+	if len(syncLogFileModels.DelAsaSyncLogFileModels) > 0 || len(syncLogFileModels.UpdateAsaSyncLogFileModels) > 0 {
+		wg.Add(1)
+		go delAsasDb(syncLogFileModels.DelAsaSyncLogFileModels, syncLogFileModels.UpdateAsaSyncLogFileModels, &wg)
 	}
 
 	wg.Wait()
-	belogs.Info("DelCertByDelAndUpdate(): end,  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Info("delCertByDelAndUpdate(): end,  time(s):", time.Now().Sub(start).Seconds())
 	return nil
 
 }
 
-// InsertCertByAddAndUpdate :  use update, because "update" should add
-func InsertCertByAddAndUpdate(syncLogFileModels *SyncLogFileModels) (err error) {
+// insertCertByAddAndUpdate :  use update, because "update" should add
+func insertCertByAddAndUpdate(syncLogFileModels *SyncLogFileModels) (err error) {
 
 	start := time.Now()
 	belogs.Debug("InsertCertByInsertAndUpdate(): syncLogFileModels.SyncLogId:", syncLogFileModels.SyncLogId)
@@ -143,6 +160,13 @@ func InsertCertByAddAndUpdate(syncLogFileModels *SyncLogFileModels) (err error) 
 		go parseValidateAndAddCerts(syncLogFileModels.UpdateRoaSyncLogFileModels, "roa", &wg)
 	}
 
+	// add/update asa
+	belogs.Debug("InsertCertByInsertAndUpdate():len(syncLogFileModels.UpdateAsaSyncLogFileModels):", len(syncLogFileModels.UpdateAsaSyncLogFileModels))
+	if len(syncLogFileModels.UpdateAsaSyncLogFileModels) > 0 {
+		wg.Add(1)
+		go parseValidateAndAddCerts(syncLogFileModels.UpdateAsaSyncLogFileModels, "asa", &wg)
+	}
+
 	wg.Wait()
 	belogs.Info("InsertCertByInsertAndUpdate(): end,  time(s):", time.Now().Sub(start).Seconds())
 	return nil
@@ -171,13 +195,15 @@ func parseValidateAndAddCerts(syncLogFileModels []SyncLogFileModel, fileType str
 	// add to db
 	switch fileType {
 	case "cer":
-		AddCers(syncLogFileModels)
+		addCersDb(syncLogFileModels)
 	case "crl":
-		AddCrls(syncLogFileModels)
+		addCrlsDb(syncLogFileModels)
 	case "mft":
-		AddMfts(syncLogFileModels)
+		addMftsDb(syncLogFileModels)
 	case "roa":
-		AddRoas(syncLogFileModels)
+		addRoasDb(syncLogFileModels)
+	case "asa":
+		addAsasDb(syncLogFileModels)
 	}
 	belogs.Info("parseValidateAndAddCerts():end add***(), len(syncLogFileModels):", len(syncLogFileModels), "  fileType:", fileType, "  time(s):", time.Now().Sub(start).Seconds())
 }
@@ -352,4 +378,58 @@ func parseFileSimple(certFile string) (parseCerSimple model.ParseCerSimple, err 
 		return ParseCerSimpleModel(certFile)
 	}
 	return parseCerSimple, errors.New("unknown file type")
+}
+
+func updateCertByCheckAll() (err error) {
+
+	start := time.Now()
+	now := start
+	belogs.Info("updateCertByCheckAll():start:")
+
+	var g errgroup.Group
+	g.Go(func() error {
+		er := updateCerByCheckAll(now)
+		if er != nil {
+			belogs.Error("updateCertByCheckAll(): updateCerByCheckAll:  err:", er)
+		}
+		return er
+	})
+
+	g.Go(func() error {
+		er := updateCrlByCheckAll(start)
+		if er != nil {
+			belogs.Error("updateCertByCheckAll(): updateCrlByCheckAll:  err:", er)
+		}
+		return er
+	})
+
+	g.Go(func() error {
+		er := updateMftByCheckAll(start)
+		if er != nil {
+			belogs.Error("updateCertByCheckAll(): updateMftByCheckAll:  err:", er)
+		}
+		return er
+	})
+
+	g.Go(func() error {
+		er := updateRoaByCheckAll(start)
+		if er != nil {
+			belogs.Error("updateCertByCheckAll(): updateRoaByCheckAll:  err:", er)
+		}
+		return er
+	})
+	g.Go(func() error {
+		er := updateAsaByCheckAll(start)
+		if er != nil {
+			belogs.Error("updateCertByCheckAll(): updateAsaByCheckAll:  err:", er)
+		}
+		return er
+	})
+
+	if err := g.Wait(); err != nil {
+		belogs.Error("updateCertByCheckAll(): fail, err:", err, "   time(s):", time.Now().Sub(start))
+		return err
+	}
+	belogs.Info("updateCertByCheckAll(): ok,   time(s):", time.Now().Sub(start))
+	return nil
 }

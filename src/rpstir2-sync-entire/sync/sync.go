@@ -114,16 +114,16 @@ func getUrlsBySyncStyle(syncStyle model.SyncStyle, talModels []model.TalModel) (
 
 		for j := range talModels[i].TalSyncUrls {
 			if syncStyle.SyncStyle == "sync" {
-				if talModels[i].TalSyncUrls[j].SupportRrdp {
+				if talModels[i].TalSyncUrls[j].SupportRrdp && len(talModels[i].TalSyncUrls[j].RrdpUrl) > 0 {
 					rrdpUrls = append(rrdpUrls, talModels[i].TalSyncUrls[j].RrdpUrl)
-				} else if talModels[i].TalSyncUrls[j].SupportRsync {
+				} else if talModels[i].TalSyncUrls[j].SupportRsync && len(talModels[i].TalSyncUrls[j].RsyncUrl) > 0 {
 					rsyncUrls = append(rsyncUrls, talModels[i].TalSyncUrls[j].RsyncUrl)
 				}
 			} else if syncStyle.SyncStyle == "rrdp" {
-				if talModels[i].TalSyncUrls[j].SupportRrdp {
+				if talModels[i].TalSyncUrls[j].SupportRrdp && len(talModels[i].TalSyncUrls[j].RrdpUrl) > 0 {
 					rrdpUrls = append(rrdpUrls, talModels[i].TalSyncUrls[j].RrdpUrl)
 				}
-			} else if syncStyle.SyncStyle == "rsync" {
+			} else if syncStyle.SyncStyle == "rsync" && len(talModels[i].TalSyncUrls[j].RsyncUrl) > 0 {
 				if talModels[i].TalSyncUrls[j].SupportRsync {
 					rsyncUrls = append(rsyncUrls, talModels[i].TalSyncUrls[j].RsyncUrl)
 				}
@@ -145,30 +145,34 @@ func checkNeedFullSync(thisRrdpUrls, thisRsyncUrls []string) (needFullSync bool,
 	needFullSync = false
 	rrdpDestPath := conf.VariableString("rrdp::destPath") + osutil.GetPathSeparator()
 	rsyncDestPath := conf.VariableString("rsync::destPath") + osutil.GetPathSeparator()
-	belogs.Debug("checkNeedFullSync(): rrdpDestPath,  rsyncDestPath:", rrdpDestPath, rsyncDestPath,
+	belogs.Debug("checkNeedFullSync(): rrdpDestPath:", rrdpDestPath, "   rsyncDestPath:", rsyncDestPath,
 		"  thisRrdpUrls:", thisRrdpUrls, "     thisRsyncUrls:", thisRsyncUrls)
 
 	// if rrdp url exists in sync, or sync url exists in rrdp, it will needFullSync
 	for _, thisRrdpUrl := range thisRrdpUrls {
 		testRrdpUrlInRsyncDestPath, err := urlutil.JoinPrefixPathAndUrlHost(rsyncDestPath, thisRrdpUrl)
-		belogs.Debug("checkNeedFullSync(): test rrdp url in sync:", testRrdpUrlInRsyncDestPath)
+		belogs.Debug("checkNeedFullSync(): test rrdp url in sync,  rsyncDestPath:", rsyncDestPath,
+			"   thisRrdpUrl:", thisRrdpUrl, "   testRrdpUrlInRsyncDestPath:", testRrdpUrlInRsyncDestPath, err)
 		if err != nil {
-			belogs.Error("checkNeedFullSync():test rrdp url exists in rsync, JoinPrefixPathAndUrlHost err,  rsyncDestPath, thisRrdpUrl:", rsyncDestPath, thisRrdpUrl)
+			belogs.Error("checkNeedFullSync():test rrdp url exists in rsync, JoinPrefixPathAndUrlHost err, rsyncDestPath:", rsyncDestPath,
+				"   thisRrdpUrl:", thisRrdpUrl, "   testRrdpUrlInRsyncDestPath:", testRrdpUrlInRsyncDestPath, err)
 			return true, err
 		}
 		exists, err := osutil.IsExists(testRrdpUrlInRsyncDestPath)
 		if err != nil {
-			belogs.Info("checkNeedFullSync(): test rrdp url exists in rsync, IsExists err, testRrdpUrlInRsyncDestPath:", testRrdpUrlInRsyncDestPath, err)
+			belogs.Error("checkNeedFullSync(): rrdp url exists in rsync, IsExists err, testRrdpUrlInRsyncDestPath:", testRrdpUrlInRsyncDestPath, err)
 			return true, err
 		}
 		if exists {
-			belogs.Debug("checkNeedFullSync(): test rrdp url exists in rsync, need full sync:", testRrdpUrlInRsyncDestPath)
+			belogs.Info("checkNeedFullSync(): rrdp url exists in rsync, need full sync,rsyncDestPath:", rsyncDestPath,
+				"   thisRrdpUrl:", thisRrdpUrl, " testRrdpUrlInRsyncDestPath:", testRrdpUrlInRsyncDestPath)
 			return true, nil
 		}
 	}
 	for _, thisRsyncUrl := range thisRsyncUrls {
 		testRsyncUrlInRrdpDestPath, err := urlutil.JoinPrefixPathAndUrlHost(rrdpDestPath, thisRsyncUrl)
-		belogs.Debug("checkNeedFullSync(): test rsync url in rrdp:", testRsyncUrlInRrdpDestPath)
+		belogs.Debug("checkNeedFullSync(): test rsync url in rrdp, rrdpDestPath:", rrdpDestPath, "   thisRsyncUrl:", thisRsyncUrl,
+			" testRsyncUrlInRrdpDestPath:", testRsyncUrlInRrdpDestPath, err)
 		if err != nil {
 			belogs.Error("checkNeedFullSync(): test rsync url exists in rrdp, JoinPrefixPathAndUrlHost err,  rrdpDestPath, thisRsyncUrl:", rrdpDestPath, thisRsyncUrl)
 			return true, err
@@ -179,7 +183,8 @@ func checkNeedFullSync(thisRrdpUrls, thisRsyncUrls []string) (needFullSync bool,
 			return true, err
 		}
 		if exists {
-			belogs.Info("checkNeedFullSync(): test rsync url exits in rrdp ,need full sync:", testRsyncUrlInRrdpDestPath)
+			belogs.Info("checkNeedFullSync(): test rsync url exits in rrdp ,need full sync, rrdpDestPath:", rrdpDestPath, "   thisRsyncUrl:", thisRsyncUrl,
+				"  testRsyncUrlInRrdpDestPath:", testRsyncUrlInRrdpDestPath)
 			return true, nil
 		}
 	}

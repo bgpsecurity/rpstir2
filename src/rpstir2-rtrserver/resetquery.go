@@ -40,7 +40,7 @@ func ParseToResetQuery(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel Rt
 	if length != 8 {
 		belogs.Error("ParseToResetQuery():PDU_TYPE_RESET_QUERY,  length must be 8 ", buf, length)
 		rtrError := NewRtrError(
-			errors.New("pduType is SERIAL QUERY, length must be 8"),
+			errors.New("pduType is RESET QUERY, length must be 8"),
 			true, protocolVersion, PDU_TYPE_ERROR_CODE_CORRUPT_DATA,
 			buf, "Fail to get length")
 		return rtrPduModel, rtrError
@@ -52,63 +52,117 @@ func ParseToResetQuery(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel Rt
 }
 
 func ProcessResetQuery(rtrPduModel RtrPduModel) (resetResponses []RtrPduModel, err error) {
-	rtrFulls, sessionId, serialNumber, err := GetRtrFullAndSessionIdAndSerialNumber()
+	rtrFulls, rtrAsaFulls, sessionId, serialNumber, err := getRtrFullAndSessionIdAndSerialNumberDb()
 	if err != nil {
 		belogs.Error("ProcessResetQuery(): GetRtrFullAndSerialNumAndSessionId fail: ", err)
 		return resetResponses, err
 	}
-	belogs.Debug("ProcessResetQuery(): rtrFulls, sessionId, serialNumber: ", len(rtrFulls), sessionId, serialNumber)
-	rtrPduModels, err := assembleResetResponses(rtrFulls, rtrPduModel.GetProtocolVersion(), sessionId, serialNumber)
+	belogs.Debug("ProcessResetQuery(): len(rtrFulls):", len(rtrFulls), " sessionId:", sessionId,
+		" serialNumber: ", serialNumber)
+	rtrPduModels, err := assembleResetResponses(rtrFulls, rtrAsaFulls, rtrPduModel.GetProtocolVersion(), sessionId, serialNumber)
 	if err != nil {
-		belogs.Error("ProcessResetQuery(): GetRtrFullAndSerialNumAndSessionId fail: ", err)
+		belogs.Error("ProcessResetQuery(): assembleResetResponses fail: ", err)
 		return resetResponses, err
 	}
 	return rtrPduModels, nil
 }
 
 // when len(rtrFull)==0, it is an error with no_data_available
-func assembleResetResponses(rtrFulls []model.LabRpkiRtrFull, protocolVersion uint8, sessionId uint16,
-	serialNumber uint32) (rtrPduModels []RtrPduModel, err error) {
+func assembleResetResponses(rtrFulls []model.LabRpkiRtrFull, rtrAsaFulls []model.LabRpkiRtrAsaFull,
+	protocolVersion uint8, sessionId uint16, serialNumber uint32) (rtrPduModels []RtrPduModel, err error) {
+	belogs.Info("assembleResetResponses(): len(rtrFulls):", len(rtrFulls), " len(rtrAsaFulls):", len(rtrAsaFulls),
+		"   protocolVersion:", protocolVersion, "   sessionId:", sessionId, "   serialNumber:", serialNumber)
 	rtrPduModels = make([]RtrPduModel, 0)
+	//rtr full from roa rtr
+	if protocolVersion == PDU_PROTOCOL_VERSION_0 || protocolVersion == PDU_PROTOCOL_VERSION_1 {
+		if len(rtrFulls) > 0 {
+			belogs.Debug("assembleResetResponses(): protocolVersion=0 or 1, len(rtrFulls)>0, len(rtrFulls): ", len(rtrFulls),
+				"  protocolVersion:", protocolVersion, "   sessionId:", sessionId, "   serialNumber:", serialNumber)
 
-	if len(rtrFulls) > 0 {
-		belogs.Debug("assembleResetResponses(): will send will send Cache Response of all rtr,",
-			",  protocolVersion:", protocolVersion, ",   sessionId:", sessionId, ",  serialNumber:", serialNumber, ", len(rtr): ", len(rtrFulls))
+			// start response
+			cacheResponseModel := NewRtrCacheResponseModel(protocolVersion, sessionId)
+			rtrPduModels = append(rtrPduModels, cacheResponseModel)
+			belogs.Debug("assembleResetResponses(): protocolVersion=0 or 1, cacheResponseModel : ", jsonutil.MarshalJson(cacheResponseModel))
 
-		cacheResponseModel := NewRtrCacheResponseModel(protocolVersion, sessionId)
-		belogs.Debug("assembleResetResponses(): cacheResponseModel : ", jsonutil.MarshalJson(cacheResponseModel))
-
-		rtrPduModels = append(rtrPduModels, cacheResponseModel)
-		for i, _ := range rtrFulls {
-			rtrPduModel, err := convertRtrFullToRtrPduModel(&rtrFulls[i], protocolVersion)
+			// rtr full to response
+			rtrFullPduModels, err := convertRtrFullsToRtrPduModels(rtrFulls, protocolVersion)
 			if err != nil {
-				belogs.Error("assembleResetResponses(): convertRtrFullToRtrPduModel fail: ", err)
-				return rtrPduModels, err
+				belogs.Error("assembleResetResponses(): protocolVersion=0 or 1, convertRtrIncrementalsToRtrPduModels fail: ", err)
+				return nil, err
 			}
-			//belogs.Debug("assembleResetResponses(): rtrPduModel : ", jsonutil.MarshalJson(rtrPduModel))
+			rtrPduModels = append(rtrPduModels, rtrFullPduModels...)
+			belogs.Debug("assembleResetResponses(): protocolVersion=0 or 1, len(rtrFullPduModels) : ", len(rtrFullPduModels))
 
-			rtrPduModels = append(rtrPduModels, rtrPduModel)
+			// end response
+			endOfDataModel := assembleEndOfDataResponse(protocolVersion, sessionId, serialNumber)
+			rtrPduModels = append(rtrPduModels, endOfDataModel)
+			belogs.Debug("assembleResetResponses(): protocolVersion=0 or 1, endOfDataModel : ", jsonutil.MarshalJson(endOfDataModel))
+
+			belogs.Info("assembleResetResponses(): protocolVersion=0 or 1, will send will send Cache Response of all rtr,",
+				",  receive protocolVersion:", protocolVersion, ",   sessionId:", sessionId, ",  serialNumber:", serialNumber,
+				",  len(rtrFulls): ", len(rtrFulls), ",  len(rtrPduModels):", len(rtrPduModels), "  rtrPduModels:", jsonutil.MarshalJson(rtrPduModels))
+			return rtrPduModels, nil
+
+		} else {
+			errorReportModel := NewRtrErrorReportModel(protocolVersion, PDU_TYPE_ERROR_CODE_NO_DATA_AVAILABLE, nil, nil)
+			rtrPduModels = append(rtrPduModels, errorReportModel)
+			belogs.Info("assembleResetResponses(): protocolVersion=0 or 1,there is no rtr this time,  will send errorReport with not_data_available, ",
+				",  receive protocolVersion:", protocolVersion, ",   sessionId:", sessionId, ",  serialNumber:", serialNumber, ",  rtrPduModels:", jsonutil.MarshalJson(rtrPduModels))
+			return rtrPduModels, nil
 		}
+	} else if protocolVersion == PDU_PROTOCOL_VERSION_2 {
+		//rtr full from asa rtr
+		if len(rtrAsaFulls) > 0 || len(rtrAsaFulls) > 0 {
+			belogs.Debug("assembleResetResponses(): protocolVersion=2, len(rtrAsaFulls)>0, len(rtrAsaFulls): ", len(rtrAsaFulls),
+				"  protocolVersion:", protocolVersion, "   sessionId:", sessionId, "   serialNumber:", serialNumber)
 
-		endOfDataModel := assembleEndOfDataResponse(protocolVersion, sessionId, serialNumber)
-		belogs.Debug("assembleResetResponses(): endOfDataModel : ", jsonutil.MarshalJson(endOfDataModel))
+			// start response
+			cacheResponseModel := NewRtrCacheResponseModel(protocolVersion, sessionId)
+			rtrPduModels = append(rtrPduModels, cacheResponseModel)
+			belogs.Debug("assembleResetResponses(): cacheResponseModel : ", jsonutil.MarshalJson(cacheResponseModel))
 
-		rtrPduModels = append(rtrPduModels, endOfDataModel)
-		belogs.Info("assembleResetResponses(): will send will send Cache Response of all rtr,",
-			",  protocolVersion:", protocolVersion, ",   sessionId:", sessionId, ",  serialNumber:", serialNumber,
-			", len(rtr): ", len(rtrFulls), ",  len(rtrPduModels):", len(rtrPduModels))
+			// from rtr full
+			rtrFullPduModels, err := convertRtrFullsToRtrPduModels(rtrFulls, protocolVersion)
+			if err != nil {
+				belogs.Error("assembleResetResponses(): convertRtrFullsToRtrPduModels fail: ", err)
+				return nil, err
+			}
+			rtrPduModels = append(rtrPduModels, rtrFullPduModels...)
+			belogs.Debug("assembleResetResponses(): len(rtrFullPduModels) : ", len(rtrFullPduModels))
 
-	} else {
-		belogs.Debug("assembleResetResponses(): there is no rtr this time,  will send errorReport with not_data_available, ",
-			",  protocolVersion:", protocolVersion, ",   sessionId:", sessionId, ",  serialNumber:", serialNumber)
-		errorReportModel := NewRtrErrorReportModel(protocolVersion, PDU_TYPE_ERROR_CODE_NO_DATA_AVAILABLE, nil, nil)
+			// rtr asa full to response
+			rtrAsaFullPduModels, err := convertRtrAsaFullsToRtrPduModels(rtrAsaFulls, protocolVersion)
+			if err != nil {
+				belogs.Error("assembleResetResponses(): convertRtrAsaFullsToRtrPduModels fail: ", err)
+				return nil, err
+			}
+			rtrPduModels = append(rtrPduModels, rtrAsaFullPduModels...)
+			belogs.Debug("assembleResetResponses(): len(rtrAsaFullPduModels) : ", len(rtrAsaFullPduModels))
 
-		rtrPduModels = append(rtrPduModels, errorReportModel)
-		belogs.Info("assembleResetResponses(): there is no rtr this time,  will send errorReport with not_data_available, ",
-			",  protocolVersion:", protocolVersion, ",   sessionId:", sessionId, ",  serialNumber:", serialNumber, ",  rtrPduModels:", jsonutil.MarshalJson(rtrPduModels))
+			// end response
+			endOfDataModel := assembleEndOfDataResponse(protocolVersion, sessionId, serialNumber)
+			rtrPduModels = append(rtrPduModels, endOfDataModel)
+			belogs.Debug("assembleResetResponses(): will send all rtrPduModels : ", jsonutil.MarshalJson(rtrPduModels))
 
+			belogs.Info("assembleResetResponses(): protocolVersion=2, will send will send Cache Response of all rtr,",
+				",  receive protocolVersion:", protocolVersion, ",   sessionId:", sessionId, ",  serialNumber:", serialNumber,
+				",  len(rtrFulls): ", len(rtrFulls), ", len(rtrAsaFulls): ", len(rtrAsaFulls),
+				",  len(rtrPduModels):", len(rtrPduModels), "  rtrPduModels:", jsonutil.MarshalJson(rtrPduModels))
+
+			return rtrPduModels, nil
+		} else {
+			belogs.Debug("assembleResetResponses(): protocolVersion=2, len(rtrAsaFulls)==0 : just send endofdata,",
+				" protocolVersion:", protocolVersion, "   sessionId:", sessionId, "   serialNumber:", serialNumber)
+			rtrPduModels = assembleEndOfDataResponses(protocolVersion, sessionId, serialNumber)
+
+			belogs.Info("assembleResetResponses(): protocolVersion=2,there is no rtr this time,  will send errorReport with not_data_available, ",
+				",  receive protocolVersion:", protocolVersion, ",   sessionId:", sessionId, ",  serialNumber:", serialNumber, ",  rtrPduModels:", jsonutil.MarshalJson(rtrPduModels))
+			return rtrPduModels, nil
+		}
 	}
-	return rtrPduModels, nil
+
+	belogs.Error("assembleResetResponses(): not support protocolVersion, fail: ", protocolVersion)
+	return nil, errors.New("protocolVersion is not support")
 
 }
 
@@ -118,15 +172,62 @@ func convertRtrFullToRtrPduModel(rtrFull *model.LabRpkiRtrFull, protocolVersion 
 	if ipType == iputil.Ipv4Type {
 		ipv4 := [4]byte{0x00}
 		copy(ipv4[:], ipHex[:])
-		rtrIpv4PrefixModel := NewRtrIpv4PrefixModel(protocolVersion, 1, uint8(rtrFull.PrefixLength),
+		rtrIpv4PrefixModel := NewRtrIpv4PrefixModel(protocolVersion, PDU_FLAG_ANNOUNCE, uint8(rtrFull.PrefixLength),
 			uint8(rtrFull.MaxLength), ipv4, uint32(rtrFull.Asn))
 		return rtrIpv4PrefixModel, nil
 	} else if ipType == iputil.Ipv6Type {
 		ipv6 := [16]byte{0x00}
 		copy(ipv6[:], ipHex[:])
-		rtrIpv6PrefixModel := NewRtrIpv6PrefixModel(protocolVersion, 1, uint8(rtrFull.PrefixLength),
+		rtrIpv6PrefixModel := NewRtrIpv6PrefixModel(protocolVersion, PDU_FLAG_ANNOUNCE, uint8(rtrFull.PrefixLength),
 			uint8(rtrFull.MaxLength), ipv6, uint32(rtrFull.Asn))
 		return rtrIpv6PrefixModel, nil
 	}
 	return rtrPduModel, errors.New("convert to rtr format, error ipType")
+}
+
+func convertRtrFullsToRtrPduModels(rtrFulls []model.LabRpkiRtrFull,
+	protocolVersion uint8) (rtrPduModels []RtrPduModel, err error) {
+	rtrPduModels = make([]RtrPduModel, 0)
+	for i := range rtrFulls {
+		rtrPduModel, err := convertRtrFullToRtrPduModel(&rtrFulls[i], protocolVersion)
+		if err != nil {
+			belogs.Error("convertRtrFullsToRtrPduModels(): convertRtrFullToRtrPduModel fail: ", err)
+			return nil, err
+		}
+		rtrPduModels = append(rtrPduModels, rtrPduModel)
+	}
+	belogs.Debug("convertRtrFullsToRtrPduModels(): len(rtrFulls): ", len(rtrFulls), " len(rtrPduModels):", len(rtrPduModels))
+	return rtrPduModels, nil
+}
+
+func convertRtrAsaFullsToRtrPduModels(rtrAsaFulls []model.LabRpkiRtrAsaFull,
+	protocolVersion uint8) (rtrAsaPduModels []RtrPduModel, err error) {
+	rtrAsaPduModels = make([]RtrPduModel, 0)
+	for i := range rtrAsaFulls {
+		rtrPduModel, err := convertRtrAsaFullToRtrPduModel(&rtrAsaFulls[i], protocolVersion)
+		if err != nil {
+			belogs.Error("convertRtrFullsToRtrPduModels(): convertRtrFullToRtrPduModel fail: ",
+				jsonutil.MarshalJson(rtrAsaFulls[i]), err)
+			return nil, err
+		}
+		rtrAsaPduModels = append(rtrAsaPduModels, rtrPduModel)
+		belogs.Debug("convertRtrFullsToRtrPduModels():rtrPduModel: ", jsonutil.MarshalJson(rtrPduModel))
+	}
+	belogs.Debug("convertRtrFullsToRtrPduModels(): len(rtrAsaFulls): ", len(rtrAsaFulls),
+		" len(rtrAsaPduModels):", len(rtrAsaPduModels))
+	return rtrAsaPduModels, nil
+}
+
+func convertRtrAsaFullToRtrPduModel(rtrAsaFull *model.LabRpkiRtrAsaFull,
+	protocolVersion uint8) (rtrPduModel RtrPduModel, err error) {
+	providerAsnUint32s := make([]uint32, 0)
+	providerAsns := make([]model.ProviderAsn, 0)
+	jsonutil.UnmarshalJson(rtrAsaFull.ProviderAsns, &providerAsns)
+	for i := range providerAsns {
+		p := uint32(providerAsns[i].ProviderAsn)
+		providerAsnUint32s = append(providerAsnUint32s, p)
+	}
+	rtrAsaModel := NewRtrAsaModel(protocolVersion, PDU_FLAG_ANNOUNCE,
+		uint32(rtrAsaFull.CustomerAsn), providerAsnUint32s)
+	return rtrAsaModel, nil
 }

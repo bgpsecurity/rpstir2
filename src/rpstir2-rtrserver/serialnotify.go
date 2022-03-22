@@ -61,9 +61,9 @@ func ParseToSerialNotify(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel 
 }
 
 func ProcessSerialNotify(protocolVersion uint8) (rtrPduModel RtrPduModel, err error) {
-	sessionId, serialNumber, err := GetSessionIdAndSerialNumber()
+	sessionId, serialNumber, err := getSessionIdAndSerialNumberDb()
 	if err != nil {
-		belogs.Error("ProcessSerialNotify():GetSessionIdAndSerialNumber fail:", err)
+		belogs.Error("ProcessSerialNotify():getSessionIdAndSerialNumberDb fail:", err)
 		rtrError := NewRtrError(
 			err,
 			false, protocolVersion, PDU_TYPE_ERROR_CODE_INTERNAL_ERROR,

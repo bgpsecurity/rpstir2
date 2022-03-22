@@ -217,7 +217,11 @@ func ParseRoaModelByOpensslResults(results []string, roaModel *model.RoaModel) (
 		return err
 	}
 	roa := RouteOriginAttestation{}
-	asn1.Unmarshal(roaByte, &roa)
+	_, err = asn1.Unmarshal(roaByte, &roa)
+	if err != nil {
+		belogs.Error("ParseRoaModelByOpensslResults():Unmarshal roaByte, err:", err)
+		return err
+	}
 	belogs.Debug("ParseRoaModelByOpensslResults(): roa:", jsonutil.MarshalJson(roa))
 
 	if len(roa.IpAddrBlocks) == 0 {
@@ -776,17 +780,21 @@ func ParseAsaModelByOpensslResults(results []string, asaModel *model.AsaModel) (
 		belogs.Error("ParseAsaModelByOpensslResults():DecodeString err:", err)
 		return err
 	}
-	asProviderAttestation := model.AsProviderAttestation{}
+	asProviderAttestation := AsProviderAttestation{}
 	_, err = asn1.Unmarshal(asaBytes, &asProviderAttestation)
 	if err != nil {
 		belogs.Error("ParseAsaModelByOpensslResults():asn1.Unmarshal err:", err)
 		return err
 	}
-	belogs.Info("ParseAsaModelByOpensslResults(): asProviderAttestation:", jsonutil.MarshalJson(asProviderAttestation))
-	asaModel.AsProviderAttestations = make([]model.AsProviderAttestation, 0)
-	asaModel.AsProviderAttestations = append(asaModel.AsProviderAttestations, asProviderAttestation)
+	asaModel.CustomerAsns, err = convertAsProviderAttestationToCustomerAsns(asProviderAttestation)
+	if err != nil {
+		belogs.Error("ParseAsaModelByOpensslResults():convertAsProviderAttestationToCustomerAsns err:", err)
+		return err
+	}
+	belogs.Info("ParseAsaModelByOpensslResults(): asaModel.CustomerAsns:", jsonutil.MarshalJson(asaModel.CustomerAsns))
 	return nil
 }
+
 func ParseAsaEContentTypeByOpensslResults(results []string) (eContentType string, err error) {
 	// get 1.2.840.113549.1.9.16.1.49
 	/*

@@ -2,8 +2,9 @@ package model
 
 import (
 	"crypto/x509/pkix"
-	"fmt"
 	"time"
+
+	"github.com/guregu/null"
 )
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -435,7 +436,7 @@ type AsaModel struct {
 	FileName string `json:"fileName" xorm:"fileName varchar(128)"`
 	FileHash string `json:"fileHash" xorm:"fileHash varchar(512)"`
 
-	AsProviderAttestations []AsProviderAttestation `json:"asProviderAttestations"`
+	CustomerAsns []CustomerAsn `json:"customerAsns"`
 
 	EContentType    string          `json:"eContentType"`
 	AiaModel        AiaModel        `json:"aiaModel"`
@@ -445,17 +446,12 @@ type AsaModel struct {
 }
 
 //  1.2.840.113549.1.9.16.1.49
-type AsProviderAttestation struct {
-	CustomerAsId  int            `json:"customerAsId"`
-	ProviderAsIds []ProviderAsId `json:"ProviderAsIds"`
+type CustomerAsn struct {
+	AddressFamily null.Int      `json:"addressFamily"`
+	CustomerAsn   uint64        `json:"customerAsn"`
+	ProviderAsns  []ProviderAsn `json:"ProviderAsns"`
 }
-type ProviderAsId struct {
-	ProviderAsId            int `json:"providerAsId"`
-	AddressFamilyIdentifier Afi `json:"addressFamilyIdentifier" asn1:"optional"`
-}
-type Afi []byte
-
-func (a Afi) MarshalText() ([]byte, error) {
-	//return []byte(`[` + convert.PrintBytesOneLine(a) + `]`), nil
-	return []byte(fmt.Sprintf("%#x", a)), nil
+type ProviderAsn struct {
+	AddressFamily null.Int `json:"addressFamily"`
+	ProviderAsn   uint64   `json:"providerAsn"`
 }

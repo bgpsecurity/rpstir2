@@ -127,3 +127,24 @@ func NewChainDbMftModel(chainMft *ChainMft) *ChainDbMftModel {
 	}
 	return chainDbMftModel
 }
+
+// for chaincert in db table
+type ChainDbAsaModel struct {
+	Id              uint64            `json:"id" xorm:"id int"`
+	ParentChainCers []ChainDbCerModel `json:"parentChainCers,omitempty"`
+}
+
+func NewChainDbAsaModel(chainAsa *ChainAsa) *ChainDbAsaModel {
+	chainDbAsaModel := &ChainDbAsaModel{}
+	chainDbAsaModel.Id = chainAsa.Id
+
+	chainDbAsaModel.ParentChainCers = make([]ChainDbCerModel, 0, len(chainAsa.ParentChainCerAlones))
+	for i := range chainAsa.ParentChainCerAlones {
+		// only save id
+		chainDbCerModel := ChainDbCerModel{}
+		chainDbCerModel.Id = chainAsa.ParentChainCerAlones[i].Id
+		chainDbAsaModel.ParentChainCers = append(chainDbAsaModel.ParentChainCers, chainDbCerModel)
+	}
+
+	return chainDbAsaModel
+}

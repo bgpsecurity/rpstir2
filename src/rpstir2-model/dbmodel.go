@@ -3,6 +3,8 @@ package model
 import (
 	"database/sql"
 	"time"
+
+	"github.com/guregu/null"
 )
 
 //////////////////
@@ -271,6 +273,39 @@ type LabRpkiRtrIncremental struct {
 	Address      string `json:"address" xorm:"address varchar(512)"`
 	PrefixLength uint64 `json:"prefixLength" xorm:"prefixLength int"`
 	MaxLength    uint64 `json:"maxLength" xorm:"maxLength int"`
+	//'come from : {souce:sync/slurm/transfer,syncLogId/syncLogFileId/slurmId/slurmFileId/transferLogId}',
+	SourceFrom string `json:"sourceFrom" xorm:"sourceFrom json"`
+}
+
+//lab_rpki_rtr_asa_full
+type LabRpkiRtrAsaFull struct {
+	Id            uint64   `json:"id" xorm:"id int"`
+	SerialNumber  uint64   `json:"serialNumber" xorm:"serialNumber int"`
+	AddressFamily null.Int `json:"addressFamily" xorm:"addressFamily int"`
+	CustomerAsn   uint64   `json:"customerAsn" xorm:"customerAsn int"`
+	ProviderAsns  string   `json:"providerAsns" xorm:"providerAsns varchar"`
+	SourceFrom    string   `json:"sourceFrom" xorm:"sourceFrom json"`
+}
+
+type AsaToRtrFullLog struct {
+	AsaId         uint64   `json:"roaId" xorm:"roaId int"`
+	AddressFamily null.Int `json:"addressFamily" xorm:"addressFamily int"`
+	CustomerAsn   uint64   `json:"customerAsn" xorm:"customerAsn int"`
+	//'[{"providerAsn":65000},{"providerAsn":65001},{"providerAsn":65002}]'
+	ProviderAsns  []ProviderAsn `json:"providerAsns" xorm:"providerAsns varchar"`
+	SyncLogId     uint64        `json:"syncLogId" xorm:"syncLogId int"`
+	SyncLogFileId uint64        `json:"syncLogFileId" xorm:"syncLogFileId int"`
+}
+
+//lab_rpki_rtr_asa_incremental
+type LabRpkiRtrAsaIncremental struct {
+	Id           uint64 `json:"id" xorm:"id int"`
+	SerialNumber uint64 `json:"serialNumber" xorm:"serialNumber bigint"`
+	//announce/withdraw, is 1/0 in protocol
+	Style         string   `json:"style" xorm:"style varchar(16)"`
+	AddressFamily null.Int `json:"addressFamily" xorm:"addressFamily int"`
+	CustomerAsn   uint64   `json:"customerAsn" xorm:"customerAsn int"`
+	ProviderAsns  string   `json:"providerAsns" xorm:"providerAsns varchar"`
 	//'come from : {souce:sync/slurm/transfer,syncLogId/syncLogFileId/slurmId/slurmFileId/transferLogId}',
 	SourceFrom string `json:"sourceFrom" xorm:"sourceFrom json"`
 }

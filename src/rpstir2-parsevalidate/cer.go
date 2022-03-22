@@ -12,6 +12,8 @@ import (
 
 	"github.com/cpusoft/goutil/asn1util"
 	"github.com/cpusoft/goutil/belogs"
+	"github.com/cpusoft/goutil/conf"
+	"github.com/cpusoft/goutil/convert"
 	"github.com/cpusoft/goutil/hashutil"
 	"github.com/cpusoft/goutil/iputil"
 	"github.com/cpusoft/goutil/jsonutil"
@@ -320,14 +322,18 @@ func validateCerlModel(cerModel *model.CerModel, stateModel *model.StateModel) (
 	if cerModel.NotBefore.After(now) {
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
 			Fail:   "NotBefore is later than the current time",
-			Detail: ""}
+			Detail: "The current time is " + convert.Time2StringZone(now) + ", notBefore is " + convert.Time2StringZone(cerModel.NotBefore)}
 		stateModel.AddError(&stateMsg)
 	}
 	if cerModel.NotAfter.Before(now) {
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
 			Fail:   "NotAfter is earlier than the current time",
-			Detail: ""}
-		stateModel.AddWarning(&stateMsg)
+			Detail: "The current time is " + convert.Time2StringZone(now) + ", notAfter is " + convert.Time2StringZone(cerModel.NotAfter)}
+		if conf.Bool("policy::allowStaleCer") {
+			stateModel.AddWarning(&stateMsg)
+		} else {
+			stateModel.AddError(&stateMsg)
+		}
 	}
 	if cerModel.NotBefore.After(cerModel.NotAfter) {
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
@@ -831,4 +837,51 @@ func ParseCerSimpleModel(certFile string) (parseCerSimple model.ParseCerSimple, 
 	}
 	parseCerSimple.SubjectPublicKeyInfo = cer.RawSubjectPublicKeyInfo
 	return parseCerSimple, nil
+}
+
+func updateCerByCheckAll(now time.Time) error {
+	// check expire
+	curCertIdStateModels, err := getExpireCerDb(now)
+	if err != nil {
+		belogs.Error("updateCerByCheckAll(): getExpireCerDb:  err: ", err)
+		return err
+	}
+	belogs.Info("updateCerByCheckAll(): len(curCertIdStateModels):", len(curCertIdStateModels))
+
+	newCertIdStateModels := make([]CertIdStateModel, 0)
+	for i := range curCertIdStateModels {
+		// if have this error, ignore
+		belogs.Debug("updateCerByCheckAll(): old curCertIdStateModels[i]:", jsonutil.MarshalJson(curCertIdStateModels[i]))
+		if strings.Contains(curCertIdStateModels[i].StateStr, "NotAfter is earlier than the current time") {
+			continue
+		}
+
+		// will add error
+		stateModel := model.StateModel{}
+		jsonutil.UnmarshalJson(curCertIdStateModels[i].StateStr, &stateModel)
+		stateMsg := model.StateMsg{Stage: "parsevalidate",
+			Fail:   "NotAfter is earlier than the current time",
+			Detail: "The current time is " + convert.Time2StringZone(now) + ", notAfter is " + convert.Time2StringZone(curCertIdStateModels[i].EndTime)}
+		if conf.Bool("policy::allowStaleCer") {
+			stateModel.AddWarning(&stateMsg)
+		} else {
+			stateModel.AddError(&stateMsg)
+		}
+
+		certIdStateModel := CertIdStateModel{
+			Id:       curCertIdStateModels[i].Id,
+			StateStr: jsonutil.MarshalJson(stateModel),
+		}
+		newCertIdStateModels = append(newCertIdStateModels, certIdStateModel)
+		belogs.Debug("updateCerByCheckAll(): new certIdStateModel:", jsonutil.MarshalJson(certIdStateModel))
+	}
+
+	// update db
+	err = updateCerStateDb(newCertIdStateModels)
+	if err != nil {
+		belogs.Error("updateCerByCheckAll(): updateCerStateDb:  err: ", len(newCertIdStateModels), err)
+		return err
+	}
+	belogs.Info("updateCerByCheckAll(): ok len(newCertIdStateModels):", len(newCertIdStateModels))
+	return nil
 }

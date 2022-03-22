@@ -18,35 +18,35 @@ import (
 	"github.com/cpusoft/goutil/osutil"
 )
 
-func GetChainCers(chains *Chains, wg *sync.WaitGroup) {
+func getChainCers(chains *Chains, wg *sync.WaitGroup) {
 	defer wg.Done()
 	start := time.Now()
-	belogs.Debug("GetChainCers(): start:")
+	belogs.Debug("getChainCers(): start:")
 
-	chainCerSqls, err := GetChainCerSqls()
+	chainCerSqls, err := getChainCerSqlsDb()
 	if err != nil {
-		belogs.Error("GetChainCers(): GetChainCerSqls:", err)
+		belogs.Error("getChainCers(): getChainCerSqlsDb:", err)
 		return
 	}
-	belogs.Debug("GetChainCers(): GetChainCers, len(chainCerSqls):", len(chainCerSqls))
+	belogs.Debug("getChainCers(): getChainCers, len(chainCerSqls):", len(chainCerSqls))
 
 	for i := range chainCerSqls {
 		chainCer := chainCerSqls[i].ToChainCer()
-		belogs.Debug("GetChainCers():i, chainCer:", i, jsonutil.MarshalJson(chainCer))
+		belogs.Debug("getChainCers():i, chainCer:", i, jsonutil.MarshalJson(chainCer))
 		chains.CerIds = append(chains.CerIds, chainCerSqls[i].Id)
 		chains.AddCer(&chainCer)
 	}
 
-	belogs.Debug("GetChainCers(): end, len(chainCerSqls):", len(chainCerSqls), ",   len(chains.CerIds):", len(chains.CerIds), ",  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Debug("getChainCers(): end, len(chainCerSqls):", len(chainCerSqls), ",   len(chains.CerIds):", len(chains.CerIds), ",  time(s):", time.Now().Sub(start).Seconds())
 	return
 }
 
-func ValidateCers(chains *Chains, wg *sync.WaitGroup) {
+func validateCers(chains *Chains, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	start := time.Now()
 	cerIds := chains.CerIds
-	belogs.Debug("ValidateCers(): start: len(cerIds):", len(cerIds))
+	belogs.Debug("validateCers(): start: len(cerIds):", len(cerIds))
 
 	var cerWg sync.WaitGroup
 	chainCerCh := make(chan int, conf.Int("chain::chainConcurrentCount"))
@@ -58,7 +58,7 @@ func ValidateCers(chains *Chains, wg *sync.WaitGroup) {
 	cerWg.Wait()
 	close(chainCerCh)
 
-	belogs.Info("ValidateCers():end len(cerIds):", len(cerIds), "  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Info("validateCers():end len(cerIds):", len(cerIds), "  time(s):", time.Now().Sub(start).Seconds())
 }
 
 func validateCer(chains *Chains, cerId uint64, wg *sync.WaitGroup, chainCerCh chan int) {
@@ -153,7 +153,7 @@ func validateCer(chains *Chains, cerId uint64, wg *sync.WaitGroup, chainCerCh ch
 
 			// verify ipaddress prefix,if one parent is not found ,found the upper
 			// rfc8360: Validation Reconsidered, set warning
-			invalidAsns := AsnsIncludeInParents(chainCer.ParentChainCerAlones, chainCer.ChainAsns)
+			invalidAsns := asnsIncludeInParents(chainCer.ParentChainCerAlones, chainCer.ChainAsns)
 			if len(invalidAsns) > 0 {
 				belogs.Debug("validateCer(): cer asn is overclaimed, fail, cerId:", chainCer.Id, jsonutil.MarshalJson(invalidAsns), err)
 				stateMsg := model.StateMsg{Stage: "chainvalidate",
@@ -230,7 +230,7 @@ func validateCer(chains *Chains, cerId uint64, wg *sync.WaitGroup, chainCerCh ch
 }
 
 //
-func AsnsIncludeInParents(parentChainCerAlones []ChainCerAlone, self []ChainAsn) (invalids []ChainAsn) {
+func asnsIncludeInParents(parentChainCerAlones []ChainCerAlone, self []ChainAsn) (invalids []ChainAsn) {
 	// self is inherit,there is no asn, then is ok
 	if len(self) == 0 {
 		return nil

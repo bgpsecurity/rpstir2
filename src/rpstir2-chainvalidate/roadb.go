@@ -13,7 +13,7 @@ import (
 	"xorm.io/xorm"
 )
 
-func GetChainRoaSqls() (chainCertSqls []ChainCertSql, err error) {
+func getChainRoaSqlsDb() (chainCertSqls []ChainCertSql, err error) {
 	start := time.Now()
 	chainCertSqls = make([]ChainCertSql, 0, 50000)
 	// if add "order by ***", the sort_mem may not enough
@@ -23,14 +23,14 @@ func GetChainRoaSqls() (chainCertSqls []ChainCertSql, err error) {
 			group by c.id, c.jsonAll, c.state, v.fileName, v.revocationTime  `
 	err = xormdb.XormEngine.SQL(sql).Find(&chainCertSqls)
 	if err != nil {
-		belogs.Error("GetChainRoaSqls(): lab_rpki_roa id fail:", err)
+		belogs.Error("getChainRoaSqlsDb(): lab_rpki_roa id fail:", err)
 		return nil, err
 	}
-	belogs.Info("GetChainRoaSqls(): len(chainCertSqls):", len(chainCertSqls), "  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Info("getChainRoaSqlsDb(): len(chainCertSqls):", len(chainCertSqls), "  time(s):", time.Now().Sub(start).Seconds())
 	return chainCertSqls, nil
 }
 
-func UpdateRoas(chains *Chains, wg *sync.WaitGroup) {
+func updateRoasDb(chains *Chains, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	start := time.Now()
@@ -43,28 +43,28 @@ func UpdateRoas(chains *Chains, wg *sync.WaitGroup) {
 	roaIds := chains.RoaIds
 	for _, roaId := range roaIds {
 
-		err = updateRoa(session, chains, roaId)
+		err = updateRoaDb(session, chains, roaId)
 		if err != nil {
-			belogs.Error("UpdateRoas(): updateRoa fail, roaId:", roaId, err)
-			xormdb.RollbackAndLogError(session, "UpdateRoas(): updateRoa fail: "+convert.ToString(roaId), err)
+			belogs.Error("updateRoasDb(): updateRoaDb fail, roaId:", roaId, err)
+			xormdb.RollbackAndLogError(session, "updateRoasDb(): updateRoaDb fail: "+convert.ToString(roaId), err)
 			return
 		}
 	}
 
 	err = xormdb.CommitSession(session)
 	if err != nil {
-		belogs.Error("UpdateRoas(): CommitSession fail :", err)
+		belogs.Error("updateRoasDb(): CommitSession fail :", err)
 		return
 	}
-	belogs.Debug("UpdateRoas(): len(roaIds):", len(roaIds), "  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Debug("updateRoasDb(): len(roaIds):", len(roaIds), "  time(s):", time.Now().Sub(start).Seconds())
 
 }
 
-func updateRoa(session *xorm.Session, chains *Chains, roaId uint64) (err error) {
+func updateRoaDb(session *xorm.Session, chains *Chains, roaId uint64) (err error) {
 	start := time.Now()
 	chainRoa, err := chains.GetRoaById(roaId)
 	if err != nil {
-		belogs.Error("updateRoa(): GetRoa fail :", roaId, err)
+		belogs.Error("updateRoaDb(): GetRoa fail :", roaId, err)
 		return err
 	}
 
@@ -74,13 +74,13 @@ func updateRoa(session *xorm.Session, chains *Chains, roaId uint64) (err error) 
 	chainCerts := jsonutil.MarshalJson(*chainDbRoaModel)
 	state := jsonutil.MarshalJson(chainRoa.StateModel)
 	origin := jsonutil.MarshalJson(originModel)
-	belogs.Debug("updateRoa():roaId:", roaId, "    chainCerts:", chainCerts, "    origin:", origin, "  state:", state)
+	belogs.Debug("updateRoaDb():roaId:", roaId, "    chainCerts:", chainCerts, "    origin:", origin, "  state:", state)
 	sqlStr := `UPDATE lab_rpki_roa set chainCerts=?, state=?, origin=?   where id=? `
 	_, err = session.Exec(sqlStr, chainCerts, state, origin, roaId)
 	if err != nil {
-		belogs.Error("updateRoa(): UPDATE lab_rpki_roa fail :", roaId, err)
+		belogs.Error("updateRoaDb(): UPDATE lab_rpki_roa fail :", roaId, err)
 		return err
 	}
-	belogs.Debug("updateRoa():roaId:", roaId, "  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Debug("updateRoaDb():roaId:", roaId, "  time(s):", time.Now().Sub(start).Seconds())
 	return nil
 }

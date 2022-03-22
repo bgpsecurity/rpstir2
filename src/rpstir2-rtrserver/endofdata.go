@@ -11,7 +11,7 @@ import (
 
 func ParseToEndOfData(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel RtrPduModel, err error) {
 	/*
-		if protocolVersion == PROTOCOL_VERSION_0 {
+		if protocolVersion == PDU_PROTOCOL_VERSION_0 {
 			return &RtrEndOfDataModel{
 				ProtocolVersion: protocolVersion,
 				PduType:         PDU_TYPE_END_OF_DATA,
@@ -20,7 +20,7 @@ func ParseToEndOfData(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel Rtr
 				SerialNumber:    serialNumber,
 			}
 
-		} else if protocolVersion == PROTOCOL_VERSION_1 {
+		} else if protocolVersion == PDU_PROTOCOL_VERSION_1 {
 			return &RtrEndOfDataModel{
 				ProtocolVersion: protocolVersion,
 				PduType:         PDU_TYPE_END_OF_DATA,
@@ -62,7 +62,7 @@ func ParseToEndOfData(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel Rtr
 			buf, "Fail to get length")
 		return rtrPduModel, rtrError
 	}
-	if protocolVersion == PROTOCOL_VERSION_0 && length != 12 {
+	if protocolVersion == PDU_PROTOCOL_VERSION_0 && length != 12 {
 		belogs.Error("ParseToEndOfData():PDU_TYPE_END_OF_DATA, when version is 0, length must be 12, ", buf, length)
 		rtrError := NewRtrError(
 			errors.New("pduType is CACHE RESPONSE, when version is 0, length must be 12"),
@@ -70,7 +70,7 @@ func ParseToEndOfData(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel Rtr
 			buf, "Fail to get length")
 		return rtrPduModel, rtrError
 	}
-	if protocolVersion == PROTOCOL_VERSION_1 && length != 24 {
+	if protocolVersion == PDU_PROTOCOL_VERSION_1 && length != 24 {
 		belogs.Error("ParseToEndOfData():PDU_TYPE_END_OF_DATA,   when version is 1, length must be 24, ", buf, length)
 		rtrError := NewRtrError(
 			errors.New("pduType is CACHE RESPONSE, when version is 1, length must be 24"),
@@ -90,7 +90,7 @@ func ParseToEndOfData(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel Rtr
 		return rtrPduModel, rtrError
 	}
 
-	if protocolVersion == PROTOCOL_VERSION_1 {
+	if protocolVersion == PDU_PROTOCOL_VERSION_1 {
 		// get refreshInterval
 		err = binary.Read(buf, binary.BigEndian, &refreshInterval)
 		if err != nil {

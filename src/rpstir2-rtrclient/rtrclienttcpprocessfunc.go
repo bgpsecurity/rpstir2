@@ -19,9 +19,9 @@ func (rq *RtrTcpClientProcessFunc) ActiveSend(conn *net.TCPConn, tcpClientProces
 	start := time.Now()
 	var rtrPduModel rtrserver.RtrPduModel
 	if "resetquery" == tcpClientProcessChan {
-		rtrPduModel = rtrserver.NewRtrResetQueryModel(1)
+		rtrPduModel = rtrserver.NewRtrResetQueryModel(rtrserver.PDU_PROTOCOL_VERSION_2)
 	} else if "serialquery" == tcpClientProcessChan {
-		rtrPduModel = rtrserver.NewRtrSerialQueryModel(1, 1, 1)
+		rtrPduModel = rtrserver.NewRtrSerialQueryModel(rtrserver.PDU_PROTOCOL_VERSION_2, 1, 1)
 	}
 	sendBytes := rtrPduModel.Bytes()
 	belogs.Debug("ActiveSend():client:", convert.Bytes2String(sendBytes))
@@ -39,13 +39,13 @@ func (rq *RtrTcpClientProcessFunc) OnReceive(conn *net.TCPConn, receiveData []by
 
 	go func() {
 		start := time.Now()
-		belogs.Debug("OnReceive():client,", convert.Bytes2String(receiveData))
+		belogs.Debug("OnReceive():client,bytes\n" + convert.PrintBytes(receiveData, 8))
 		buf := bytes.NewReader(receiveData)
 		rtrPduModel, err := rtrserver.ParseToRtrPduModel(buf)
 		if err != nil {
 			return
 		}
-		belogs.Info("OnReceive(): client receive :", jsonutil.MarshalJson(rtrPduModel), "   time(s):", time.Now().Sub(start).Seconds())
+		belogs.Info("OnReceive(): client receive bytes:\n"+convert.PrintBytes(receiveData, 8)+"\n   parseTo:", jsonutil.MarshalJson(rtrPduModel), "   time(s):", time.Now().Sub(start))
 	}()
 	return nil
 

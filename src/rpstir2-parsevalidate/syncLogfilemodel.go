@@ -30,6 +30,9 @@ type SyncLogFileModels struct {
 
 	UpdateRoaSyncLogFileModels []SyncLogFileModel `json:"updateRoaSyncLogFileModels"`
 	DelRoaSyncLogFileModels    []SyncLogFileModel `json:"delRoaSyncLogFileModels"`
+
+	UpdateAsaSyncLogFileModels []SyncLogFileModel `json:"updateAsaSyncLogFileModels"`
+	DelAsaSyncLogFileModels    []SyncLogFileModel `json:"delAsaSyncLogFileModels"`
 }
 
 func NewSyncLogFileModels(syncLogId uint64, dbSyncLogFileModels []SyncLogFileModel) *SyncLogFileModels {
@@ -47,6 +50,9 @@ func NewSyncLogFileModels(syncLogId uint64, dbSyncLogFileModels []SyncLogFileMod
 
 	syncLogFileModels.UpdateRoaSyncLogFileModels = make([]SyncLogFileModel, 0)
 	syncLogFileModels.DelRoaSyncLogFileModels = make([]SyncLogFileModel, 0)
+
+	syncLogFileModels.UpdateAsaSyncLogFileModels = make([]SyncLogFileModel, 0)
+	syncLogFileModels.DelAsaSyncLogFileModels = make([]SyncLogFileModel, 0)
 
 	for i := range dbSyncLogFileModels {
 		if dbSyncLogFileModels[i].FileType == "cer" {
@@ -72,6 +78,12 @@ func NewSyncLogFileModels(syncLogId uint64, dbSyncLogFileModels []SyncLogFileMod
 				syncLogFileModels.UpdateRoaSyncLogFileModels = append(syncLogFileModels.UpdateRoaSyncLogFileModels, dbSyncLogFileModels[i])
 			} else if dbSyncLogFileModels[i].SyncType == "del" {
 				syncLogFileModels.DelRoaSyncLogFileModels = append(syncLogFileModels.DelRoaSyncLogFileModels, dbSyncLogFileModels[i])
+			}
+		} else if dbSyncLogFileModels[i].FileType == "asa" {
+			if dbSyncLogFileModels[i].SyncType == "add" || dbSyncLogFileModels[i].SyncType == "update" {
+				syncLogFileModels.UpdateAsaSyncLogFileModels = append(syncLogFileModels.UpdateAsaSyncLogFileModels, dbSyncLogFileModels[i])
+			} else if dbSyncLogFileModels[i].SyncType == "del" {
+				syncLogFileModels.DelAsaSyncLogFileModels = append(syncLogFileModels.DelAsaSyncLogFileModels, dbSyncLogFileModels[i])
 			}
 		}
 	}

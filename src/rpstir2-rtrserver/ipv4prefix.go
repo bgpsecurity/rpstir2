@@ -57,7 +57,7 @@ func ParseToIpv4Prefix(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel Rt
 		rtrError := NewRtrError(
 			errors.New("pduType is IPV4 PREFIX, length must be 20"),
 			true, protocolVersion, PDU_TYPE_ERROR_CODE_CORRUPT_DATA,
-			buf, "Fail to get zero0")
+			buf, "Fail to get length")
 		return rtrPduModel, rtrError
 
 	}

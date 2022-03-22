@@ -34,7 +34,7 @@ func ParseValidateStart(c *gin.Context) {
 		} else {
 			httpclient.Post("https://"+conf.String("rpstir2-rp::serverHost")+":"+conf.String("rpstir2-rp::serverHttpsPort")+
 				"/sys/servicestate", `{"operate":"leave","state":"parsevalidate"}`, false)
-			// will call ChainValidate
+			// will call chainValidate
 			go httpclient.Post("https://"+conf.String("rpstir2-rp::serverHost")+":"+conf.String("rpstir2-rp::serverHttpsPort")+
 				"/chainvalidate/start", "", false)
 			belogs.Info("ParseValidateStart():  sync.Start end,  nextStep is :", nextStep)

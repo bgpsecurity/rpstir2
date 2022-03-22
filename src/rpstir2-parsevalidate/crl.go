@@ -2,6 +2,7 @@ package parsevalidate
 
 import (
 	"strconv"
+	"strings"
 	"time"
 
 	model "rpstir2-model"
@@ -142,7 +143,7 @@ func validateCrlModel(crlModel *model.CrlModel, stateModel *model.StateModel) (e
 	if crlModel.ThisUpdate.After(now) {
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
 			Fail:   "ThisUpdate is later than the current time",
-			Detail: "now is " + convert.Time2StringZone(now) + ", thisUpdate is " + convert.Time2StringZone(crlModel.ThisUpdate)}
+			Detail: "The current time is " + convert.Time2StringZone(now) + ", thisUpdate is " + convert.Time2StringZone(crlModel.ThisUpdate)}
 		if conf.Bool("policy::allowNotYetCrl") {
 			stateModel.AddWarning(&stateMsg)
 		} else {
@@ -152,7 +153,7 @@ func validateCrlModel(crlModel *model.CrlModel, stateModel *model.StateModel) (e
 	if crlModel.NextUpdate.Before(now) {
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
 			Fail:   "NextUpdate is earlier than the current time",
-			Detail: "now is " + convert.Time2StringZone(now) + ", nextUpdate is " + convert.Time2StringZone(crlModel.NextUpdate)}
+			Detail: "The current time is " + convert.Time2StringZone(now) + ", nextUpdate is " + convert.Time2StringZone(crlModel.NextUpdate)}
 		if conf.Bool("policy::allowStaleCrl") {
 			stateModel.AddWarning(&stateMsg)
 		} else {
@@ -230,4 +231,53 @@ func validateCrlModel(crlModel *model.CrlModel, stateModel *model.StateModel) (e
 	belogs.Debug("validateCrlModel():filePath, fileName,stateModel:",
 		crlModel.FilePath, crlModel.FileName, jsonutil.MarshalJson(stateModel))
 	return nil
+}
+
+func updateCrlByCheckAll(now time.Time) error {
+	// check expire
+	curCertIdStateModels, err := getExpireCrlDb(now)
+	if err != nil {
+		belogs.Error("updateCrlByCheckAll(): getExpireCrlDb:  err: ", err)
+		return err
+	}
+	belogs.Info("updateCrlByCheckAll(): len(curCertIdStateModels):", len(curCertIdStateModels))
+
+	newCertIdStateModels := make([]CertIdStateModel, 0)
+	for i := range curCertIdStateModels {
+		// if have this error, ignore
+		belogs.Debug("updateCrlByCheckAll(): old curCertIdStateModels[i]:", jsonutil.MarshalJson(curCertIdStateModels[i]))
+		if strings.Contains(curCertIdStateModels[i].StateStr, "NextUpdate is earlier than the current time") {
+			continue
+		}
+
+		// will add error
+		stateModel := model.StateModel{}
+		jsonutil.UnmarshalJson(curCertIdStateModels[i].StateStr, &stateModel)
+
+		stateMsg := model.StateMsg{Stage: "parsevalidate",
+			Fail:   "NextUpdate is earlier than the current time",
+			Detail: "The current time is " + convert.Time2StringZone(now) + ", nextUpdate is " + convert.Time2StringZone(curCertIdStateModels[i].EndTime)}
+		if conf.Bool("policy::allowStaleCrl") {
+			stateModel.AddWarning(&stateMsg)
+		} else {
+			stateModel.AddError(&stateMsg)
+		}
+
+		certIdStateModel := CertIdStateModel{
+			Id:       curCertIdStateModels[i].Id,
+			StateStr: jsonutil.MarshalJson(stateModel),
+		}
+		newCertIdStateModels = append(newCertIdStateModels, certIdStateModel)
+		belogs.Debug("updateCrlByCheckAll(): new certIdStateModel:", jsonutil.MarshalJson(certIdStateModel))
+	}
+
+	// update db
+	err = updateCrlStateDb(newCertIdStateModels)
+	if err != nil {
+		belogs.Error("updateCrlByCheckAll(): updateCrlStateDb:  err: ", len(newCertIdStateModels), err)
+		return err
+	}
+	belogs.Info("updateCrlByCheckAll(): ok len(newCertIdStateModels):", len(newCertIdStateModels))
+	return nil
+
 }

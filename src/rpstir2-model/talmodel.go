@@ -1,7 +1,5 @@
 package model
 
-import ()
-
 /*
 
 
@@ -31,7 +29,7 @@ SupportRsync is true, when CaRepository is exist and RsyncUrl start with "rsync:
 */
 
 type TalModel struct {
-	TalSyncUrls []TalSyncUrl `json:"syncUrls"`
+	TalSyncUrls []TalSyncUrl `json:"talSyncUrls"`
 
 	SubjectPublicKeyInfo string `json:"subjectPublicKeyInfo"`
 }
@@ -43,7 +41,7 @@ type TalSyncUrl struct {
 
 	// rsync
 	// is cer url for rsync
-	RsyncUrl     string `json:"syncUrl"`
+	RsyncUrl     string `json:"rsyncUrl"`
 	SupportRsync bool   `json:"supportRsync"`
 
 	// rrdp
@@ -51,7 +49,7 @@ type TalSyncUrl struct {
 	RrdpUrl     string `json:"rrdpUrl"`
 	SupportRrdp bool   `json:"supportRrdp"`
 
-	Error error `json:"error"`
+	Error string `json:"error"`
 
 	// saved tmp file
 	LocalFile string `json:"-"`

@@ -242,6 +242,9 @@ func JudgeOrigin(filePath string) (originModel OriginModel) {
 	} else if strings.Index(filePath, "rpki.roa.net") > 0 {
 		rir = ORIGIN_RIR_RIPE_NCC
 		repo = "rpki.roa.net"
+	} else if strings.Index(filePath, "rpki-rps.arin.net") > 0 {
+		rir = ORIGIN_RIR_ARIN
+		repo = "rpki-rps.arin.net"
 	} else {
 		rir = "unknown"
 		if strings.Index(filePath, "afrinic.net") > 0 {

@@ -7,13 +7,14 @@ import (
 	model "rpstir2-model"
 
 	"github.com/cpusoft/goutil/belogs"
+	"github.com/cpusoft/goutil/convert"
 	"github.com/cpusoft/goutil/jsonutil"
 	"github.com/cpusoft/goutil/xormdb"
 	"xorm.io/xorm"
 )
 
 // add
-func AddMfts(syncLogFileModels []SyncLogFileModel) error {
+func addMftsDb(syncLogFileModels []SyncLogFileModel) error {
 	session, err := xormdb.NewSession()
 	if err != nil {
 		return err
@@ -21,33 +22,33 @@ func AddMfts(syncLogFileModels []SyncLogFileModel) error {
 	defer session.Close()
 	start := time.Now()
 
-	belogs.Debug("AddMfts(): len(syncLogFileModels):", len(syncLogFileModels))
+	belogs.Debug("addMftsDb(): len(syncLogFileModels):", len(syncLogFileModels))
 	// insert new mft
 	for i := range syncLogFileModels {
-		err = insertMft(session, &syncLogFileModels[i], start)
+		err = insertMftDb(session, &syncLogFileModels[i], start)
 		if err != nil {
-			belogs.Error("AddMfts(): insertMft fail:", jsonutil.MarshalJson(syncLogFileModels[i]), err)
-			return xormdb.RollbackAndLogError(session, "AddMfts(): insertMft fail: "+jsonutil.MarshalJson(syncLogFileModels[i]), err)
+			belogs.Error("addMftsDb(): insertMftDb fail:", jsonutil.MarshalJson(syncLogFileModels[i]), err)
+			return xormdb.RollbackAndLogError(session, "addMftsDb(): insertMftDb fail: "+jsonutil.MarshalJson(syncLogFileModels[i]), err)
 		}
 	}
 
-	err = UpdateSyncLogFilesJsonAllAndState(session, syncLogFileModels)
+	err = updateSyncLogFilesJsonAllAndStateDb(session, syncLogFileModels)
 	if err != nil {
-		belogs.Error("AddMfts(): UpdateSyncLogFilesJsonAllAndState fail:", err)
-		return xormdb.RollbackAndLogError(session, "AddMfts(): UpdateSyncLogFilesJsonAllAndState fail", err)
+		belogs.Error("addMftsDb(): updateSyncLogFilesJsonAllAndStateDb fail:", err)
+		return xormdb.RollbackAndLogError(session, "addMftsDb(): updateSyncLogFilesJsonAllAndStateDb fail", err)
 	}
 
 	err = xormdb.CommitSession(session)
 	if err != nil {
-		belogs.Error("AddMfts(): insertMft CommitSession fail :", err)
+		belogs.Error("addMftsDb(): CommitSession fail :", err)
 		return err
 	}
-	belogs.Info("AddMfts(): len(mfts):", len(syncLogFileModels), "  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Info("addMftsDb(): len(syncLogFileModels):", len(syncLogFileModels), "  time(s):", time.Now().Sub(start).Seconds())
 	return nil
 }
 
 // del
-func DelMfts(delSyncLogFileModels []SyncLogFileModel, updateSyncLogFileModels []SyncLogFileModel, wg *sync.WaitGroup) (err error) {
+func delMftsDb(delSyncLogFileModels []SyncLogFileModel, updateSyncLogFileModels []SyncLogFileModel, wg *sync.WaitGroup) (err error) {
 	defer func() {
 		wg.Done()
 	}()
@@ -57,51 +58,33 @@ func DelMfts(delSyncLogFileModels []SyncLogFileModel, updateSyncLogFileModels []
 	defer session.Close()
 
 	syncLogFileModels := append(delSyncLogFileModels, updateSyncLogFileModels...)
-	belogs.Debug("DelMfts(): len(syncLogFileModels):", len(syncLogFileModels))
+	belogs.Debug("delMftsDb(): len(syncLogFileModels):", len(syncLogFileModels))
 	for i := range syncLogFileModels {
-		err = delMftById(session, syncLogFileModels[i].CertId)
+		err = delMftByIdDb(session, syncLogFileModels[i].CertId)
 		if err != nil {
-			belogs.Error("DelMfts(): DelMftByFile fail, cerId:", syncLogFileModels[i].CertId, err)
-			return xormdb.RollbackAndLogError(session, "DelMfts(): DelMftById fail: "+jsonutil.MarshalJson(syncLogFileModels[i]), err)
+			belogs.Error("delMftsDb(): delMftByIdDb fail, cerId:", syncLogFileModels[i].CertId, err)
+			return xormdb.RollbackAndLogError(session, "delMftsDb(): delMftByIdDb fail: "+jsonutil.MarshalJson(syncLogFileModels[i]), err)
 		}
 	}
 
 	// only update delSyncLogFileModels
-	err = UpdateSyncLogFilesJsonAllAndState(session, delSyncLogFileModels)
+	err = updateSyncLogFilesJsonAllAndStateDb(session, delSyncLogFileModels)
 	if err != nil {
-		belogs.Error("DelMfts(): UpdateSyncLogFilesJsonAllAndState fail:", err)
-		return xormdb.RollbackAndLogError(session, "DelMfts(): UpdateSyncLogFilesJsonAllAndState fail", err)
+		belogs.Error("delMftsDb(): updateSyncLogFilesJsonAllAndStateDb fail:", err)
+		return xormdb.RollbackAndLogError(session, "delMftsDb(): updateSyncLogFilesJsonAllAndStateDb fail", err)
 	}
 
 	err = xormdb.CommitSession(session)
 	if err != nil {
-		belogs.Error("DelMfts(): CommitSession fail :", err)
+		belogs.Error("delMftsDb(): CommitSession fail :", err)
 		return err
 	}
-	belogs.Info("DelMfts(): len(mfts):", len(syncLogFileModels), "  time(s):", time.Now().Sub(start).Seconds())
-	return nil
-}
-func DelMftByFile(session *xorm.Session, filePath, fileName string) (err error) {
-	// try to delete old
-	belogs.Debug("DelMftByFile():will delete lab_rpki_mft by filePath+fileName:", filePath, fileName)
-
-	labRpkiMft := model.LabRpkiMft{}
-	var mftId uint64
-	has, err := session.Table(&labRpkiMft).Where("filePath=?", filePath).And("fileName=?", fileName).Cols("id").Get(&mftId)
-	if err != nil {
-		belogs.Error("DelMftByFile(): get current labRpkiMft fail:", filePath, fileName, err)
-		return err
-	}
-
-	belogs.Debug("DelMftByFile():will delete lab_rpki_mft mftId:", mftId, "    has:", has)
-	if has {
-		return delMftById(session, mftId)
-	}
+	belogs.Info("delMftsDb(): len(mfts):", len(syncLogFileModels), "  time(s):", time.Now().Sub(start).Seconds())
 	return nil
 }
 
-func delMftById(session *xorm.Session, mftId uint64) (err error) {
-	belogs.Info("delMftById():delete lab_rpki_mft by mftId:", mftId)
+func delMftByIdDb(session *xorm.Session, mftId uint64) (err error) {
+	belogs.Info("delMftByIdDb():delete lab_rpki_mft by mftId:", mftId)
 
 	// rrdp may have id==0, just return nil
 	if mftId <= 0 {
@@ -111,50 +94,50 @@ func delMftById(session *xorm.Session, mftId uint64) (err error) {
 	//lab_rpki_mft_file_hash
 	res, err := session.Exec("delete from lab_rpki_mft_file_hash  where mftId = ?", mftId)
 	if err != nil {
-		belogs.Error("delMftById():delete  from lab_rpki_mft_file_hash fail: mftId: ", mftId, err)
+		belogs.Error("delMftByIdDb():delete  from lab_rpki_mft_file_hash fail: mftId: ", mftId, err)
 		return err
 	}
 	count, _ := res.RowsAffected()
-	belogs.Debug("delMftById():delete lab_rpki_mft_file_hash by mftId:", mftId, "  count:", count)
+	belogs.Debug("delMftByIdDb():delete lab_rpki_mft_file_hash by mftId:", mftId, "  count:", count)
 
 	//lab_rpki_mft_sia
 	res, err = session.Exec("delete from  lab_rpki_mft_sia  where mftId = ?", mftId)
 	if err != nil {
-		belogs.Error("delMftById():delete  from lab_rpki_mft_sia fail:mftId: ", mftId, err)
+		belogs.Error("delMftByIdDb():delete  from lab_rpki_mft_sia fail:mftId: ", mftId, err)
 		return err
 	}
 	count, _ = res.RowsAffected()
-	belogs.Debug("delMftById():delete lab_rpki_mft_sia by mftId:", mftId, "  count:", count)
+	belogs.Debug("delMftByIdDb():delete lab_rpki_mft_sia by mftId:", mftId, "  count:", count)
 
 	//lab_rpki_mft_aia
 	res, err = session.Exec("delete from  lab_rpki_mft_aia  where mftId = ?", mftId)
 	if err != nil {
-		belogs.Error("delMftById():delete  from lab_rpki_mft_aia fail:mftId: ", mftId, err)
+		belogs.Error("delMftByIdDb():delete  from lab_rpki_mft_aia fail:mftId: ", mftId, err)
 		return err
 	}
 	count, _ = res.RowsAffected()
-	belogs.Debug("delMftById():delete lab_rpki_mft_aia by mftId:", mftId, "  count:", count)
+	belogs.Debug("delMftByIdDb():delete lab_rpki_mft_aia by mftId:", mftId, "  count:", count)
 
 	//lab_rpki_mft
 	res, err = session.Exec("delete from  lab_rpki_mft  where id = ?", mftId)
 	if err != nil {
-		belogs.Error("delMftById():delete  from lab_rpki_mft fail:mftId: ", mftId, err)
+		belogs.Error("delMftByIdDb():delete  from lab_rpki_mft fail:mftId: ", mftId, err)
 		return err
 	}
 	count, _ = res.RowsAffected()
-	belogs.Debug("delMftById():delete lab_rpki_mft by mftId:", mftId, "  count:", count)
+	belogs.Debug("delMftByIdDb():delete lab_rpki_mft by mftId:", mftId, "  count:", count)
 
 	return nil
 
 }
 
-func insertMft(session *xorm.Session,
+func insertMftDb(session *xorm.Session,
 	syncLogFileModel *SyncLogFileModel, now time.Time) error {
 
 	mftModel := syncLogFileModel.CertModel.(model.MftModel)
 	thisUpdate := mftModel.ThisUpdate
 	nextUpdate := mftModel.NextUpdate
-	belogs.Debug("insertMft():now ", now, "  thisUpdate:", thisUpdate, "  nextUpdate:", nextUpdate, "    mftModel:", jsonutil.MarshalJson(mftModel))
+	belogs.Debug("insertMftDb():now ", now, "  thisUpdate:", thisUpdate, "  nextUpdate:", nextUpdate, "    mftModel:", jsonutil.MarshalJson(mftModel))
 
 	//lab_rpki_manifest
 	sqlStr := `INSERT lab_rpki_mft(
@@ -170,30 +153,30 @@ func insertMft(session *xorm.Session,
 		mftModel.FilePath, mftModel.FileName, mftModel.FileHash, xormdb.SqlNullString(jsonutil.MarshalJson(mftModel)), syncLogFileModel.SyncLogId,
 		syncLogFileModel.Id, now, xormdb.SqlNullString(jsonutil.MarshalJson(syncLogFileModel.StateModel)))
 	if err != nil {
-		belogs.Error("insertMft(): INSERT lab_rpki_mft Exec :", jsonutil.MarshalJson(syncLogFileModel), err)
+		belogs.Error("insertMftDb(): INSERT lab_rpki_mft Exec :", jsonutil.MarshalJson(syncLogFileModel), err)
 		return err
 	}
 
 	mftId, err := res.LastInsertId()
 	if err != nil {
-		belogs.Error("insertMft(): LastInsertId :", jsonutil.MarshalJson(syncLogFileModel), err)
+		belogs.Error("insertMftDb(): LastInsertId :", jsonutil.MarshalJson(syncLogFileModel), err)
 		return err
 	}
 
 	//lab_rpki_mft_aia
-	belogs.Debug("insertMft(): mftModel.Aia.CaIssuers:", mftModel.AiaModel.CaIssuers)
+	belogs.Debug("insertMftDb(): mftModel.Aia.CaIssuers:", mftModel.AiaModel.CaIssuers)
 	if len(mftModel.AiaModel.CaIssuers) > 0 {
 		sqlStr = `INSERT lab_rpki_mft_aia(mftId, caIssuers) 
 			VALUES(?,?)`
 		res, err = session.Exec(sqlStr, mftId, mftModel.AiaModel.CaIssuers)
 		if err != nil {
-			belogs.Error("insertMft(): INSERT lab_rpki_mft_aia Exec :", jsonutil.MarshalJson(syncLogFileModel), err)
+			belogs.Error("insertMftDb(): INSERT lab_rpki_mft_aia Exec :", jsonutil.MarshalJson(syncLogFileModel), err)
 			return err
 		}
 	}
 
 	//lab_rpki_mft_sia
-	belogs.Debug("insertMft(): mftModel.Sia:", mftModel.SiaModel)
+	belogs.Debug("insertMftDb(): mftModel.Sia:", mftModel.SiaModel)
 	if len(mftModel.SiaModel.CaRepository) > 0 ||
 		len(mftModel.SiaModel.RpkiManifest) > 0 ||
 		len(mftModel.SiaModel.RpkiNotify) > 0 ||
@@ -204,22 +187,64 @@ func insertMft(session *xorm.Session,
 			mftModel.SiaModel.RpkiNotify, mftModel.SiaModel.CaRepository,
 			mftModel.SiaModel.SignedObject)
 		if err != nil {
-			belogs.Error("insertMft(): INSERT lab_rpki_mft_sia Exec :", jsonutil.MarshalJson(syncLogFileModel), err)
+			belogs.Error("insertMftDb(): INSERT lab_rpki_mft_sia Exec :", jsonutil.MarshalJson(syncLogFileModel), err)
 			return err
 		}
 	}
 
 	//lab_rpki_mft_fileAndHashs
-	belogs.Debug("insertMft(): mftModel.FileHashModels:", mftModel.FileHashModels)
+	belogs.Debug("insertMftDb(): mftModel.FileHashModels:", mftModel.FileHashModels)
 	if mftModel.FileHashModels != nil && len(mftModel.FileHashModels) > 0 {
 		sqlStr = `INSERT lab_rpki_mft_file_hash(mftId, file,hash) VALUES(?,?,?)`
 		for _, fileHashModel := range mftModel.FileHashModels {
 			res, err = session.Exec(sqlStr, mftId, fileHashModel.File, fileHashModel.Hash)
 			if err != nil {
-				belogs.Error("insertMft(): INSERT lab_rpki_mft_file_hash Exec :", jsonutil.MarshalJson(syncLogFileModel), err)
+				belogs.Error("insertMftDb(): INSERT lab_rpki_mft_file_hash Exec :", jsonutil.MarshalJson(syncLogFileModel), err)
 				return err
 			}
 		}
 	}
+	return nil
+}
+
+func getExpireMftDb(now time.Time) (certIdStateModels []CertIdStateModel, err error) {
+
+	certIdStateModels = make([]CertIdStateModel, 0)
+	t := convert.Time2String(now)
+	sql := `select id, state as stateStr, c.nextUpdate  as endTime from  lab_rpki_mft c 
+			where timestamp(c.nextUpdate) < ? order by id `
+
+	err = xormdb.XormEngine.SQL(sql, t).Find(&certIdStateModels)
+	if err != nil {
+		belogs.Error("getExpireMftDb(): lab_rpki_mft fail:", t, err)
+		return nil, err
+	}
+	belogs.Info("getExpireMftDb(): now t:", t, "  , len(certIdStateModels):", len(certIdStateModels))
+	return certIdStateModels, nil
+}
+
+func updateMftStateDb(certIdStateModels []CertIdStateModel) error {
+	start := time.Now()
+	session, err := xormdb.NewSession()
+	defer session.Close()
+
+	sql := `update lab_rpki_mft c set c.state = ? where id = ? `
+	for i := range certIdStateModels {
+		belogs.Debug("updateMftStateDb():  certIdStateModels[i]:", certIdStateModels[i].Id, certIdStateModels[i].StateStr)
+		_, err := session.Exec(sql, certIdStateModels[i].StateStr, certIdStateModels[i].Id)
+		if err != nil {
+			belogs.Error("updateMftStateDb(): UPDATE lab_rpki_mft fail :", jsonutil.MarshalJson(certIdStateModels[i]), err)
+			return xormdb.RollbackAndLogError(session, "updateMftStateDb(): UPDATE lab_rpki_mft fail : certIdStateModels[i]: "+
+				jsonutil.MarshalJson(certIdStateModels[i]), err)
+		}
+	}
+
+	err = xormdb.CommitSession(session)
+	if err != nil {
+		belogs.Error("updateMftStateDb(): CommitSession fail :", err)
+		return err
+	}
+	belogs.Info("updateMftStateDb(): len(certIdStateModels):", len(certIdStateModels), "  time(s):", time.Now().Sub(start))
+
 	return nil
 }

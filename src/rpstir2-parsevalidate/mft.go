@@ -2,6 +2,7 @@ package parsevalidate
 
 import (
 	"strconv"
+	"strings"
 	"time"
 
 	model "rpstir2-model"
@@ -267,9 +268,9 @@ func validateMftModel(mftModel *model.MftModel, stateModel *model.StateModel) (e
 		fileName := fileHash.File
 		hash := fileHash.Hash
 		ext := osutil.Ext(fileName)
-		if ext != ".cer" && ext != ".roa" && ext != ".crl" {
+		if ext != ".cer" && ext != ".roa" && ext != ".crl" && ext != ".gbr" {
 			stateMsg := model.StateMsg{Stage: "parsevalidate",
-				Fail:   "The file in fileList is not one of the three types of cer/roa/crl",
+				Fail:   "The file in fileList is not one of the three types of cer/roa/crl/gbr",
 				Detail: "The file is " + fileName}
 			stateModel.AddError(&stateMsg)
 		}
@@ -318,7 +319,7 @@ func validateMftModel(mftModel *model.MftModel, stateModel *model.StateModel) (e
 	if mftModel.ThisUpdate.After(now) {
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
 			Fail:   "ThisUpdate is later than the current time",
-			Detail: "now is " + convert.Time2StringZone(now) + ", thisUpdate is " + convert.Time2StringZone(mftModel.ThisUpdate)}
+			Detail: "The current time is " + convert.Time2StringZone(now) + ", thisUpdate is " + convert.Time2StringZone(mftModel.ThisUpdate)}
 		if conf.Bool("policy::allowNotYetMft") {
 			stateModel.AddWarning(&stateMsg)
 		} else {
@@ -328,7 +329,7 @@ func validateMftModel(mftModel *model.MftModel, stateModel *model.StateModel) (e
 	if mftModel.NextUpdate.Before(now) {
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
 			Fail:   "NextUpdate is earlier than the current time",
-			Detail: "now is " + convert.Time2StringZone(now) + ", nextUpdate is " + convert.Time2StringZone(mftModel.NextUpdate)}
+			Detail: "The current time is " + convert.Time2StringZone(now) + ", nextUpdate is " + convert.Time2StringZone(mftModel.NextUpdate)}
 		if conf.Bool("policy::allowStaleMft") {
 			stateModel.AddWarning(&stateMsg)
 		} else {
@@ -390,4 +391,53 @@ func validateMftModel(mftModel *model.MftModel, stateModel *model.StateModel) (e
 	belogs.Debug("validateMftModel():filePath, fileName,stateModel:",
 		mftModel.FilePath, mftModel.FileName, jsonutil.MarshalJson(stateModel))
 	return nil
+}
+
+func updateMftByCheckAll(now time.Time) error {
+	// check expire
+	curCertIdStateModels, err := getExpireMftDb(now)
+	if err != nil {
+		belogs.Error("updateMftByCheckAll(): getExpireMftDb:  err: ", err)
+		return err
+	}
+	belogs.Info("updateMftByCheckAll(): len(curCertIdStateModels):", len(curCertIdStateModels))
+
+	newCertIdStateModels := make([]CertIdStateModel, 0)
+	for i := range curCertIdStateModels {
+		// if have this error, ignore
+		belogs.Debug("updateMftByCheckAll(): old curCertIdStateModels[i]:", jsonutil.MarshalJson(curCertIdStateModels[i]))
+		if strings.Contains(curCertIdStateModels[i].StateStr, "NextUpdate is earlier than the current time") {
+			continue
+		}
+
+		// will add error
+		stateModel := model.StateModel{}
+		jsonutil.UnmarshalJson(curCertIdStateModels[i].StateStr, &stateModel)
+
+		stateMsg := model.StateMsg{Stage: "parsevalidate",
+			Fail:   "NextUpdate is earlier than the current time",
+			Detail: "The current time is " + convert.Time2StringZone(now) + ", nextUpdate is " + convert.Time2StringZone(curCertIdStateModels[i].EndTime)}
+		if conf.Bool("policy::allowStaleMft") {
+			stateModel.AddWarning(&stateMsg)
+		} else {
+			stateModel.AddError(&stateMsg)
+		}
+
+		certIdStateModel := CertIdStateModel{
+			Id:       curCertIdStateModels[i].Id,
+			StateStr: jsonutil.MarshalJson(stateModel),
+		}
+		newCertIdStateModels = append(newCertIdStateModels, certIdStateModel)
+		belogs.Debug("updateMftByCheckAll(): new certIdStateModel:", jsonutil.MarshalJson(certIdStateModel))
+	}
+
+	// update db
+	err = updateMftStateDb(newCertIdStateModels)
+	if err != nil {
+		belogs.Error("updateMftByCheckAll(): updateMftStateDb:  err: ", len(newCertIdStateModels), err)
+		return err
+	}
+	belogs.Info("updateMftByCheckAll(): ok len(newCertIdStateModels):", len(newCertIdStateModels))
+	return nil
+
 }

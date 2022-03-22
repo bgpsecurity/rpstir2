@@ -22,7 +22,7 @@ func ParseToRtrPduModel(buf *bytes.Reader) (rtrPduModel RtrPduModel, err error) 
 		belogs.Error("ParseToRtrPduModel(): recv byte's length is too small: ", buf.Size())
 		rtrError := NewRtrError(
 			errors.New("length of receive bytes is too small"),
-			false, PROTOCOL_VERSION_0, PDU_TYPE_ERROR_CODE_INVALID_REQUEST,
+			false, PDU_PROTOCOL_VERSION_0, PDU_TYPE_ERROR_CODE_INVALID_REQUEST,
 			buf, "")
 		return rtrPduModel, rtrError
 	}
@@ -65,6 +65,9 @@ func ParseToRtrPduModel(buf *bytes.Reader) (rtrPduModel RtrPduModel, err error) 
 
 	case PDU_TYPE_ERROR_REPORT:
 		return ParseToErrorReport(buf, protocolVersion)
+
+	case PDU_TYPE_ASA:
+		return ParseToAsa(buf, protocolVersion)
 
 	default:
 		belogs.Error("parseToRtrPduModel():received bytes cannot be parse to rtr's pdu,  pduType:", pduType)
@@ -135,8 +138,8 @@ func SendResponses(conn *net.TCPConn, rtrPduModelResponses []RtrPduModel) (err e
 			belogs.Debug("sendResponses():  conn.Write() fail,  ", jsonutil.MarshalJson(one), n, err)
 			return err
 		}
-		belogs.Debug("SendResponses():send batchId:", batchId, ", rtrPduModel:", jsonutil.MarshalJson(one),
-			", should send len(sendBytes):", len(sendBytes), ",  actual send Bytes n:", n)
+		belogs.Info("SendResponses():send batchId:", batchId, ", rtrPduModel:", jsonutil.MarshalJson(one),
+			", len(sendBytes):", len(sendBytes), ",  sendBytes:\n"+convert.PrintBytes(sendBytes, 8))
 
 		// avoid tcp sticky packets
 		if sendIntervalMs > 0 {
@@ -179,15 +182,18 @@ func parseProtocolVersionAndPduType(buf *bytes.Reader) (protocolVersion, pduType
 		belogs.Error("parseToPduModel(): get protocolVersion from recvByte fail: ", buf, err)
 		rtrError := NewRtrError(
 			err,
-			true, PROTOCOL_VERSION_0, PDU_TYPE_ERROR_CODE_UNSUPPORTED_PROTOCOL_VERSION,
+			true, PDU_PROTOCOL_VERSION_0, PDU_TYPE_ERROR_CODE_UNSUPPORTED_PROTOCOL_VERSION,
 			buf, "Fail to get protocolVersion")
 		return 0, 0, rtrError
 	}
-	if protocolVersion != 0 && protocolVersion != 1 {
+	belogs.Debug("parseToPduModel():Read protocolVersion:", protocolVersion)
+
+	if protocolVersion != PDU_PROTOCOL_VERSION_0 && protocolVersion != PDU_PROTOCOL_VERSION_1 &&
+		protocolVersion != PDU_PROTOCOL_VERSION_2 {
 		belogs.Error("parseToPduModel(): protocolVersion is illegal: ", buf, protocolVersion)
 		rtrError := NewRtrError(
 			errors.New("protocolVersion is neigher 0 nor 1, "+strconv.Itoa(int(protocolVersion))),
-			true, PROTOCOL_VERSION_0, PDU_TYPE_ERROR_CODE_UNSUPPORTED_PROTOCOL_VERSION,
+			true, PDU_PROTOCOL_VERSION_0, PDU_TYPE_ERROR_CODE_UNSUPPORTED_PROTOCOL_VERSION,
 			buf, "Fail to get protocolVersion")
 		return 0, 0, rtrError
 	}
@@ -202,11 +208,13 @@ func parseProtocolVersionAndPduType(buf *bytes.Reader) (protocolVersion, pduType
 			buf, "Fail to get pduType")
 		return 0, 0, rtrError
 	}
-	if pduType > PDU_TYPE_ERROR_REPORT {
+	belogs.Debug("parseToPduModel():Read pduType:", pduType)
+
+	if pduType > PDU_TYPE_ASA {
 		belogs.Error("parseToPduModel(): pduType is illegal: ", buf, pduType)
 		rtrError := NewRtrError(
 			errors.New("get Itoa is error "+strconv.Itoa(int(pduType))),
-			true, PROTOCOL_VERSION_0, PDU_TYPE_ERROR_CODE_UNSUPPORTED_PDU_TYPE,
+			true, PDU_PROTOCOL_VERSION_0, PDU_TYPE_ERROR_CODE_UNSUPPORTED_PDU_TYPE,
 			buf, "Fail to get pduType")
 		return 0, 0, rtrError
 	}
@@ -214,7 +222,7 @@ func parseProtocolVersionAndPduType(buf *bytes.Reader) (protocolVersion, pduType
 		belogs.Error("parseToPduModel():pduType is PDU_TYPE_ROUTER_KEY,  protocolVersion must be 1 ", buf, pduType, protocolVersion)
 		rtrError := NewRtrError(
 			errors.New("pduType is ROUTER KEY,  protocolVersion must be 1"),
-			true, PROTOCOL_VERSION_0, PDU_TYPE_ERROR_CODE_UNSUPPORTED_PROTOCOL_VERSION,
+			true, PDU_PROTOCOL_VERSION_0, PDU_TYPE_ERROR_CODE_UNSUPPORTED_PROTOCOL_VERSION,
 			buf, "Fail to get pduType")
 		return 0, 0, rtrError
 	}
