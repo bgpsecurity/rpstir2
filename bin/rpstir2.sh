@@ -117,7 +117,6 @@ case $1 in
   fullsync ) 
     echo "start rpstir2 fullsync"
     echo ${serverHost}":"${serverHttpsPort}
-    echo "POST https://www.baidu.com/"
     curl -v -k -d '{"sysStyle": "fullsync","syncPolicy":"entire"}'  -H "Content-type: application/json" -X POST https://${serverHost}:${serverHttpsPort}/sys/initreset
     echo -e "\n"
     ;;  
