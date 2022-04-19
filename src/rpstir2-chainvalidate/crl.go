@@ -15,36 +15,36 @@ import (
 	"github.com/cpusoft/goutil/osutil"
 )
 
-func GetChainCrls(chains *Chains, wg *sync.WaitGroup) {
+func getChainCrls(chains *Chains, wg *sync.WaitGroup) {
 	defer wg.Done()
 	start := time.Now()
-	belogs.Debug("GetChainCrls(): start:")
+	belogs.Debug("getChainCrls(): start:")
 
-	chainCrlSqls, err := GetChainCrlSqls()
+	chainCrlSqls, err := getChainCrlSqlsDb()
 	if err != nil {
-		belogs.Error("GetChainCrls(): GetChainCrlSqls:", err)
+		belogs.Error("getChainCrls(): getChainCrlSqlsDb:", err)
 		return
 	}
-	belogs.Debug("GetChainCrls(): GetChainCers, len(chainCrlSqls):", len(chainCrlSqls))
+	belogs.Debug("getChainCrls(): getChainCrlSqlsDb, len(chainCrlSqls):", len(chainCrlSqls))
 
 	for i := range chainCrlSqls {
 		chainCrl := chainCrlSqls[i].ToChainCrl()
-		belogs.Debug("GetChainCrls():i, chainCrl:", i, jsonutil.MarshalJson(chainCrl))
+		belogs.Debug("getChainCrls():i, chainCrl:", i, jsonutil.MarshalJson(chainCrl))
 		chains.CrlIds = append(chains.CrlIds, chainCrlSqls[i].Id)
 		chains.AddCrl(&chainCrl)
 	}
 
-	belogs.Debug("GetChainCrls(): end, len(chainCrlSqls):", len(chainCrlSqls), ",   len(chains.CrlIds):", len(chains.CrlIds), "  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Debug("getChainCrls(): end, len(chainCrlSqls):", len(chainCrlSqls), ",   len(chains.CrlIds):", len(chains.CrlIds), "  time(s):", time.Now().Sub(start).Seconds())
 	return
 }
 
-func ValidateCrls(chains *Chains, wg *sync.WaitGroup) {
+func validateCrls(chains *Chains, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	start := time.Now()
 
 	crlIds := chains.CrlIds
-	belogs.Debug("ValidateCrls(): start: len(crlIds):", len(crlIds))
+	belogs.Debug("validateCrls(): start: len(crlIds):", len(crlIds))
 
 	var crlWg sync.WaitGroup
 	chainCrlCh := make(chan int, conf.Int("chain::chainConcurrentCount"))
@@ -56,7 +56,7 @@ func ValidateCrls(chains *Chains, wg *sync.WaitGroup) {
 	crlWg.Wait()
 	close(chainCrlCh)
 
-	belogs.Info("ValidateCrls(): end, len(crlIds):", len(crlIds), "  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Info("validateCrls(): end, len(crlIds):", len(crlIds), "  time(s):", time.Now().Sub(start).Seconds())
 }
 
 func validateCrl(chains *Chains, crlId uint64, wg *sync.WaitGroup, chainCrlCh chan int) {

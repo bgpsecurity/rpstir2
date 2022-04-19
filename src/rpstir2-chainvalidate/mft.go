@@ -17,41 +17,41 @@ import (
 	"github.com/cpusoft/goutil/osutil"
 )
 
-func GetChainMfts(chains *Chains, wg *sync.WaitGroup) {
+func getChainMfts(chains *Chains, wg *sync.WaitGroup) {
 	defer wg.Done()
 	start := time.Now()
-	belogs.Debug("GetChainMfts(): start:")
+	belogs.Debug("getChainMfts(): start:")
 
-	chainMftSqls, err := GetChainMftSqls()
+	chainMftSqls, err := getChainMftSqlsDb()
 	if err != nil {
-		belogs.Error("GetChainMfts(): GetChainMftSqls:", err)
+		belogs.Error("getChainMfts(): getChainMftSqlsDb:", err)
 		return
 	}
-	belogs.Debug("GetChainMfts(): GetChainMftSqls, len(chainMftSqls):", len(chainMftSqls))
+	belogs.Debug("getChainMfts(): getChainMftSqlsDb, len(chainMftSqls):", len(chainMftSqls))
 
 	for i := range chainMftSqls {
 		chainMft := chainMftSqls[i].ToChainMft()
 		chainMft.ChainFileHashs, err = GetChainFileHashs(chainMft.Id)
-		belogs.Debug("GetChainMfts():i, chainMft:", i, jsonutil.MarshalJson(chainMft))
+		belogs.Debug("getChainMfts():i, chainMft:", i, jsonutil.MarshalJson(chainMft))
 		if err != nil {
-			belogs.Error("GetChainCers(): GetChainFileHashs fail:", chainMft.Id, err)
+			belogs.Error("getChainMfts(): GetChainFileHashs fail:", chainMft.Id, err)
 			return
 		}
 		chains.MftIds = append(chains.MftIds, chainMftSqls[i].Id)
 		chains.AddMft(&chainMft)
 	}
 
-	belogs.Debug("GetChainMfts(): end len(chainMftSqls):", len(chainMftSqls), ",   len(chains.MftIds):", len(chains.MftIds), "  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Debug("getChainMfts(): end len(chainMftSqls):", len(chainMftSqls), ",   len(chains.MftIds):", len(chains.MftIds), "  time(s):", time.Now().Sub(start).Seconds())
 	return
 }
 
-func ValidateMfts(chains *Chains, wg *sync.WaitGroup) {
+func validateMfts(chains *Chains, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	start := time.Now()
 
 	mftIds := chains.MftIds
-	belogs.Debug("ValidateMfts(): start: len(mftIds):", len(mftIds))
+	belogs.Debug("validateMfts(): start: len(mftIds):", len(mftIds))
 
 	var mftWg sync.WaitGroup
 	chainMftCh := make(chan int, conf.Int("chain::chainConcurrentCount"))
@@ -63,7 +63,7 @@ func ValidateMfts(chains *Chains, wg *sync.WaitGroup) {
 	mftWg.Wait()
 	close(chainMftCh)
 
-	belogs.Info("ValidateMfts(): end, len(mftIds):", len(mftIds), "  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Info("validateMfts(): end, len(mftIds):", len(mftIds), "  time(s):", time.Now().Sub(start).Seconds())
 
 }
 
@@ -427,4 +427,83 @@ func getSameAkiCerRoaCrlFilesChainMfts(chains *Chains, mftId uint64) (sameAkiCer
 		}
 	}
 	return
+}
+
+func updateChainByMft(chains *Chains) (err error) {
+	start := time.Now()
+	mftIds := chains.MftIds
+	belogs.Info("updateChainByMft(): start: len(mftIds):", len(mftIds))
+	rsyncDestPath := conf.VariableString("rsync::destPath") + "/"
+	rrdpDestPath := conf.VariableString("rrdp::destPath") + "/"
+	// found invalid mft
+	for _, mftId := range mftIds {
+		chainMft, err := chains.GetMftById(mftId)
+		if err != nil {
+			belogs.Error("validateMft(): GetMftById fail:", mftId, err)
+			return err
+		}
+		if chainMft.StateModel.State != "invalid" {
+			continue
+		}
+		belogs.Debug("updateChainByMft(): found invalid mft, mftId:", mftId,
+			chainMft.FilePath, chainMft.FileName, jsonutil.MarshalJson(chainMft.StateModel))
+		fileTypeIds, ok := chains.AkiToFileTypeIds[chainMft.Aki]
+		belogs.Debug("updateChainByMft(): mftId, fileTypeIds, ok:", mftId, fileTypeIds, ok)
+		if !ok {
+			continue
+		}
+		publicPointName := chainMft.FilePath
+		publicPointName = strings.Replace(publicPointName, rsyncDestPath, "", -1)
+		publicPointName = strings.Replace(publicPointName, rrdpDestPath, "", -1)
+
+		stateMsg := model.StateMsg{Stage: "chainvalidate",
+			Fail:   "Manifest which has same AKI of this file is invalid or missing",
+			Detail: `No manifest(invalid or missing) is available for ` + publicPointName + ` , and AKI is (` + chainMft.Aki + `), thus there may have been undetected deletions or replay substitutions from the publication point`}
+		belogs.Debug("updateChainByMft(): mftId, publicPointName, stateMsg:", mftId, publicPointName,
+			jsonutil.MarshalJson(stateMsg))
+
+		for _, fileTypeId := range fileTypeIds.FileTypeIds {
+			belogs.Debug("updateChainByMft(): mftId, fileTypeId:", mftId, fileTypeId)
+
+			fileType := string(fileTypeId[:3])
+			switch fileType {
+			case "cer":
+				chainCer, err := chains.GetCerByFileTypeId(fileTypeId)
+				if err != nil {
+					belogs.Error("updateChainByMft(): GetCerByFileTypeId, mftId,fileTypeId,err:", mftId, fileTypeId, err)
+					return err
+				}
+				chainCer.StateModel.AddWarning(&stateMsg)
+				chains.UpdateFileTypeIdToCer(&chainCer)
+				belogs.Info("updateChainByMft(): mftId:", mftId, "   chainMft:", chainMft.FilePath, chainMft.FileName,
+					" chainCer:", chainCer.FilePath, chainCer.FileName, jsonutil.MarshalJson(chainCer.StateModel))
+			case "crl":
+				chainCrl, err := chains.GetCrlByFileTypeId(fileTypeId)
+				if err != nil {
+					belogs.Error("updateChainByMft(): GetCrlByFileTypeId, mftId,fileTypeId,err:", mftId, fileTypeId, err)
+					return err
+				}
+				chainCrl.StateModel.AddWarning(&stateMsg)
+				chains.UpdateFileTypeIdToCrl(&chainCrl)
+				belogs.Info("updateChainByMft(): mftId:", mftId, "   chainMft:", chainMft.FilePath, chainMft.FileName,
+					" chainCrl:", chainCrl.FilePath, chainCrl.FileName, jsonutil.MarshalJson(chainCrl.StateModel))
+			case "roa":
+				chainRoa, err := chains.GetRoaByFileTypeId(fileTypeId)
+				if err != nil {
+					belogs.Error("updateChainByMft(): GetRoaByFileTypeId, mftId,fileTypeId,err:", mftId, fileTypeId, err)
+					return err
+				}
+				chainRoa.StateModel.AddWarning(&stateMsg)
+				chains.UpdateFileTypeIdToRoa(&chainRoa)
+				belogs.Info("updateChainByMft(): mftId:", mftId, "   chainMft:", chainMft.FilePath, chainMft.FileName,
+					" chainRoa:", chainRoa.FilePath, chainRoa.FileName, jsonutil.MarshalJson(chainRoa.StateModel))
+			default:
+				// do nothing
+			}
+
+		}
+
+	}
+	belogs.Info("updateChainByMft(): end: len(mftIds):", len(mftIds), "  time(s):", time.Now().Sub(start))
+	return nil
 }

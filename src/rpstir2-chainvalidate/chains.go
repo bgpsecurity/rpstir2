@@ -31,6 +31,7 @@ type Chains struct {
 	FileTypeIdToCrl map[string]ChainCrl
 	FileTypeIdToMft map[string]ChainMft
 	FileTypeIdToRoa map[string]ChainRoa
+	FileTypeIdToAsa map[string]ChainAsa
 
 	// key: Aki, value: fileTypeId, may be more than one FileTypeId
 	AkiToFileTypeIds map[string]FileTypeIds
@@ -42,6 +43,7 @@ type Chains struct {
 	CrlIds []uint64
 	MftIds []uint64
 	RoaIds []uint64
+	AsaIds []uint64
 }
 
 func NewChains(count uint64) *Chains {
@@ -50,11 +52,13 @@ func NewChains(count uint64) *Chains {
 	chains.CrlIds = make([]uint64, 0)
 	chains.MftIds = make([]uint64, 0)
 	chains.RoaIds = make([]uint64, 0)
+	chains.AsaIds = make([]uint64, 0)
 
 	chains.FileTypeIdToCer = make(map[string]ChainCer, count)
 	chains.FileTypeIdToCrl = make(map[string]ChainCrl, count)
 	chains.FileTypeIdToMft = make(map[string]ChainMft, count)
 	chains.FileTypeIdToRoa = make(map[string]ChainRoa, count)
+	chains.FileTypeIdToAsa = make(map[string]ChainAsa, count)
 
 	chains.AkiToFileTypeIds = make(map[string]FileTypeIds, count)
 	chains.SkiToFileTypeId = make(map[string]string, count)
@@ -266,4 +270,55 @@ func (c *Chains) GetRoaByFileTypeId(fileTypeId string) (chainRoa ChainRoa, err e
 func (c *Chains) GetRoaById(roaId uint64) (chainRoa ChainRoa, err error) {
 	fileTypeId := "roa" + convert.ToString(roaId)
 	return c.GetRoaByFileTypeId(fileTypeId)
+}
+
+func (c *Chains) AddAsa(chainAsa *ChainAsa) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	fileTypeId := "asa" + convert.ToString(chainAsa.Id)
+	belogs.Debug("AddAsa(): fileTypeId:", fileTypeId)
+
+	// fileTypeId To Cer
+	c.FileTypeIdToAsa[fileTypeId] = *chainAsa
+	belogs.Debug("AddAsa():add FileTypeIdToAsa fileTypeId, chainAsa.Id:", fileTypeId, chainAsa.Id)
+	// Aki to fileTypeId
+	fileTypeIds, ok := c.AkiToFileTypeIds[chainAsa.Aki]
+	belogs.Debug("AddAsa():found AkiToFileTypeIds, chainAsa.Aki, fileTypeId, ok", chainAsa.Aki, fileTypeId, ok)
+	if ok {
+		fileTypeIds.Add(fileTypeId)
+	} else {
+		fileTypeIds = *NewFileTypeIds(fileTypeId)
+	}
+	c.AkiToFileTypeIds[chainAsa.Aki] = fileTypeIds
+	belogs.Debug("AddAsa():add AkiToFileTypeIds, chainAsa.Aki, len(fileTypeIds):", chainAsa.Aki, len(fileTypeIds.FileTypeIds))
+	// ski to fileTypeId
+	c.SkiToFileTypeId[chainAsa.Ski] = fileTypeId
+	belogs.Debug("AddAsa():add SkiToFileTypeId, chainAsa.Ski:fileTypeIds:", chainAsa.Ski, fileTypeIds)
+}
+func (c *Chains) UpdateFileTypeIdToAsa(chainAsa *ChainAsa) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+	fileTypeId := "asa" + convert.ToString(chainAsa.Id)
+	c.FileTypeIdToAsa[fileTypeId] = *chainAsa
+	belogs.Debug("UpdateFileTypeIdToAsa():update FileTypeIdToAsa, fileTypeId:", fileTypeId,
+		"   chainAsa.Id:", chainAsa.Id, "   chainAsa.StateModel:", chainAsa.StateModel)
+}
+
+func (c *Chains) GetAsaByFileTypeId(fileTypeId string) (chainAsa ChainAsa, err error) {
+	c.lock.RLock()
+	defer c.lock.RUnlock()
+
+	chainAsa, ok := c.FileTypeIdToAsa[fileTypeId]
+	if ok {
+		belogs.Debug("GetAsaByFileTypeId(): fileTypeId:", fileTypeId, "  chainAsa.Id, ok:", chainAsa.Id, ok)
+		return chainAsa, nil
+	}
+	return chainAsa, errors.New("not found chainAsa by " + fileTypeId)
+
+}
+
+func (c *Chains) GetAsaById(asaId uint64) (chainAsa ChainAsa, err error) {
+	fileTypeId := "asa" + convert.ToString(asaId)
+	return c.GetAsaByFileTypeId(fileTypeId)
 }

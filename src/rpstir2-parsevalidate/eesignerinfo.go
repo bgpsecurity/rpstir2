@@ -8,6 +8,7 @@ import (
 	openssl "rpstir2-parsevalidate-openssl"
 
 	"github.com/cpusoft/goutil/belogs"
+	"github.com/cpusoft/goutil/conf"
 	"github.com/cpusoft/goutil/convert"
 	"github.com/cpusoft/goutil/jsonutil"
 	"github.com/cpusoft/goutil/opensslutil"
@@ -82,14 +83,19 @@ func ValidateEeCertModel(stateModel *model.StateModel, eeCertModel *model.EeCert
 	if eeCertModel.NotBefore.After(now) {
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
 			Fail:   "NotBefore of EE is later than the current time",
-			Detail: "now is " + convert.Time2StringZone(now) + ", notBefore is " + convert.Time2StringZone(eeCertModel.NotBefore)}
+			Detail: "The current time is " + convert.Time2StringZone(now) + ", notBefore is " + convert.Time2StringZone(eeCertModel.NotBefore)}
 		stateModel.AddError(&stateMsg)
 	}
 	if eeCertModel.NotAfter.Before(now) {
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
 			Fail:   "NotAfter of EE is earlier than the current time",
-			Detail: "now is " + convert.Time2StringZone(now) + ", notAfter is " + convert.Time2StringZone(eeCertModel.NotAfter)}
-		stateModel.AddWarning(&stateMsg)
+			Detail: "The current time is " + convert.Time2StringZone(now) + ", notAfter is " + convert.Time2StringZone(eeCertModel.NotAfter)}
+		if conf.Bool("policy::allowStaleEe") {
+			stateModel.AddWarning(&stateMsg)
+		} else {
+			stateModel.AddError(&stateMsg)
+		}
+
 	}
 	if eeCertModel.NotAfter.Before(eeCertModel.NotBefore) {
 		stateMsg := model.StateMsg{Stage: "parsevalidate",

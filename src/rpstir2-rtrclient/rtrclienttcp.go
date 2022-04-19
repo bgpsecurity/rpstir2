@@ -4,22 +4,21 @@ import (
 	"errors"
 
 	"github.com/cpusoft/goutil/belogs"
-	"github.com/cpusoft/goutil/conf"
 	ts "github.com/cpusoft/goutil/tcpserver"
 )
 
 var RtrTcpClient *ts.TcpClient
 
-func clientStart() {
-	tcpserver := conf.String("rtr::tcpserver")
-	tcpport := conf.String("rtr::tcpport")
+func clientStart(rtrClientStartModel RtrClientStartModel) {
+	//tcpserver := conf.String("rpstir2-vc::serverHost")
+	//tcpport := conf.String("rpstir2-vc::serverTcpPort")
 	rtrTcpClientProcessFunc := new(RtrTcpClientProcessFunc)
-	belogs.Info("clientStart():Rtr Tcp Client: connect to tcpserver:", tcpserver, "    tcpport:", tcpport)
+	belogs.Info("clientStart():Rtr Tcp Client: connect to tcpserver:", rtrClientStartModel.Server, "    tcpport:", rtrClientStartModel.Port)
 
 	//CreateTcpClient("127.0.0.1:9999", ClientProcess1)
 	RtrTcpClient = ts.NewTcpClient(rtrTcpClientProcessFunc)
 	belogs.Debug("clientStart(): Tcp Client, will start RtrTcpClient %p ", RtrTcpClient)
-	go RtrTcpClient.Start(tcpserver + ":" + tcpport)
+	go RtrTcpClient.Start(rtrClientStartModel.Server + ":" + rtrClientStartModel.Port)
 	belogs.Debug("clientStart(): Tcp Client, after start RtrTcpClient %p ", RtrTcpClient)
 
 }

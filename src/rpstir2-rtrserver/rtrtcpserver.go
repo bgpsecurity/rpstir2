@@ -33,7 +33,7 @@ func SendSerialNotify() (err error) {
 		return errors.New("RtrTcpServer is nil, should start first")
 	}
 
-	rtrPduModelResponse, err := ProcessSerialNotify(PROTOCOL_VERSION_0)
+	rtrPduModelResponse, err := ProcessSerialNotify(PDU_PROTOCOL_VERSION_0)
 	if err != nil {
 		belogs.Error("SendSerialNotify():server, ProcessSerialNotify fail: ", err)
 		return err

@@ -8,8 +8,9 @@ import (
 )
 
 const (
-	PROTOCOL_VERSION_0 = 0
-	PROTOCOL_VERSION_1 = 1
+	PDU_PROTOCOL_VERSION_0 = 0
+	PDU_PROTOCOL_VERSION_1 = 1
+	PDU_PROTOCOL_VERSION_2 = 2
 
 	PDU_TYPE_SERIAL_NOTIFY  = 0
 	PDU_TYPE_SERIAL_QUERY   = 1
@@ -22,9 +23,14 @@ const (
 	//PDU_TYPE_RESERVED       = 9
 	PDU_TYPE_ROUTER_KEY   = 9
 	PDU_TYPE_ERROR_REPORT = 10
+	PDU_TYPE_ASA          = 11
 
 	// min pdu type length is reset query
 	PDU_TYPE_MIN_LEN = 8
+
+	// flag: from style
+	PDU_FLAG_WITHDRAW = 0
+	PDU_FLAG_ANNOUNCE = 1
 
 	// error code
 	PDU_TYPE_ERROR_CODE_CORRUPT_DATA                    = 0
@@ -327,7 +333,7 @@ type RtrEndOfDataModel struct {
 func NewRtrEndOfDataModel(protocolVersion uint8, sessionId uint16,
 	serialNumber uint32, refreshInterval uint32,
 	retryInterval uint32, expireInterval uint32) *RtrEndOfDataModel {
-	if protocolVersion == PROTOCOL_VERSION_0 {
+	if protocolVersion == PDU_PROTOCOL_VERSION_0 {
 		return &RtrEndOfDataModel{
 			ProtocolVersion: protocolVersion,
 			PduType:         PDU_TYPE_END_OF_DATA,
@@ -336,7 +342,7 @@ func NewRtrEndOfDataModel(protocolVersion uint8, sessionId uint16,
 			SerialNumber:    serialNumber,
 		}
 
-	} else if protocolVersion == PROTOCOL_VERSION_1 {
+	} else if protocolVersion == PDU_PROTOCOL_VERSION_1 || protocolVersion == PDU_PROTOCOL_VERSION_2 {
 		return &RtrEndOfDataModel{
 			ProtocolVersion: protocolVersion,
 			PduType:         PDU_TYPE_END_OF_DATA,
@@ -359,7 +365,7 @@ func (p *RtrEndOfDataModel) Bytes() []byte {
 
 	binary.Write(wr, binary.BigEndian, p.Length)
 	binary.Write(wr, binary.BigEndian, p.SerialNumber)
-	if p.ProtocolVersion == PROTOCOL_VERSION_1 {
+	if p.ProtocolVersion == PDU_PROTOCOL_VERSION_1 {
 		binary.Write(wr, binary.BigEndian, p.RefreshInterval)
 		binary.Write(wr, binary.BigEndian, p.RetryInterval)
 		binary.Write(wr, binary.BigEndian, p.ExpireInterval)
@@ -426,10 +432,10 @@ type RtrRouterKeyModel struct {
 	SubjectPublicKeyInfo uint32   `json:"subjectPublicKeyInfo"`
 }
 
-func NewRtrRouterKeyModel(flags uint8, subjectKeyIdentifier [20]byte,
+func NewRtrRouterKeyModel(protocolVersion uint8, flags uint8, subjectKeyIdentifier [20]byte,
 	asn uint32, subjectPublicKeyInfo uint32) *RtrRouterKeyModel {
 	return &RtrRouterKeyModel{
-		ProtocolVersion:      PROTOCOL_VERSION_1,
+		ProtocolVersion:      protocolVersion,
 		PduType:              PDU_TYPE_ROUTER_KEY,
 		Flags:                flags,
 		Zero:                 0,
@@ -526,11 +532,11 @@ func (p *RtrErrorReportModel) GetPduType() uint8 {
 }
 
 // withdraw-->0, announce-->1
-func GetIpPrefixModelFlags(style string) uint8 {
+func getModelFlagsFromStyle(style string) uint8 {
 	if style == "withdraw" {
-		return 0
+		return PDU_FLAG_WITHDRAW
 	} else if style == "announce" {
-		return 1
+		return PDU_FLAG_ANNOUNCE
 	}
 	return 0
 }
@@ -574,4 +580,61 @@ func (p *RtrError) Error() string {
 }
 func (p *RtrError) Unwrap() error {
 	return p.Err
+}
+
+type RtrAsaModel struct {
+	ProtocolVersion uint8    `json:"protocolVersion"`
+	PduType         uint8    `json:"pduType"`
+	Zero0           uint16   `json:"zero0"`
+	Length          uint32   `json:"length"`
+	Flags           uint8    `json:"flags"`
+	Zero1           uint8    `json:"zero1"`
+	ProviderAsCount uint16   `json:"providerAsCount"`
+	CustomerAsn     uint32   `json:"customerAsn"`
+	ProviderAsns    []uint32 `json:"providerAsns"`
+}
+
+func NewRtrAsaModel(protocolVersion uint8, flags uint8,
+	customerAsn uint32, providerAsns []uint32) *RtrAsaModel {
+	length := 16 + len(providerAsns)*4
+
+	return &RtrAsaModel{
+		ProtocolVersion: protocolVersion,
+		PduType:         PDU_TYPE_ASA,
+		Zero0:           0,
+		Length:          uint32(length),
+		Flags:           flags,
+		Zero1:           0,
+		ProviderAsCount: uint16(len(providerAsns)),
+		CustomerAsn:     customerAsn,
+		ProviderAsns:    providerAsns,
+	}
+}
+
+func (p *RtrAsaModel) Bytes() []byte {
+	wr := bytes.NewBuffer([]byte{})
+	binary.Write(wr, binary.BigEndian, p.ProtocolVersion)
+	binary.Write(wr, binary.BigEndian, p.PduType)
+	binary.Write(wr, binary.BigEndian, p.Zero0)
+	binary.Write(wr, binary.BigEndian, p.Length)
+	binary.Write(wr, binary.BigEndian, p.Flags)
+	binary.Write(wr, binary.BigEndian, p.Zero1)
+	binary.Write(wr, binary.BigEndian, p.ProviderAsCount)
+	binary.Write(wr, binary.BigEndian, p.CustomerAsn)
+	if len(p.ProviderAsns) > 0 {
+		for i := range p.ProviderAsns {
+			binary.Write(wr, binary.BigEndian, p.ProviderAsns[i])
+		}
+	}
+	return wr.Bytes()
+}
+func (p *RtrAsaModel) PrintBytes() string {
+	return convert.PrintBytes(p.Bytes(), 8)
+}
+func (p *RtrAsaModel) GetProtocolVersion() uint8 {
+	return p.ProtocolVersion
+}
+
+func (p *RtrAsaModel) GetPduType() uint8 {
+	return p.PduType
 }

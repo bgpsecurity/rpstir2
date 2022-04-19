@@ -24,8 +24,11 @@ func ServerSendSerialNotify(c *gin.Context) {
 // start client
 func ClientStart(c *gin.Context) {
 	belogs.Info("ClientStart(): start")
+	rtrClientStartModel := RtrClientStartModel{}
+	c.ShouldBindJSON(&rtrClientStartModel)
+	belogs.Debug("ClientStart(): rtrClientStartModel:", rtrClientStartModel)
 
-	go clientStart()
+	go clientStart(rtrClientStartModel)
 	ginserver.ResponseOk(c, nil)
 }
 

@@ -32,6 +32,11 @@ var intiSqls []string = []string{
 	`drop table if exists lab_rpki_roa_ipaddress`,
 	`drop table if exists lab_rpki_roa_sia`,
 	`drop table if exists lab_rpki_roa`,
+	`drop table if exists lab_rpki_asa_provider_asn`,
+	`drop table if exists lab_rpki_asa_customer_asn`,
+	`drop table if exists lab_rpki_asa_aia`,
+	`drop table if exists lab_rpki_asa_sia`,
+	`drop table if exists lab_rpki_asa`,
 	`drop table if exists lab_rpki_rtr_full_log`,
 	`drop table if exists lab_rpki_rtr_full`,
 	`drop table if exists lab_rpki_rtr_incremental`,
@@ -327,6 +332,81 @@ CREATE TABLE lab_rpki_roa_ee_ipaddress (
 `,
 
 	`
+###### asa
+CREATE TABLE lab_rpki_asa (
+	id int(10) unsigned not null primary key auto_increment,
+	ski varchar(128) ,
+	aki varchar(128) ,
+	filePath varchar(512) NOT NULL ,
+	fileName varchar(128) NOT NULL ,
+	state json comment 'state info in json',
+	jsonAll json NOT NULL,
+	chainCerts json comment 'chain certs(cer/crl/mft/roa/asa) in json',
+	syncLogId int(10) unsigned not null comment 'foreign key references lab_rpki_sync_log(id)',
+	syncLogFileId int(10) unsigned not null comment 'foreign key references lab_rpki_sync_log_file(id)',
+	updateTime datetime NOT NULL,
+	fileHash varchar(512) NOT NULL ,
+	origin json comment 'origin(rir->repo) in json',
+	key ski (ski),
+	key aki (aki),
+	key filePath (filePath),
+	key fileName (fileName),
+	key syncLogId (syncLogId),
+	key syncLogFileId (syncLogFileId), 
+	unique asaFilePathFileName (filePath,fileName),
+	unique asaSkiFilePath (ski,filePath) 
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='asa info'
+`,
+
+	`	
+CREATE TABLE lab_rpki_asa_sia (
+	id int(10) unsigned not null primary key auto_increment,
+	asaId int(10) unsigned not null,
+	rpkiManifest varchar(512) ,
+	rpkiNotify varchar(512) ,
+	caRepository varchar(512) ,
+	signedObject varchar(512) ,
+	FOREIGN key (asaId) REFERENCES lab_rpki_asa(id)
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='asa sia'
+`,
+
+	`
+CREATE TABLE lab_rpki_asa_aia (
+	id int(10) unsigned not null primary key auto_increment,
+	asaId int(10) unsigned not null,
+	caIssuers varchar(512) ,
+	foreign key (asaId) references lab_rpki_asa(id)
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='asa aia'
+`,
+
+	`
+##### one asa may have many customerAsn
+CREATE TABLE lab_rpki_asa_customer_asn (
+	id int(10) unsigned not null primary key auto_increment,
+	asaId int(10) unsigned not null,
+	customerAsn int(10) unsigned not null,
+	addressFamily int(10) unsigned,
+	key customerAsn (customerAsn),
+	foreign key (asaId) references lab_rpki_asa(id)
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='asa customerAsn'
+`,
+
+	`
+##### one customerAsn may have many providerAsn
+CREATE TABLE lab_rpki_asa_provider_asn (
+	id int(10) unsigned not null primary key auto_increment,
+	asaId int(10) unsigned not null,
+	customerAsnId int(10) unsigned not null,
+	providerAsn int(10) unsigned not null,
+	addressFamily int(10) unsigned,
+	providerOrder int(10) unsigned not null,
+	key providerAsn (providerAsn),
+	foreign key (asaId) references lab_rpki_asa(id),
+	foreign key (customerAsnId) references lab_rpki_asa_customer_asn(id)
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='asa providerAsn'
+`,
+
+	`
 ################################################
 ## recored every sync log for cer/crl/roa/mft
 ################################################
@@ -431,6 +511,7 @@ CREATE TABLE lab_rpki_rtr_full (
 	prefixLength int(10) unsigned not null,
 	maxLength int(10) unsigned not null,
 	sourceFrom json not null comment 'come from : {souce:sync/slurm/rush,syncLogId/syncLogFileId/slurmId/slurmFileId/rushDataLogId}',
+	key serialNumber(serialNumber),
 	key asn(asn),
 	key address(address),
 	key prefixLength(prefixLength),
@@ -449,6 +530,7 @@ CREATE TABLE lab_rpki_rtr_full_log (
 	maxLength int(10) unsigned not null,
 	sourceFrom json not null comment 'come from : {souce:sync/slurm/rush,syncLogId/syncLogFileId/slurmId/slurmFileId/rushDataLogId}',
 	index serialNumber(serialNumber),
+	key serialNumber(serialNumber),
 	key asn(asn),
 	key address(address),
 	key prefixLength(prefixLength),
@@ -466,12 +548,55 @@ CREATE TABLE lab_rpki_rtr_incremental (
 	prefixLength int(10) unsigned not null,
 	maxLength int(10) unsigned not null,
 	sourceFrom json not null comment 'come from : {souce:sync/slurm/rush,syncLogId/syncLogFileId/slurmId/slurmFileId/rushDataLogId}',
+	key serialNumber(serialNumber),
 	key asn(asn),
 	key address(address),
 	key prefixLength(prefixLength),
 	key maxLength(maxLength),
 	unique rtrIncrementalSerialNumberAsnAddrPrefixMaxStyle (serialNumber , asn,address,prefixLength,maxLength,style)
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='after every sync repo, will insert all full'
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='incremental rtr'
+`,
+
+	`
+CREATE TABLE lab_rpki_rtr_asa_full (
+	id int(10) unsigned not null primary key auto_increment,
+	serialNumber bigint(20) unsigned not null,
+	addressFamily int(10) unsigned,
+	customerAsn int(10) unsigned not null comment 'customer asn',
+	providerAsns varchar(255) comment '[{"providerAsn":65000},{"providerAsn":65001},{"providerAsn":65002}]',
+	sourceFrom json not null comment 'come from : {souce:sync/slurm/rush,syncLogId/syncLogFileId/slurmId/slurmFileId/rushDataLogId}',
+	key serialNumber(serialNumber),
+	key customerAsn(customerAsn),
+	unique rtrAsaFullSerialNumberCustomerAsnProviderAsns(serialNumber,customerAsn,providerAsns)
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='full rtr asa'
+`,
+
+	`
+CREATE TABLE lab_rpki_rtr_asa_full_log (
+	id int(10) unsigned not null primary key auto_increment,
+	serialNumber bigint(20) unsigned not null,
+	addressFamily int(10) unsigned,
+	customerAsn int(10) unsigned not null comment 'customer asn',
+	providerAsns varchar(255) comment '[{"providerAsn":65000},{"providerAsn":65001},{"providerAsn":65002}]',
+	sourceFrom json not null comment 'come from : {souce:sync/slurm/rush,syncLogId/syncLogFileId/slurmId/slurmFileId/rushDataLogId}',
+	key serialNumber(serialNumber),
+	key customerAsn(customerAsn)
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='full rtr asa log history'
+`,
+
+	`
+CREATE TABLE lab_rpki_rtr_asa_incremental (
+	id int(10) unsigned not null primary key auto_increment,
+	serialNumber bigint(20) unsigned not null,
+	style varchar(16) not null comment 'announce/withdraw, is 1/0 in protocol',
+	addressFamily int(10) unsigned,
+	customerAsn int(10) unsigned not null comment 'customer asn',
+	providerAsns varchar(255) comment '[{"providerAsn":65000},{"providerAsn":65001},{"providerAsn":65002}]',
+	sourceFrom json not null comment 'come from : {souce:sync/slurm/rush,syncLogId/syncLogFileId/slurmId/slurmFileId/rushDataLogId}',
+	key serialNumber(serialNumber),
+	key customerAsn(customerAsn),
+	unique rtrIncrementalSerialNumberCustomerAsnProviderAsns(serialNumber,customerAsn,providerAsns)
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='incremental rtr asa'
 `,
 
 	`
@@ -588,6 +713,11 @@ var fullSyncSqls []string = []string{
 	`truncate  table  lab_rpki_roa_aia`,
 	`truncate  table  lab_rpki_roa_ipaddress`,
 	`truncate  table  lab_rpki_roa_ee_ipaddress`,
+	`truncate  table  lab_rpki_asa`,
+	`truncate  table  lab_rpki_asa_sia`,
+	`truncate  table  lab_rpki_asa_aia`,
+	`truncate  table  lab_rpki_asa_customer_asn`,
+	`truncate  table  lab_rpki_asa_provider_asn`,
 	`truncate  table  lab_rpki_sync_rrdp_log`,
 	`truncate  table  lab_rpki_sync_log_file`,
 	`truncate  table  lab_rpki_sync_log`,
@@ -621,6 +751,11 @@ var optimizeSqls []string = []string{
 	`optimize  table  lab_rpki_roa_aia`,
 	`optimize  table  lab_rpki_roa_ipaddress`,
 	`optimize  table  lab_rpki_roa_ee_ipaddress`,
+	`optimize  table  lab_rpki_asa`,
+	`optimize  table  lab_rpki_asa_sia`,
+	`optimize  table  lab_rpki_asa_aia`,
+	`optimize  table  lab_rpki_asa_customer_asn`,
+	`optimize  table  lab_rpki_asa_provider_asn`,
 	`optimize  table  lab_rpki_sync_log_file`,
 	`optimize  table  lab_rpki_sync_rrdp_log`,
 	`optimize  table  lab_rpki_sync_log`,
@@ -630,7 +765,8 @@ var optimizeSqls []string = []string{
 	`optimize  table  lab_rpki_rtr_full`,
 	`optimize  table  lab_rpki_rtr_full_log`,
 	`optimize  table  lab_rpki_rtr_incremental`,
-	`optimize  table  lab_rpki_slurm`}
+	`optimize  table  lab_rpki_slurm`,
+}
 
 // when isInit is true, then init all db. otherwise will reset all db
 func InitResetDb(sysStyle SysStyle) error {
@@ -664,7 +800,6 @@ func initResetDb(session *xorm.Session, sysStyle SysStyle) error {
 	}(session)
 
 	start := time.Now()
-
 	sql := `set foreign_key_checks=0;`
 	if _, err := session.Exec(sql); err != nil {
 		belogs.Error("initResetDb(): SET foreign_key_checks=0 fail", err)

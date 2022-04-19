@@ -146,6 +146,27 @@ func (c *ChainCertSql) ToChainRoa() (chainRoa ChainRoa) {
 	return chainRoa
 }
 
+func (c *ChainCertSql) ToChainAsa() (chainAsa ChainAsa) {
+	chainAsa.Id = c.Id
+
+	asaModel := model.AsaModel{}
+	err := jsonutil.UnmarshalJson(c.JsonAll, &asaModel)
+	belogs.Debug("ToChainAsa(): asaModel, err:", jsonutil.MarshalJson(asaModel), err)
+
+	chainAsa.FilePath = asaModel.FilePath
+	chainAsa.FileName = asaModel.FileName
+	chainAsa.Ski = asaModel.Ski
+	chainAsa.Aki = asaModel.Aki
+	chainAsa.EeCertStart = asaModel.EeCertModel.EeCertStart
+	chainAsa.EeCertEnd = asaModel.EeCertModel.EeCertEnd
+
+	chainAsa.StateModel = model.GetStateModelAndResetStage(c.State, "chainvalidate")
+	chainAsa.ChainSnInCrlRevoked = ChainSnInCrlRevoked{
+		CrlFileName: c.CrlFileName, RevocationTime: c.RevocationTime}
+	belogs.Debug("ToChainAsa(): chainAsa:", chainAsa)
+	return chainAsa
+}
+
 type ChainCer struct {
 	Id        uint64    `json:"id" xorm:"id int"`
 	FilePath  string    `json:"-" xorm:"filePath varchar(512)"`
@@ -377,4 +398,24 @@ type ChainRoa struct {
 type ChainValidateFileRequest struct {
 	FilePath string `json:"filePath"`
 	FileName string `json:"fileName"`
+}
+
+type ChainAsa struct {
+	Id          uint64 `json:"id" xorm:"id int"`
+	Asn         uint64 `json:"-" xorm:"asn int"`
+	FilePath    string `json:"-" xorm:"filePath varchar(512)"`
+	FileName    string `json:"-" xorm:"fileName varchar(128)"`
+	Ski         string `json:"-" xorm:"ski varchar(128)"`
+	Aki         string `json:"-" xorm:"aki varchar(128)"`
+	State       string `json:"-" xorm:"state json"`
+	EeCertStart uint64 `json:"-" xorm:"eeCertStart int"`
+	EeCertEnd   uint64 `json:"-" xorm:"eeCertEnd int"`
+
+	// parent cer
+	ParentChainCerAlones []ChainCerAlone `json:"parentChainCers"`
+
+	//should be revoked
+	ChainSnInCrlRevoked ChainSnInCrlRevoked `json:"-"`
+
+	StateModel model.StateModel `json:"-"`
 }

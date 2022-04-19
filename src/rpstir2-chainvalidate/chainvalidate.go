@@ -5,30 +5,31 @@ import (
 	"time"
 
 	"github.com/cpusoft/goutil/belogs"
+	"github.com/cpusoft/goutil/conf"
 )
 
 func chainValidateStart() (nextStep string, err error) {
 	start := time.Now()
 
-	belogs.Debug("chainValidateStart(): start")
+	belogs.Info("chainValidateStart(): start")
 	// save chain validate starttime to lab_rpki_sync_log
-	labRpkiSyncLogId, err := UpdateRsyncLogChainValidateStateStart("chainvalidating")
+	labRpkiSyncLogId, err := updateRsyncLogChainValidateStateStartDb("chainvalidating")
 	if err != nil {
-		belogs.Error("chainValidateStart():UpdateRsyncLogChainValidateStart fail:", err)
+		belogs.Error("chainValidateStart():updateRsyncLogChainValidateStateStartDb fail:", err)
 		return "", err
 	}
 
 	// build and validate chain all cert (include all)
-	err = ChainValidate()
+	err = chainValidate()
 	if err != nil {
-		belogs.Error("chainValidateStart():ChainValidateCerts fail:", err)
+		belogs.Error("chainValidateStart():chainValidate fail:", err)
 		return "", err
 	}
 
 	// save  chain validate end time
-	err = UpdateRsyncLogChainValidateStateEnd(labRpkiSyncLogId, "chainvalidated")
+	err = updateRsyncLogChainValidateStateEndDb(labRpkiSyncLogId, "chainvalidated")
 	if err != nil {
-		belogs.Error("chainValidateStart():UpdateRsyncLogChainValidateStateEnd fail:", err)
+		belogs.Error("chainValidateStart():updateRsyncLogChainValidateStateEndDb fail:", err)
 		return "", err
 	}
 
@@ -36,8 +37,8 @@ func chainValidateStart() (nextStep string, err error) {
 	return "rtr", nil
 }
 
-func ChainValidate() (err error) {
-	belogs.Info("ChainValidate():start:")
+func chainValidate() (err error) {
+	belogs.Info("chainValidate():start:")
 
 	chains := NewChains(80000)
 
@@ -45,55 +46,84 @@ func ChainValidate() (err error) {
 	var wgGetChain sync.WaitGroup
 	// get Chains
 	wgGetChain.Add(1)
-	go GetChainMfts(chains, &wgGetChain)
+	go getChainMfts(chains, &wgGetChain)
 
 	wgGetChain.Add(1)
-	go GetChainCrls(chains, &wgGetChain)
+	go getChainCrls(chains, &wgGetChain)
 
 	wgGetChain.Add(1)
-	go GetChainCers(chains, &wgGetChain)
+	go getChainCers(chains, &wgGetChain)
 
 	wgGetChain.Add(1)
-	go GetChainRoas(chains, &wgGetChain)
+	go getChainRoas(chains, &wgGetChain)
+
+	wgGetChain.Add(1)
+	go getChainAsas(chains, &wgGetChain)
 
 	wgGetChain.Wait()
-	belogs.Info("ChainValidate(): GetChains  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Info("chainValidate(): GetChains  time(s):", time.Now().Sub(start).Seconds())
 
 	// validate
 	start = time.Now()
 	var wgValidate sync.WaitGroup
 	wgValidate.Add(1)
-	go ValidateMfts(chains, &wgValidate)
+	go validateMfts(chains, &wgValidate)
 
 	wgValidate.Add(1)
-	go ValidateCrls(chains, &wgValidate)
+	go validateCrls(chains, &wgValidate)
 
 	wgValidate.Add(1)
-	go ValidateCers(chains, &wgValidate)
+	go validateCers(chains, &wgValidate)
 
 	wgValidate.Add(1)
-	go ValidateRoas(chains, &wgValidate)
+	go validateRoas(chains, &wgValidate)
+
+	wgValidate.Add(1)
+	go validateAsas(chains, &wgValidate)
 
 	wgValidate.Wait()
-	belogs.Info("ChainValidate(): after Validates  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Info("chainValidate(): after Validates  time(s):", time.Now().Sub(start).Seconds())
+
+	// will check all certs in chain: mft invalid --> crl/roa/cer invalid
+	err = updateChainByCheckAll(chains)
+	if err != nil {
+		belogs.Error("chainValidate():updateChainByCheckAll fail:", err)
+		return err
+	}
 
 	// save
 	start = time.Now()
 	var wgUpdate sync.WaitGroup
 	wgUpdate.Add(1)
-	go UpdateMfts(chains, &wgUpdate)
+	go updateMftsDb(chains, &wgUpdate)
 
 	wgUpdate.Add(1)
-	go UpdateCrls(chains, &wgUpdate)
+	go updateCrlsDb(chains, &wgUpdate)
 
 	wgUpdate.Add(1)
-	go UpdateCers(chains, &wgUpdate)
+	go updateCersDb(chains, &wgUpdate)
 
 	wgUpdate.Add(1)
-	go UpdateRoas(chains, &wgUpdate)
+	go updateRoasDb(chains, &wgUpdate)
+
+	wgUpdate.Add(1)
+	go updateAsasDb(chains, &wgUpdate)
 
 	wgUpdate.Wait()
-	belogs.Info("ChainValidate(): after updates  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Info("chainValidate(): after updates  time(s):", time.Now().Sub(start).Seconds())
 
+	return nil
+}
+
+func updateChainByCheckAll(chains *Chains) (err error) {
+	// after all, will check again:
+	// if mft is invalid,may effect roa/crl/cer --> warning, not found mft
+	if conf.String("policy::invalidMftEffect") == "warning" {
+		err = updateChainByMft(chains)
+		if err != nil {
+			belogs.Error("updateChainByCheckAll():updateChainByMft fail:", err)
+			return err
+		}
+	}
 	return nil
 }

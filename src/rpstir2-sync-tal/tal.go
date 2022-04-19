@@ -138,7 +138,7 @@ func parseTalFile(file string) (talModel model.TalModel, err error) {
 	}
 	talModel.TalSyncUrls = talSyncUrls
 	talModel.SubjectPublicKeyInfo = buffer.String()
-	belogs.Debug("parseTalFile(): talModel:", jsonutil.MarshalJson(talModel))
+	belogs.Debug("parseTalFile():file:", file, "  talModel:", jsonutil.MarshalJson(talModel))
 	return talModel, nil
 }
 
@@ -174,7 +174,7 @@ func syncToLocalAndParseValidateCers(talModels []model.TalModel) (passTalModels 
 		passTalModel := model.TalModel{}
 		passTalModel.TalSyncUrls = make([]model.TalSyncUrl, 0)
 		for j := range talModels[i].TalSyncUrls {
-			if talModels[i].TalSyncUrls[j].Error == nil {
+			if talModels[i].TalSyncUrls[j].Error == "" {
 				passTalModel.TalSyncUrls = append(passTalModel.TalSyncUrls, talModels[i].TalSyncUrls[j])
 			}
 		}
@@ -192,12 +192,12 @@ func syncToLocalAndParseValidateCer(tmpDir, talUrl, subjectPublicKeyInfo string,
 
 	start := time.Now()
 	belogs.Debug("syncToLocalAndParseValidateCer(): tmpDir,  talUrl:", tmpDir, talUrl)
-	talSyncUrl.Error = nil
+	talSyncUrl.Error = ""
 	// get file name
 	_, _, file, err := urlutil.HostAndPathAndFile(talUrl)
 	if err != nil {
 		belogs.Error("syncToLocalAndParseValidateCer(): HostAndPathAndFile err:", talUrl, err)
-		talSyncUrl.Error = err
+		talSyncUrl.Error = err.Error()
 		return
 	}
 	belogs.Debug("syncToLocalAndParseValidateCer(): HostAndPathAndFile, file:", file)
@@ -208,12 +208,14 @@ func syncToLocalAndParseValidateCer(tmpDir, talUrl, subjectPublicKeyInfo string,
 		resp, body, err := httpclient.GetHttpsVerify(talUrl, true)
 		if err != nil {
 			belogs.Error("syncToLocalAndParseValidateCer(): GetHttpsVerify fail, err:", talUrl, err)
-			talSyncUrl.Error = err
+			talSyncUrl.Error = err.Error()
+			talSyncUrl.SupportRrdp = false
 			return
 		}
 		if resp.StatusCode != 200 {
 			belogs.Error("syncToLocalAndParseValidateCer(): GetHttpsVerify StatusCode != 200 :", talUrl, resp.StatusCode)
-			talSyncUrl.Error = errors.New("http status code is not 200")
+			talSyncUrl.Error = "http status code is not 200"
+			talSyncUrl.SupportRrdp = false
 			return
 		}
 		// save to localFile
@@ -221,7 +223,8 @@ func syncToLocalAndParseValidateCer(tmpDir, talUrl, subjectPublicKeyInfo string,
 		err = fileutil.WriteBytesToFile(talSyncUrl.LocalFile, []byte(body))
 		if err != nil {
 			belogs.Error("syncToLocalAndParseValidateCer(): WriteBytesToFile fail, err:", talUrl, err)
-			talSyncUrl.Error = err
+			talSyncUrl.Error = err.Error()
+			talSyncUrl.SupportRrdp = false
 			return
 		}
 
@@ -230,13 +233,16 @@ func syncToLocalAndParseValidateCer(tmpDir, talUrl, subjectPublicKeyInfo string,
 		rsyncDestPath, _, err := rsyncutil.RsyncQuiet(talUrl, tmpDir)
 		if err != nil {
 			belogs.Error("syncToLocalAndParseValidateCer(): RsyncQuiet fail, url, tmpDir, err:", talUrl, tmpDir, err)
-			talSyncUrl.Error = err
+			talSyncUrl.Error = err.Error()
+			talSyncUrl.SupportRsync = false
 			return
 		}
 		talSyncUrl.LocalFile = osutil.JoinPathFile(rsyncDestPath, file)
 
 	} else {
-		talSyncUrl.Error = errors.New("talUrl is not supported:" + talUrl)
+		talSyncUrl.Error = "talUrl is not supported:" + talUrl
+		talSyncUrl.SupportRrdp = false
+		talSyncUrl.SupportRsync = false
 		return
 	}
 
@@ -244,7 +250,7 @@ func syncToLocalAndParseValidateCer(tmpDir, talUrl, subjectPublicKeyInfo string,
 	err = parseAndValidateCer(talUrl, subjectPublicKeyInfo, tmpDir, talSyncUrl)
 	if err != nil {
 		belogs.Error("syncToLocalAndParseValidateCer(): parseAndValidateCer err:", talSyncUrl.LocalFile, err)
-		talSyncUrl.Error = err
+		talSyncUrl.Error = err.Error()
 		return
 	}
 
@@ -254,7 +260,9 @@ func syncToLocalAndParseValidateCer(tmpDir, talUrl, subjectPublicKeyInfo string,
 }
 
 func parseAndValidateCer(talUrl, subjectPublicKeyInfo, tmpDir string, talSyncUrl *model.TalSyncUrl) (err error) {
-	belogs.Debug("parseAndValidateCer(): talSyncUrl:", jsonutil.MarshalJson(talSyncUrl), "   subjectPublicKeyInfo:", subjectPublicKeyInfo)
+	start := time.Now()
+	belogs.Debug("parseAndValidateCer(): talUrl:", talUrl, "   subjectPublicKeyInfo:", subjectPublicKeyInfo, "  tmpDir:", tmpDir,
+		"  talSyncUrl:", jsonutil.MarshalJson(talSyncUrl))
 
 	// parse by /parsevalidate/parsefilesimple
 	// post file, still use http
@@ -267,6 +275,15 @@ func parseAndValidateCer(talUrl, subjectPublicKeyInfo, tmpDir string, talSyncUrl
 	}
 	belogs.Debug("parseAndValidateCer(): PostFileAndUnmarshalResponseModel file :", talSyncUrl.LocalFile,
 		"   parseCerSimple:", jsonutil.MarshalJson(parseCerSimple))
+
+	if conf.String("sync::supportTestCer") == "true" {
+		if strings.Contains(talUrl, "zdns.cn") && strings.Contains(talSyncUrl.LocalFile, "zdns-test.cer") {
+			parseCerSimple.RpkiNotify = "https://rpki-rrdp-test.zdns.cn/notification.xml"
+			parseCerSimple.CaRepository = ""
+			belogs.Info("parseAndValidateCer():supportTestCer, talUrl, talSyncUrl.LocalFile:", talUrl, talSyncUrl.LocalFile,
+				"    parseCerSimple:", jsonutil.MarshalJson(parseCerSimple))
+		}
+	}
 
 	// check rpkiNotify(rrdp)
 	if len(parseCerSimple.RpkiNotify) > 0 {
@@ -281,14 +298,14 @@ func parseAndValidateCer(talUrl, subjectPublicKeyInfo, tmpDir string, talSyncUrl
 			talSyncUrl.SupportRrdp = true
 			talSyncUrl.RrdpUrl = parseCerSimple.RpkiNotify
 		}
-
+	} else {
+		talSyncUrl.SupportRrdp = false
 	}
-	belogs.Debug("parseAndValidateCer():after check rpkiNotify(rrdp),talUrl, rpkiNotify, talSyncUrl:",
-		talUrl, parseCerSimple.RpkiNotify, jsonutil.MarshalJson(talSyncUrl))
+	belogs.Debug("parseAndValidateCer():after check rpkiNotify(rrdp), parseCerSimple.RpkiNotify:", parseCerSimple.RpkiNotify,
+		"  talUrl:", talUrl, "  talSyncUrl:", jsonutil.MarshalJson(talSyncUrl))
 
 	// check caRepository(rsync), but just test talUrl
 	if len(parseCerSimple.CaRepository) > 0 {
-
 		// must start with "rsync", otherwise root cer cannot  download by rsync
 		if strings.HasPrefix(talSyncUrl.TalUrl, "rsync:") {
 			belogs.Debug("parseAndValidateCer(): test rsync is ok:", talSyncUrl.TalUrl)
@@ -304,8 +321,11 @@ func parseAndValidateCer(talUrl, subjectPublicKeyInfo, tmpDir string, talSyncUrl
 			belogs.Debug("parseAndValidateCer(): have CaRepository, but not start with 'rsync':", talSyncUrl.TalUrl, err)
 			talSyncUrl.SupportRsync = false
 		}
+	} else {
+		talSyncUrl.SupportRsync = false
 	}
-	belogs.Debug("parseAndValidateCer():after check caRepository(rsync),talUrl,  talSyncUrl:", talUrl, jsonutil.MarshalJson(talSyncUrl))
+	belogs.Debug("parseAndValidateCer():after check caRepository(rsync), parseCerSimple.CaRepository:", parseCerSimple.CaRepository,
+		"  talUrl:", talUrl, "  talSyncUrl:", jsonutil.MarshalJson(talSyncUrl))
 
 	// validate, using public key info
 	subjectPublicKeyInfoInCer := base64util.EncodeBase64(parseCerSimple.SubjectPublicKeyInfo)
@@ -316,5 +336,7 @@ func parseAndValidateCer(talUrl, subjectPublicKeyInfo, tmpDir string, talSyncUrl
 			"  subjectPublicKeyInfoInCer:\r\n", subjectPublicKeyInfoInCer, "\r\n   subjectPublicKeyInfo:\r\n", subjectPublicKeyInfo)
 		return errors.New("subjectInfo is not equal")
 	}
+	belogs.Info("parseAndValidateCer(): pass, talUrl:", talUrl, "   subjectPublicKeyInfo:", subjectPublicKeyInfo, "  tmpDir:", tmpDir,
+		"  talSyncUrl:", jsonutil.MarshalJson(talSyncUrl), "   time(s):", time.Now().Sub(start))
 	return nil
 }

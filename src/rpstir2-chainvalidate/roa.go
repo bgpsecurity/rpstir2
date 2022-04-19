@@ -16,36 +16,36 @@ import (
 	"github.com/cpusoft/goutil/osutil"
 )
 
-func GetChainRoas(chains *Chains, wg *sync.WaitGroup) {
+func getChainRoas(chains *Chains, wg *sync.WaitGroup) {
 	defer wg.Done()
 	start := time.Now()
-	belogs.Debug("GetChainRoas(): start:")
+	belogs.Debug("getChainRoas(): start:")
 
-	chainRoaSqls, err := GetChainRoaSqls()
+	chainRoaSqls, err := getChainRoaSqlsDb()
 	if err != nil {
-		belogs.Error("GetChainRoas(): GetChainRoaSqls:", err)
+		belogs.Error("getChainRoas(): getChainRoaSqlsDb:", err)
 		return
 	}
-	belogs.Debug("GetChainRoas(): GetChainRoaSqls, len(chainRoaSqls):", len(chainRoaSqls))
+	belogs.Debug("getChainRoas(): getChainRoaSqlsDb, len(chainRoaSqls):", len(chainRoaSqls))
 
 	for i := range chainRoaSqls {
 		chainRoa := chainRoaSqls[i].ToChainRoa()
-		belogs.Debug("GetChainRoas():i, chainRoa:", i, jsonutil.MarshalJson(chainRoa))
+		belogs.Debug("getChainRoas():i, chainRoa:", i, jsonutil.MarshalJson(chainRoa))
 		chains.RoaIds = append(chains.RoaIds, chainRoaSqls[i].Id)
 		chains.AddRoa(&chainRoa)
 	}
 
-	belogs.Debug("GetChainRoas(): end, len(chainRoaSqls):", len(chainRoaSqls), ",   len(chains.RoaIds):", len(chains.RoaIds), "  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Debug("getChainRoas(): end, len(chainRoaSqls):", len(chainRoaSqls), ",   len(chains.RoaIds):", len(chains.RoaIds), "  time(s):", time.Now().Sub(start).Seconds())
 	return
 }
 
-func ValidateRoas(chains *Chains, wg *sync.WaitGroup) {
+func validateRoas(chains *Chains, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	start := time.Now()
 
 	roaIds := chains.RoaIds
-	belogs.Debug("ValidateRoas(): start: len(roaIds):", len(roaIds))
+	belogs.Debug("validateRoas(): start: len(roaIds):", len(roaIds))
 
 	var roaWg sync.WaitGroup
 	chainRoaCh := make(chan int, conf.Int("chain::chainConcurrentCount"))
@@ -57,7 +57,7 @@ func ValidateRoas(chains *Chains, wg *sync.WaitGroup) {
 	roaWg.Wait()
 	close(chainRoaCh)
 
-	belogs.Info("ValidateRoas(): end, len(roaIds):", len(roaIds), "  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Info("validateRoas(): end, len(roaIds):", len(roaIds), "  time(s):", time.Now().Sub(start).Seconds())
 
 }
 
@@ -129,7 +129,7 @@ func validateRoa(chains *Chains, roaId uint64, wg *sync.WaitGroup, chainRoaCh ch
 		self := make([]ChainAsn, 0)
 		asn := ChainAsn{Asn: chainRoa.Asn}
 		self = append(self, asn)
-		invalidAsns := AsnsIncludeInParents(chainRoa.ParentChainCerAlones, self)
+		invalidAsns := asnsIncludeInParents(chainRoa.ParentChainCerAlones, self)
 		if len(invalidAsns) > 0 {
 			belogs.Debug("validateRoa(): cer asn is overclaimed, fail, roaId:", chainRoa.Id, jsonutil.MarshalJson(invalidAsns))
 			stateMsg := model.StateMsg{Stage: "chainvalidate",

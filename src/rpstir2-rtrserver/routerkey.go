@@ -101,7 +101,7 @@ func ParseToRouterKey(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel Rtr
 		return rtrPduModel, rtrError
 	}
 
-	sq := NewRtrRouterKeyModel(flags, subjectKeyIdentifier,
+	sq := NewRtrRouterKeyModel(protocolVersion, flags, subjectKeyIdentifier,
 		asn, subjectPublicKeyInfo)
 
 	belogs.Debug("ParseToRouterKey():get PDU_TYPE_ROUTER_KEY ", buf, jsonutil.MarshalJson(sq))

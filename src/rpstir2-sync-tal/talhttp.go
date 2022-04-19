@@ -14,11 +14,13 @@ func GetTals(c *gin.Context) {
 	belogs.Info("GetTals")
 
 	talModels, err := getTals()
-	belogs.Debug("GetTals(): getTals, talModels:", jsonutil.MarshalJson(talModels))
 	if err != nil {
+		belogs.Error("GetTals(): getTals fail:", err)
 		ginserver.ResponseFail(c, err, "")
-	} else {
-		talModelsResponse := model.TalModelsResponse{TalModels: talModels}
-		ginserver.ResponseOk(c, talModelsResponse)
+		return
 	}
+	belogs.Debug("GetTals(): getTals, talModels:", jsonutil.MarshalJson(talModels))
+	talModelsResponse := model.TalModelsResponse{TalModels: talModels}
+	ginserver.ResponseOk(c, talModelsResponse)
+
 }
