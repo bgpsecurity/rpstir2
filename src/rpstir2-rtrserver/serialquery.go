@@ -194,8 +194,8 @@ func assembleSerialResponses(rtrIncrementals []model.LabRpkiRtrIncremental, rtrA
 
 			belogs.Info("assembleSerialResponses(): protocolVersion=0 or 1, will send will send Cache Response of incr rtr,",
 				",  receive protocolVersion:", protocolVersion, ",   sessionId:", sessionId, ",  serialNumber:", serialNumber,
-				",  len(rtrIncrementals): ", len(rtrIncrementals), ",  len(rtrPduModels):", len(rtrPduModels),
-				"   rtrPduModels:", jsonutil.MarshalJson(rtrPduModels))
+				",  len(rtrIncrementals): ", len(rtrIncrementals), ",  len(rtrPduModels):", len(rtrPduModels))
+			belogs.Debug("assembleSerialResponses(): protocolVersion=0 or 1,  rtrPduModels:", jsonutil.MarshalJson(rtrPduModels))
 			return rtrPduModels, nil
 		} else {
 			belogs.Debug("assembleSerialResponses(): protocolVersion=0 or 1,len(rtrIncrementals)==0 : just send endofdata,",
@@ -243,8 +243,8 @@ func assembleSerialResponses(rtrIncrementals []model.LabRpkiRtrIncremental, rtrA
 			belogs.Info("assembleResetResponses(): protocolVersion=2, will send will send Cache Response of all rtr,",
 				",  receive protocolVersion:", protocolVersion, ",   sessionId:", sessionId, ",  serialNumber:", serialNumber,
 				",  len(rtrIncrementals): ", len(rtrIncrementals), ", len(rtrAsaIncrementals): ", len(rtrAsaIncrementals),
-				",  len(rtrPduModels):", len(rtrPduModels), "  rtrPduModels:", jsonutil.MarshalJson(rtrPduModels))
-
+				",  len(rtrPduModels):", len(rtrPduModels))
+			belogs.Debug("assembleSerialResponses(): protocolVersion=2,  rtrPduModels:", jsonutil.MarshalJson(rtrPduModels))
 			return rtrPduModels, nil
 		} else {
 			belogs.Debug("assembleSerialResponses(): protocolVersion=2, len(rtrIncrementals)==0 : just send endofdata,",

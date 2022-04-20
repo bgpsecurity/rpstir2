@@ -529,7 +529,6 @@ CREATE TABLE lab_rpki_rtr_full_log (
 	prefixLength int(10) unsigned not null,
 	maxLength int(10) unsigned not null,
 	sourceFrom json not null comment 'come from : {souce:sync/slurm/rush,syncLogId/syncLogFileId/slurmId/slurmFileId/rushDataLogId}',
-	index serialNumber(serialNumber),
 	key serialNumber(serialNumber),
 	key asn(asn),
 	key address(address),
@@ -779,12 +778,12 @@ func InitResetDb(sysStyle SysStyle) error {
 	//truncate all table
 	err = initResetDb(session, sysStyle)
 	if err != nil {
-		return xormdb.RollbackAndLogError(session, "truncateDb(): truncateDb fail", err)
+		return xormdb.RollbackAndLogError(session, "InitResetDb(): initResetDb fail", err)
 	}
 
 	err = xormdb.CommitSession(session)
 	if err != nil {
-		return xormdb.RollbackAndLogError(session, "truncateDb(): CommitSession fail", err)
+		return xormdb.RollbackAndLogError(session, "InitResetDb(): CommitSession fail", err)
 	}
 	return nil
 }

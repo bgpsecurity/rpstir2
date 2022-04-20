@@ -100,7 +100,8 @@ func assembleResetResponses(rtrFulls []model.LabRpkiRtrFull, rtrAsaFulls []model
 
 			belogs.Info("assembleResetResponses(): protocolVersion=0 or 1, will send will send Cache Response of all rtr,",
 				",  receive protocolVersion:", protocolVersion, ",   sessionId:", sessionId, ",  serialNumber:", serialNumber,
-				",  len(rtrFulls): ", len(rtrFulls), ",  len(rtrPduModels):", len(rtrPduModels), "  rtrPduModels:", jsonutil.MarshalJson(rtrPduModels))
+				",  len(rtrFulls): ", len(rtrFulls), ",  len(rtrPduModels):", len(rtrPduModels))
+			belogs.Debug("assembleResetResponses(): protocolVersion=0 or 1, rtrPduModels:", jsonutil.MarshalJson(rtrPduModels))
 			return rtrPduModels, nil
 
 		} else {
@@ -147,7 +148,8 @@ func assembleResetResponses(rtrFulls []model.LabRpkiRtrFull, rtrAsaFulls []model
 			belogs.Info("assembleResetResponses(): protocolVersion=2, will send will send Cache Response of all rtr,",
 				",  receive protocolVersion:", protocolVersion, ",   sessionId:", sessionId, ",  serialNumber:", serialNumber,
 				",  len(rtrFulls): ", len(rtrFulls), ", len(rtrAsaFulls): ", len(rtrAsaFulls),
-				",  len(rtrPduModels):", len(rtrPduModels), "  rtrPduModels:", jsonutil.MarshalJson(rtrPduModels))
+				",  len(rtrPduModels):", len(rtrPduModels))
+			belogs.Debug("assembleResetResponses(): protocolVersion=2,	rtrPduModels:", jsonutil.MarshalJson(rtrPduModels))
 
 			return rtrPduModels, nil
 		} else {
