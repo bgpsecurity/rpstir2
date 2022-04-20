@@ -103,7 +103,7 @@ You can use crontab to perform scheduled synchronization tasks. Then RPSTIR2 wil
 $ crontab -e
 10 */4 * * *  /root/rpki/rpstir2/bin/rpstir2.sh crontab
 ```
-Note: The RPSTIR2 service must be started first. 
+Note: The RPSTIR2 service must start first. 
 
 ### 3.4 Sync and validate RPKI objects
 You can download RPKI objects with rsync or RRDP protocol, and complete the subsequent validation procedure. 
