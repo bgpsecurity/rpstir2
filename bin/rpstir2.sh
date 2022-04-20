@@ -108,7 +108,7 @@ case $1 in
     ;;
   crontab )
     source /etc/profile
-    source /root/.bashrc
+    source ~/.bashrc
     echo "start rpstir2 crontab sync"
     echo ${serverHost}":"${serverHttpsPort}
     curl -s -k -d '{"syncStyle": "sync"}'  -H "Content-type: application/json" -X POST https://${serverHost}:${serverHttpsPort}/entiresync/syncstart
