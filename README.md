@@ -101,7 +101,7 @@ You can use crontab to perform scheduled synchronization tasks. Then RPSTIR2 wil
 
 ```shell
 $ crontab -e
-1 1 * * *  /root/rpki/rpstir2/bin/rpstir2.sh crontab
+10 */4 * * *  /root/rpki/rpstir2/bin/rpstir2.sh crontab
 ```
 Note: The RPSTIR2 service must be started first. 
 
