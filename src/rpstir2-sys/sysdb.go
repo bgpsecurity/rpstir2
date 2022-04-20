@@ -40,6 +40,9 @@ var intiSqls []string = []string{
 	`drop table if exists lab_rpki_rtr_full_log`,
 	`drop table if exists lab_rpki_rtr_full`,
 	`drop table if exists lab_rpki_rtr_incremental`,
+	`drop table if exists lab_rpki_rtr_asa_full_log`,
+	`drop table if exists lab_rpki_rtr_asa_full`,
+	`drop table if exists lab_rpki_rtr_asa_incremental`,
 	`drop table if exists lab_rpki_rtr_serial_number`,
 	`drop table if exists lab_rpki_rtr_session`,
 	`drop table if exists lab_rpki_slurm`,
@@ -729,6 +732,9 @@ var resetAllOtherSqls []string = []string{
 	`truncate  table  lab_rpki_rtr_full`,
 	`truncate  table  lab_rpki_rtr_full_log`,
 	`truncate  table  lab_rpki_rtr_incremental`,
+	`truncate  table  lab_rpki_rtr_asa_full`,
+	`truncate  table  lab_rpki_rtr_asa_full_log`,
+	`truncate  table  lab_rpki_rtr_asa_incremental`,
 	`truncate  table  lab_rpki_slurm`,
 }
 
@@ -764,6 +770,9 @@ var optimizeSqls []string = []string{
 	`optimize  table  lab_rpki_rtr_full`,
 	`optimize  table  lab_rpki_rtr_full_log`,
 	`optimize  table  lab_rpki_rtr_incremental`,
+	`optimize  table  lab_rpki_rtr_asa_full`,
+	`optimize  table  lab_rpki_rtr_asa_full_log`,
+	`optimize  table  lab_rpki_rtr_asa_incremental`,
 	`optimize  table  lab_rpki_slurm`,
 }
 
