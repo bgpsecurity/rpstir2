@@ -41,7 +41,7 @@ GRANT ALL PRIVILEGES ON rpstir2.* TO 'rpstir2'@'%'  with grant option;
 flush privileges;
 ```
 
-Note: You also can use docker to run MySQL. 
+Note: You also can use docker to run MySQL, and make sure that the time zone of docker is the same as that of the host. 
 
 ### 2.3 Install GoLang(Optional)
 If you plan to compile the program by yourself, you need to install a version of Golang higher than 1.17. Otherwise you don't need to install it.
