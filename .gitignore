@@ -4,3 +4,4 @@
 *.sum
 /.vscode/settings.json
 /bin/*.bat
+/src/rpstir2.exe
