@@ -14,7 +14,7 @@ func RsyncStart(c *gin.Context) {
 
 	syncUrls := model.SyncUrls{}
 	err := c.ShouldBindJSON(&syncUrls)
-	belogs.Debug("RsyncStart(): syncUrls:", syncUrls, err)
+	belogs.Info("RsyncStart(): syncUrls:", syncUrls, err)
 	if err != nil {
 		belogs.Error("RsyncStart(): ShouldBindJSON:", err)
 		ginserver.ResponseFail(c, err, nil)
@@ -32,7 +32,7 @@ func RsyncLocalStart(c *gin.Context) {
 
 	syncUrls := model.SyncUrls{}
 	err := c.ShouldBindJSON(&syncUrls)
-	belogs.Debug("RsyncStart(): syncUrls:", syncUrls, err)
+	belogs.Info("RsyncStart(): syncUrls:", syncUrls, err)
 	if err != nil {
 		belogs.Error("RsyncStart(): ShouldBindJSON:", err)
 		ginserver.ResponseFail(c, err, nil)

@@ -14,6 +14,7 @@ import (
 
 // add
 func addAsasDb(syncLogFileModels []SyncLogFileModel) error {
+	belogs.Info("addAsasDb(): will insert len(syncLogFileModels):", len(syncLogFileModels))
 	session, err := xormdb.NewSession()
 	if err != nil {
 		return err
@@ -59,7 +60,7 @@ func delAsasDb(delSyncLogFileModels []SyncLogFileModel, updateSyncLogFileModels 
 	defer session.Close()
 
 	syncLogFileModels := append(delSyncLogFileModels, updateSyncLogFileModels...)
-	belogs.Debug("delAsasDb(): len(syncLogFileModels):", len(syncLogFileModels))
+	belogs.Info("delAsasDb(): will del len(syncLogFileModels):", len(syncLogFileModels))
 	for i := range syncLogFileModels {
 		err = delAsaByIdDb(session, syncLogFileModels[i].CertId)
 		if err != nil {
@@ -86,12 +87,13 @@ func delAsasDb(delSyncLogFileModels []SyncLogFileModel, updateSyncLogFileModels 
 
 func delAsaByIdDb(session *xorm.Session, asaId uint64) (err error) {
 
-	belogs.Info("delAsaByIdDb():delete lab_rpki_asa by asaId:", asaId)
+	belogs.Debug("delAsaByIdDb():delete lab_rpki_asa by asaId:", asaId)
 
 	// rrdp may have id==0, just return nil
 	if asaId <= 0 {
 		return nil
 	}
+	belogs.Info("delAsaByIdDb():delete lab_rpki_asa by asaId, more than 0:", asaId)
 
 	//lab_rpki_asa_provider_asn
 	res, err := session.Exec("delete from lab_rpki_asa_provider_asn  where asaId = ?", asaId)

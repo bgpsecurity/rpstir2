@@ -59,7 +59,7 @@ func delCrlsDb(delSyncLogFileModels []SyncLogFileModel, updateSyncLogFileModels 
 	defer session.Close()
 
 	syncLogFileModels := append(delSyncLogFileModels, updateSyncLogFileModels...)
-	belogs.Debug("delCrlsDb(): len(syncLogFileModels):", len(syncLogFileModels))
+	belogs.Info("delCrlsDb(): will del len(syncLogFileModels):", len(syncLogFileModels))
 	for i := range syncLogFileModels {
 		err = delCrlByIdDb(session, syncLogFileModels[i].CertId)
 		if err != nil {
@@ -85,12 +85,13 @@ func delCrlsDb(delSyncLogFileModels []SyncLogFileModel, updateSyncLogFileModels 
 }
 
 func delCrlByIdDb(session *xorm.Session, crlId uint64) (err error) {
-	belogs.Info("delCrlByIdDb(): delete lab_rpki_crl by  crlId:", crlId)
+	belogs.Debug("delCrlByIdDb():delete lab_rpki_crl by crlId:", crlId)
 
 	// rrdp may have id==0, just return nil
 	if crlId <= 0 {
 		return nil
 	}
+	belogs.Info("delCrlByIdDb():delete lab_rpki_crl by crlId, more than 0:", crlId)
 
 	//lab_rpki_crl_revoked_cert
 	res, err := session.Exec("delete from lab_rpki_crl_revoked_cert  where crlId = ?", crlId)

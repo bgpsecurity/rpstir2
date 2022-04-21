@@ -58,7 +58,7 @@ func delMftsDb(delSyncLogFileModels []SyncLogFileModel, updateSyncLogFileModels 
 	defer session.Close()
 
 	syncLogFileModels := append(delSyncLogFileModels, updateSyncLogFileModels...)
-	belogs.Debug("delMftsDb(): len(syncLogFileModels):", len(syncLogFileModels))
+	belogs.Info("delMftsDb(): will del len(syncLogFileModels):", len(syncLogFileModels))
 	for i := range syncLogFileModels {
 		err = delMftByIdDb(session, syncLogFileModels[i].CertId)
 		if err != nil {

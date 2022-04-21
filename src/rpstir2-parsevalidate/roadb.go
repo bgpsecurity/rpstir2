@@ -59,7 +59,7 @@ func delRoasDb(delSyncLogFileModels []SyncLogFileModel, updateSyncLogFileModels 
 	defer session.Close()
 
 	syncLogFileModels := append(delSyncLogFileModels, updateSyncLogFileModels...)
-	belogs.Debug("delRoasDb(): len(syncLogFileModels):", len(syncLogFileModels))
+	belogs.Info("delRoasDb(): will del len(syncLogFileModels):", len(syncLogFileModels))
 	for i := range syncLogFileModels {
 		err = delRoaByIdDb(session, syncLogFileModels[i].CertId)
 		if err != nil {
@@ -86,12 +86,12 @@ func delRoasDb(delSyncLogFileModels []SyncLogFileModel, updateSyncLogFileModels 
 
 func delRoaByIdDb(session *xorm.Session, roaId uint64) (err error) {
 
-	belogs.Info("delRoaByIdDb():delete lab_rpki_roa by roaId:", roaId)
-
+	belogs.Debug("delRoaByIdDb():delete lab_rpki_roa by roaId:", roaId)
 	// rrdp may have id==0, just return nil
 	if roaId <= 0 {
 		return nil
 	}
+	belogs.Info("delRoaByIdDb():delete lab_rpki_roa by roaId, more than 0:", roaId)
 
 	//lab_rpki_roa_ipaddress
 	res, err := session.Exec("delete from lab_rpki_roa_ipaddress  where roaId = ?", roaId)

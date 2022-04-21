@@ -14,7 +14,7 @@ func RrdpStart(c *gin.Context) {
 
 	syncUrls := model.SyncUrls{}
 	err := c.ShouldBindJSON(&syncUrls)
-	belogs.Debug("RrdpStart(): syncUrls:", syncUrls, err)
+	belogs.Info("RrdpStart(): syncUrls:", syncUrls, err)
 	if err != nil {
 		belogs.Error("RrdpStart(): ShouldBindJSON:", err)
 		ginserver.ResponseFail(c, err, nil)
