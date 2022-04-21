@@ -20,7 +20,7 @@ replace (
 )
 
 require (
-	github.com/cpusoft/goutil v1.0.33-0.20220322015430-2ec0476bbe08
+	github.com/cpusoft/goutil v1.0.33-0.20220420065058-08f4d4a13bb2
 	github.com/gin-gonic/gin v1.7.7
 	github.com/guregu/null v4.0.0+incompatible // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
