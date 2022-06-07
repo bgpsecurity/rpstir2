@@ -54,6 +54,7 @@ var intiSqls []string = []string{
 	`drop view if exists lab_rpki_mft_file_hash_view`,
 	`drop view if exists lab_rpki_roa_ipaddress_count_view`,
 	`drop view if exists lab_rpki_roa_ipaddress_view`,
+	`drop view if exists lab_rpki_sync_rrdp_log_maxid_view`,
 
 	`
 #################################
@@ -695,6 +696,13 @@ select roaId, count(*) as roaIpAddressCount
 from lab_rpki_roa_ipaddress 
 group by roaId order by roaIpAddressCount 
 `,
+	`
+#########################
+## create view roaIpAddressCount
+#########################
+CREATE VIEW lab_rpki_sync_rrdp_log_maxid_view AS 
+select max(cc.id) AS maxId from lab_rpki_sync_rrdp_log cc group by cc.notifyUrl order by cc.notifyUrl 
+`,
 }
 
 var fullSyncSqls []string = []string{
@@ -773,8 +781,7 @@ var optimizeSqls []string = []string{
 	`optimize  table  lab_rpki_rtr_asa_full`,
 	`optimize  table  lab_rpki_rtr_asa_full_log`,
 	`optimize  table  lab_rpki_rtr_asa_incremental`,
-	`optimize  table  lab_rpki_slurm`,
-}
+	`optimize  table  lab_rpki_slurm`}
 
 // when isInit is true, then init all db. otherwise will reset all db
 func InitResetDb(sysStyle SysStyle) error {

@@ -8,15 +8,14 @@ import (
 	"sync/atomic"
 	"time"
 
-	model "rpstir2-model"
-	"rpstir2-sync-core/rrdp"
-
 	"github.com/cpusoft/goutil/belogs"
 	"github.com/cpusoft/goutil/conf"
 	"github.com/cpusoft/goutil/httpclient"
 	"github.com/cpusoft/goutil/jsonutil"
 	"github.com/cpusoft/goutil/osutil"
 	"github.com/cpusoft/goutil/randutil"
+	model "rpstir2-model"
+	"rpstir2-sync-core/rrdp"
 )
 
 var rrQueue *RrdpParseQueue

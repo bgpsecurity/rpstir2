@@ -1,11 +1,10 @@
 package rsync
 
 import (
-	model "rpstir2-model"
-
 	"github.com/cpusoft/goutil/belogs"
 	"github.com/cpusoft/goutil/ginserver"
 	"github.com/gin-gonic/gin"
+	model "rpstir2-model"
 )
 
 // start to rsync from sync

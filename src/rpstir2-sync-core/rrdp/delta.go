@@ -3,11 +3,10 @@ package rrdp
 import (
 	"time"
 
-	model "rpstir2-model"
-
 	"github.com/cpusoft/goutil/belogs"
 	"github.com/cpusoft/goutil/jsonutil"
 	"github.com/cpusoft/goutil/rrdputil"
+	model "rpstir2-model"
 )
 
 // lastSerial is last syncRrdpLog's curSerial
