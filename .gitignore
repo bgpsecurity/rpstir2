@@ -5,3 +5,4 @@
 /.vscode/settings.json
 /bin/*.bat
 /src/rpstir2.exe
+/bin/*.exe
