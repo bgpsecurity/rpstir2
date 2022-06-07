@@ -12,7 +12,18 @@ serverHttpPort=`ReadINIfile "$configFile" "rpstir2-rp" "serverHttpPort" `
 function startFunc()
 {
   nohup ./rpstir2  >> ../log/nohup.log 2>&1 &
-  echo -e "\nyou can view the running status through the log files in ../log/.\n"
+  sleep 2
+  curlresult=`curl -s  -k -d '{"operate":"get"}'  -H "Content-type: application/json" -X POST https://$serverHost:$serverHttpsPort/sys/servicestate`
+  #echo $curlresult
+  running="runningState"
+  if [[ $curlresult =~ $running ]]
+  then
+     echo "Start successful"
+  else
+     echo "Start failed"
+     echo -e "\nYou can check the failure reason through the log file in ../log/.\n"
+  fi
+  
   return 0
 }
 
