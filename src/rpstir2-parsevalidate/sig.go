@@ -1,14 +1,16 @@
 package parsevalidate
 
 import (
-	model "rpstir2-model"
-	openssl "rpstir2-parsevalidate-openssl"
+	"errors"
 
 	"github.com/cpusoft/goutil/belogs"
+	"github.com/cpusoft/goutil/fileutil"
 	"github.com/cpusoft/goutil/hashutil"
 	"github.com/cpusoft/goutil/jsonutil"
 	"github.com/cpusoft/goutil/opensslutil"
 	"github.com/cpusoft/goutil/osutil"
+	model "rpstir2-model"
+	openssl "rpstir2-parsevalidate-openssl"
 )
 
 //Try to store the error in statemode instead of returning err
@@ -39,6 +41,23 @@ func ParseValidateSig(certFile string) (sigModel model.SigModel, stateModel mode
 // some parse may return err, will stop
 func parseSigModel(certFile string, sigModel *model.SigModel, stateModel *model.StateModel) error {
 	belogs.Debug("parseSigModel(): certFile: ", certFile)
+	fileLength, err := fileutil.GetFileLength(certFile)
+	if err != nil {
+		belogs.Error("parseSigModel(): GetFileLength: err: ", err, ": "+certFile)
+		stateMsg := model.StateMsg{Stage: "parsevalidate",
+			Fail:   "Fail to open file",
+			Detail: err.Error()}
+		stateModel.AddError(&stateMsg)
+		return err
+	} else if fileLength == 0 {
+		belogs.Error("parseSigModel(): GetFileLength, fileLenght is emtpy: " + certFile)
+		stateMsg := model.StateMsg{Stage: "parsevalidate",
+			Fail:   "File is empty",
+			Detail: ""}
+		stateModel.AddError(&stateMsg)
+		return errors.New("File " + certFile + " is empty")
+	}
+
 	sigModel.FilePath, sigModel.FileName = osutil.GetFilePathAndFileName(certFile)
 	sigModel.Version = 0 //default
 	//https://blog.csdn.net/Zhymax/article/details/7683925
