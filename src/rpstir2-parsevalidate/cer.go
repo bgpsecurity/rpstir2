@@ -2,24 +2,25 @@ package parsevalidate
 
 import (
 	"crypto/x509"
+	"errors"
 	"fmt"
 	"net/url"
 	"strings"
 	"time"
 
-	model "rpstir2-model"
-	openssl "rpstir2-parsevalidate-openssl"
-
 	"github.com/cpusoft/goutil/asn1util"
 	"github.com/cpusoft/goutil/belogs"
 	"github.com/cpusoft/goutil/conf"
 	"github.com/cpusoft/goutil/convert"
+	"github.com/cpusoft/goutil/fileutil"
 	"github.com/cpusoft/goutil/hashutil"
 	"github.com/cpusoft/goutil/iputil"
 	"github.com/cpusoft/goutil/jsonutil"
 	"github.com/cpusoft/goutil/opensslutil"
 	"github.com/cpusoft/goutil/osutil"
 	"github.com/cpusoft/goutil/regexputil"
+	model "rpstir2-model"
+	openssl "rpstir2-parsevalidate-openssl"
 )
 
 // Try to store the error in statemodel instead of returning err
@@ -49,6 +50,23 @@ func ParseValidateCer(certFile string) (cerModel model.CerModel, stateModel mode
 func parseCerModel(certFile string, cerModel *model.CerModel, stateModel *model.StateModel) (err error) {
 
 	belogs.Debug("parseCerModel():certFile ", certFile)
+	fileLength, err := fileutil.GetFileLength(certFile)
+	if err != nil {
+		belogs.Error("parseCerModel(): GetFileLength: err: ", err, ": "+certFile)
+		stateMsg := model.StateMsg{Stage: "parsevalidate",
+			Fail:   "Fail to open file",
+			Detail: err.Error()}
+		stateModel.AddError(&stateMsg)
+		return err
+	} else if fileLength == 0 {
+		belogs.Error("parseCerModel(): GetFileLength, fileLenght is emtpy: " + certFile)
+		stateMsg := model.StateMsg{Stage: "parsevalidate",
+			Fail:   "File is empty",
+			Detail: ""}
+		stateModel.AddError(&stateMsg)
+		return errors.New("File " + certFile + " is empty")
+	}
+
 	cerModel.FilePath, cerModel.FileName = osutil.GetFilePathAndFileName(certFile)
 
 	//get file byte
@@ -117,7 +135,7 @@ func parseCerModel(certFile string, cerModel *model.CerModel, stateModel *model.
 		belogs.Error("parseCerModel(): noCerIpAddress && noAsn: ", certFile)
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
 			Fail:   "Fail to find INR extension",
-			Detail: err.Error()}
+			Detail: "There is neither address nor ASN number"}
 		stateModel.AddError(&stateMsg)
 	}
 

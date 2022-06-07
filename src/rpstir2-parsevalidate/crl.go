@@ -1,22 +1,23 @@
 package parsevalidate
 
 import (
+	"errors"
 	"strconv"
 	"strings"
 	"time"
-
-	model "rpstir2-model"
-	openssl "rpstir2-parsevalidate-openssl"
 
 	"github.com/cpusoft/goutil/asn1util"
 	"github.com/cpusoft/goutil/belogs"
 	"github.com/cpusoft/goutil/conf"
 	"github.com/cpusoft/goutil/convert"
+	"github.com/cpusoft/goutil/fileutil"
 	"github.com/cpusoft/goutil/hashutil"
 	"github.com/cpusoft/goutil/jsonutil"
 	"github.com/cpusoft/goutil/opensslutil"
 	"github.com/cpusoft/goutil/osutil"
 	"github.com/cpusoft/goutil/regexputil"
+	model "rpstir2-model"
+	openssl "rpstir2-parsevalidate-openssl"
 )
 
 //Try to store the error in statemode instead of returning err
@@ -45,6 +46,23 @@ func ParseValidateCrl(certFile string) (crlModel model.CrlModel, stateModel mode
 // some parse may return err, will stop
 func parseCrlModel(certFile string, crlModel *model.CrlModel, stateModel *model.StateModel) error {
 	belogs.Debug("parseCrlModel():certFile: ", certFile)
+	fileLength, err := fileutil.GetFileLength(certFile)
+	if err != nil {
+		belogs.Error("parseCrlModel(): GetFileLength: err: ", err, ": "+certFile)
+		stateMsg := model.StateMsg{Stage: "parsevalidate",
+			Fail:   "Fail to open file",
+			Detail: err.Error()}
+		stateModel.AddError(&stateMsg)
+		return err
+	} else if fileLength == 0 {
+		belogs.Error("parseCrlModel(): GetFileLength, fileLenght is emtpy: " + certFile)
+		stateMsg := model.StateMsg{Stage: "parsevalidate",
+			Fail:   "File is empty",
+			Detail: ""}
+		stateModel.AddError(&stateMsg)
+		return errors.New("File " + certFile + " is empty")
+	}
+
 	crlModel.FilePath, crlModel.FileName = osutil.GetFilePathAndFileName(certFile)
 
 	fileByte, fileDecodeBase64Byte, err := asn1util.ReadFileAndDecodeBase64(certFile)

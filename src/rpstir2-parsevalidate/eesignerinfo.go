@@ -4,14 +4,13 @@ import (
 	"net/url"
 	"time"
 
-	model "rpstir2-model"
-	openssl "rpstir2-parsevalidate-openssl"
-
 	"github.com/cpusoft/goutil/belogs"
 	"github.com/cpusoft/goutil/conf"
 	"github.com/cpusoft/goutil/convert"
 	"github.com/cpusoft/goutil/jsonutil"
 	"github.com/cpusoft/goutil/opensslutil"
+	model "rpstir2-model"
+	openssl "rpstir2-parsevalidate-openssl"
 )
 
 //Try to store the error in statemode instead of returning err

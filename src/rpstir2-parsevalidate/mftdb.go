@@ -4,17 +4,17 @@ import (
 	"sync"
 	"time"
 
-	model "rpstir2-model"
-
 	"github.com/cpusoft/goutil/belogs"
 	"github.com/cpusoft/goutil/convert"
 	"github.com/cpusoft/goutil/jsonutil"
 	"github.com/cpusoft/goutil/xormdb"
+	model "rpstir2-model"
 	"xorm.io/xorm"
 )
 
 // add
 func addMftsDb(syncLogFileModels []SyncLogFileModel) error {
+	belogs.Info("addMftsDb(): will insert len(syncLogFileModels):", len(syncLogFileModels))
 	session, err := xormdb.NewSession()
 	if err != nil {
 		return err
