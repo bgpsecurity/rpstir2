@@ -74,6 +74,8 @@ func JudgeOrigin(filePath string) (originModel OriginModel) {
 
 		rpki-repo.as207960.net ripe
 		rpki.dataplane.org  arin
+
+		rpki.august.tw
 	*/
 	var rir string
 	var repo string
@@ -245,6 +247,15 @@ func JudgeOrigin(filePath string) (originModel OriginModel) {
 	} else if strings.Index(filePath, "rpki-rps.arin.net") > 0 {
 		rir = ORIGIN_RIR_ARIN
 		repo = "rpki-rps.arin.net"
+	} else if strings.Index(filePath, "rpki.august.tw") > 0 {
+		rir = ORIGIN_RIR_APNIC
+		repo = "rpki.august.tw"
+	} else if strings.Index(filePath, "rrdp-rps.arin.net") > 0 {
+		rir = ORIGIN_RIR_ARIN
+		repo = "rrdp-rps.arin.net"
+	} else if strings.Index(filePath, "rpki-rrdp.us-east-2.amazonaws.com") > 0 {
+		rir = ORIGIN_RIR_ARIN
+		repo = "rpki-rrdp.us-east-2.amazonaws.com"
 	} else {
 		rir = "unknown"
 		if strings.Index(filePath, "afrinic.net") > 0 {
