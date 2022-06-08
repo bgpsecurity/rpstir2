@@ -8,15 +8,14 @@ import (
 	"sync/atomic"
 	"time"
 
-	model "rpstir2-model"
-	"rpstir2-sync-core/rrdp"
-
 	"github.com/cpusoft/goutil/belogs"
 	"github.com/cpusoft/goutil/conf"
 	"github.com/cpusoft/goutil/httpclient"
 	"github.com/cpusoft/goutil/jsonutil"
 	"github.com/cpusoft/goutil/osutil"
 	"github.com/cpusoft/goutil/randutil"
+	model "rpstir2-model"
+	"rpstir2-sync-core/rrdp"
 )
 
 var rrQueue *RrdpParseQueue
@@ -155,7 +154,8 @@ func rrdpByUrl(rrdpModelChan RrdpModelChan) {
 
 	filePathNames := make([]string, 0)
 	for i := range rrdpFiles {
-		if osutil.ExtNoDot(rrdpFiles[i].FileName) == "cer" && rrdpFiles[i].SyncType == "add" {
+		if osutil.ExtNoDot(rrdpFiles[i].FileName) == "cer" &&
+			(rrdpFiles[i].SyncType == "add" || rrdpFiles[i].SyncType == "update") {
 			filePathName := osutil.JoinPathFile(rrdpFiles[i].FilePath, rrdpFiles[i].FileName)
 			filePathNames = append(filePathNames, filePathName)
 		}
@@ -203,7 +203,7 @@ func parseCerFiles(parseModelChan ParseModelChan) {
 		if len(rpkiNotify) > 0 {
 			rpkiNotifies = append(rpkiNotifies, rpkiNotify)
 		} else {
-			belogs.Error("parseCerFiles(): this file has no rpkiNotify:", parseModelChan.FilePathNames[i])
+			belogs.Info("parseCerFiles(): this file has no rpkiNotify:", parseModelChan.FilePathNames[i])
 		}
 	}
 

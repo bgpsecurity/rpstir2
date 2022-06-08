@@ -4,16 +4,16 @@ import (
 	"sync"
 	"time"
 
-	model "rpstir2-model"
-
 	"github.com/cpusoft/goutil/belogs"
 	"github.com/cpusoft/goutil/jsonutil"
 	"github.com/cpusoft/goutil/xormdb"
+	model "rpstir2-model"
 	"xorm.io/xorm"
 )
 
 // add
 func addRoasDb(syncLogFileModels []SyncLogFileModel) error {
+	belogs.Info("addRoasDb(): will insert len(syncLogFileModels):", len(syncLogFileModels))
 	session, err := xormdb.NewSession()
 	if err != nil {
 		return err
@@ -59,7 +59,7 @@ func delRoasDb(delSyncLogFileModels []SyncLogFileModel, updateSyncLogFileModels 
 	defer session.Close()
 
 	syncLogFileModels := append(delSyncLogFileModels, updateSyncLogFileModels...)
-	belogs.Debug("delRoasDb(): len(syncLogFileModels):", len(syncLogFileModels))
+	belogs.Info("delRoasDb(): will del len(syncLogFileModels):", len(syncLogFileModels))
 	for i := range syncLogFileModels {
 		err = delRoaByIdDb(session, syncLogFileModels[i].CertId)
 		if err != nil {
@@ -86,12 +86,12 @@ func delRoasDb(delSyncLogFileModels []SyncLogFileModel, updateSyncLogFileModels 
 
 func delRoaByIdDb(session *xorm.Session, roaId uint64) (err error) {
 
-	belogs.Info("delRoaByIdDb():delete lab_rpki_roa by roaId:", roaId)
-
+	belogs.Debug("delRoaByIdDb():delete lab_rpki_roa by roaId:", roaId)
 	// rrdp may have id==0, just return nil
 	if roaId <= 0 {
 		return nil
 	}
+	belogs.Info("delRoaByIdDb():delete lab_rpki_roa by roaId, more than 0:", roaId)
 
 	//lab_rpki_roa_ipaddress
 	res, err := session.Exec("delete from lab_rpki_roa_ipaddress  where roaId = ?", roaId)

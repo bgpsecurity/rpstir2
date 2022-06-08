@@ -41,7 +41,7 @@ GRANT ALL PRIVILEGES ON rpstir2.* TO 'rpstir2'@'%'  with grant option;
 flush privileges;
 ```
 
-Note: You also can use docker to run MySQL. 
+Note: You also can use docker to run MySQL, and make sure that the time zone of docker is the same as that of the host. 
 
 ### 2.3 Install GoLang(Optional)
 If you plan to compile the program by yourself, you need to install a version of Golang higher than 1.17. Otherwise you don't need to install it.
@@ -74,17 +74,10 @@ $ cp /root/rpki/rpstir2/build/tal/*  /root/rpki/data/tal/
 You can modify configuration parameters of programDir, dataDir, mysql, and  port in configuration file(/root/rpki/rpstir2/conf/project.conf). 
 
 ## 3 Running RPSTIR2
-
-### 3.1 Initialize the RPSTIR2
-
-```shell
-$ cd /root/rpki/rpstir2/bin
-$./rpstir2.sh start 
-$./rpstir2.sh init 
-```
-
-### 3.2 Start and stop the RPSTIR2
 The RPSTIR2 must be started first, you can check for errors by looking at the log files in ./log/ directory.
+
+### 3.1 Start and stop the RPSTIR2
+You can check the log files in ./log/ to see whether the program is started successfully.
 
 ```shell
 $ cd /root/rpki/rpstir2/bin
@@ -96,14 +89,23 @@ $ cd /root/rpki/rpstir2/bin
 $./rpstir2.sh stop 
 ```
 
+### 3.2 Initialize the RPSTIR2
+This command is used to initialize or reset the database. Please check the log files in ./log/ to see if the execution is successful.
+
+```shell
+$ cd /root/rpki/rpstir2/bin
+$./rpstir2.sh start 
+$./rpstir2.sh init 
+```
+
 ### 3.3 Configure scheduled task
 You can use crontab to perform scheduled synchronization tasks. Then RPSTIR2 will download RPKI objects, and complete the subsequent validation procedure according to the schedule you set. 
 
 ```shell
 $ crontab -e
-1 1 * * *  /root/rpki/rpstir2/bin/rpstir2.sh crontab
+10 */4 * * *  cd /root/rpki/rpstir2/bin/;./rpstir2.sh crontab
 ```
-Note: The RPSTIR2 service must be started first. 
+Note: The RPSTIR2 service must start first. 
 
 ### 3.4 Sync and validate RPKI objects
 You can download RPKI objects with rsync or RRDP protocol, and complete the subsequent validation procedure. 

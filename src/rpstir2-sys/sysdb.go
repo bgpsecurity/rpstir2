@@ -40,6 +40,9 @@ var intiSqls []string = []string{
 	`drop table if exists lab_rpki_rtr_full_log`,
 	`drop table if exists lab_rpki_rtr_full`,
 	`drop table if exists lab_rpki_rtr_incremental`,
+	`drop table if exists lab_rpki_rtr_asa_full_log`,
+	`drop table if exists lab_rpki_rtr_asa_full`,
+	`drop table if exists lab_rpki_rtr_asa_incremental`,
 	`drop table if exists lab_rpki_rtr_serial_number`,
 	`drop table if exists lab_rpki_rtr_session`,
 	`drop table if exists lab_rpki_slurm`,
@@ -51,6 +54,7 @@ var intiSqls []string = []string{
 	`drop view if exists lab_rpki_mft_file_hash_view`,
 	`drop view if exists lab_rpki_roa_ipaddress_count_view`,
 	`drop view if exists lab_rpki_roa_ipaddress_view`,
+	`drop view if exists lab_rpki_sync_rrdp_log_maxid_view`,
 
 	`
 #################################
@@ -529,7 +533,6 @@ CREATE TABLE lab_rpki_rtr_full_log (
 	prefixLength int(10) unsigned not null,
 	maxLength int(10) unsigned not null,
 	sourceFrom json not null comment 'come from : {souce:sync/slurm/rush,syncLogId/syncLogFileId/slurmId/slurmFileId/rushDataLogId}',
-	index serialNumber(serialNumber),
 	key serialNumber(serialNumber),
 	key asn(asn),
 	key address(address),
@@ -693,6 +696,13 @@ select roaId, count(*) as roaIpAddressCount
 from lab_rpki_roa_ipaddress 
 group by roaId order by roaIpAddressCount 
 `,
+	`
+#########################
+## create view roaIpAddressCount
+#########################
+CREATE VIEW lab_rpki_sync_rrdp_log_maxid_view AS 
+select max(cc.id) AS maxId from lab_rpki_sync_rrdp_log cc group by cc.notifyUrl order by cc.notifyUrl 
+`,
 }
 
 var fullSyncSqls []string = []string{
@@ -730,6 +740,9 @@ var resetAllOtherSqls []string = []string{
 	`truncate  table  lab_rpki_rtr_full`,
 	`truncate  table  lab_rpki_rtr_full_log`,
 	`truncate  table  lab_rpki_rtr_incremental`,
+	`truncate  table  lab_rpki_rtr_asa_full`,
+	`truncate  table  lab_rpki_rtr_asa_full_log`,
+	`truncate  table  lab_rpki_rtr_asa_incremental`,
 	`truncate  table  lab_rpki_slurm`,
 }
 
@@ -765,8 +778,10 @@ var optimizeSqls []string = []string{
 	`optimize  table  lab_rpki_rtr_full`,
 	`optimize  table  lab_rpki_rtr_full_log`,
 	`optimize  table  lab_rpki_rtr_incremental`,
-	`optimize  table  lab_rpki_slurm`,
-}
+	`optimize  table  lab_rpki_rtr_asa_full`,
+	`optimize  table  lab_rpki_rtr_asa_full_log`,
+	`optimize  table  lab_rpki_rtr_asa_incremental`,
+	`optimize  table  lab_rpki_slurm`}
 
 // when isInit is true, then init all db. otherwise will reset all db
 func InitResetDb(sysStyle SysStyle) error {
@@ -779,12 +794,12 @@ func InitResetDb(sysStyle SysStyle) error {
 	//truncate all table
 	err = initResetDb(session, sysStyle)
 	if err != nil {
-		return xormdb.RollbackAndLogError(session, "truncateDb(): truncateDb fail", err)
+		return xormdb.RollbackAndLogError(session, "InitResetDb(): initResetDb fail", err)
 	}
 
 	err = xormdb.CommitSession(session)
 	if err != nil {
-		return xormdb.RollbackAndLogError(session, "truncateDb(): CommitSession fail", err)
+		return xormdb.RollbackAndLogError(session, "InitResetDb(): CommitSession fail", err)
 	}
 	return nil
 }

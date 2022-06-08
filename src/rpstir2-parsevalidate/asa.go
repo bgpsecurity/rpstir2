@@ -1,19 +1,20 @@
 package parsevalidate
 
 import (
+	"errors"
 	"strings"
 	"time"
-
-	model "rpstir2-model"
-	openssl "rpstir2-parsevalidate-openssl"
 
 	"github.com/cpusoft/goutil/belogs"
 	"github.com/cpusoft/goutil/conf"
 	"github.com/cpusoft/goutil/convert"
+	"github.com/cpusoft/goutil/fileutil"
 	"github.com/cpusoft/goutil/hashutil"
 	"github.com/cpusoft/goutil/jsonutil"
 	"github.com/cpusoft/goutil/opensslutil"
 	"github.com/cpusoft/goutil/osutil"
+	model "rpstir2-model"
+	openssl "rpstir2-parsevalidate-openssl"
 )
 
 //Try to store the error in statemode instead of returning err
@@ -44,6 +45,23 @@ func ParseValidateAsa(certFile string) (asaModel model.AsaModel, stateModel mode
 // some parse may return err, will stop
 func parseAsaModel(certFile string, asaModel *model.AsaModel, stateModel *model.StateModel) error {
 	belogs.Debug("parseAsaModel(): certFile: ", certFile)
+	fileLength, err := fileutil.GetFileLength(certFile)
+	if err != nil {
+		belogs.Error("parseAsaModel(): GetFileLength: err: ", err, ": "+certFile)
+		stateMsg := model.StateMsg{Stage: "parsevalidate",
+			Fail:   "Fail to open file",
+			Detail: err.Error()}
+		stateModel.AddError(&stateMsg)
+		return err
+	} else if fileLength == 0 {
+		belogs.Error("parseAsaModel(): GetFileLength, fileLenght is emtpy: " + certFile)
+		stateMsg := model.StateMsg{Stage: "parsevalidate",
+			Fail:   "File is empty",
+			Detail: ""}
+		stateModel.AddError(&stateMsg)
+		return errors.New("File " + certFile + " is empty")
+	}
+
 	asaModel.FilePath, asaModel.FileName = osutil.GetFilePathAndFileName(certFile)
 	asaModel.Version = 0 //default
 	//https://blog.csdn.net/Zhymax/article/details/7683925

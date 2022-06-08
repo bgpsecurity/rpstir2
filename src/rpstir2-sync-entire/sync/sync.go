@@ -54,7 +54,7 @@ func syncStart(syncStyle model.SyncStyle) (nextStep string, err error) {
 		belogs.Error("syncStart(): getUrlsBySyncType fail")
 		return "", err
 	}
-	belogs.Debug("syncStart(): rrdpUrls:", syncLogSyncState.RrdpUrls, "   rsyncUrls:", syncLogSyncState.RsyncUrls)
+	belogs.Info("syncStart(): rrdpUrls:", syncLogSyncState.RrdpUrls, "   rsyncUrls:", syncLogSyncState.RsyncUrls)
 
 	// Check whether this time sync mode is different from the last sync mode.
 	// it means actual directory is different from this sync direcotry.
@@ -199,7 +199,7 @@ func callRrdpAndRsync(syncLogId uint64, syncLogSyncState *model.SyncLogSyncState
 		RrdpUrls:  syncLogSyncState.RrdpUrls,
 		RsyncUrls: syncLogSyncState.RsyncUrls}
 	syncUrlsJson := jsonutil.MarshalJson(syncUrls)
-	belogs.Debug("callRrdpAndRsync(): syncUrlsJson:", syncUrlsJson)
+	belogs.Info("callRrdpAndRsync(): syncUrlsJson:", jsonutil.MarshalJson(syncUrlsJson))
 
 	// if there is no rrdp ,then rrdpEnd=true. same to rsyncEnd
 	rrdpEnd := false

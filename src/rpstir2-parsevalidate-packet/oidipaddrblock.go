@@ -3,10 +3,9 @@ package packet
 import (
 	"errors"
 
-	model "rpstir2-model"
-
 	"github.com/cpusoft/goutil/asn1util"
 	"github.com/cpusoft/goutil/belogs"
+	model "rpstir2-model"
 )
 
 func ExtractIpAddrBlockOid(oidPackets *[]OidPacket) (cerIpAddressModel model.CerIpAddressModel, err error) {

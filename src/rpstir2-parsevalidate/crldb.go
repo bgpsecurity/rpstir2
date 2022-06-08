@@ -4,17 +4,17 @@ import (
 	"sync"
 	"time"
 
-	model "rpstir2-model"
-
 	"github.com/cpusoft/goutil/belogs"
 	"github.com/cpusoft/goutil/convert"
 	"github.com/cpusoft/goutil/jsonutil"
 	"github.com/cpusoft/goutil/xormdb"
+	model "rpstir2-model"
 	"xorm.io/xorm"
 )
 
 // add
 func addCrlsDb(syncLogFileModels []SyncLogFileModel) error {
+	belogs.Info("addCrlsDb(): will insert len(syncLogFileModels):", len(syncLogFileModels))
 	session, err := xormdb.NewSession()
 	if err != nil {
 		return err
@@ -59,7 +59,7 @@ func delCrlsDb(delSyncLogFileModels []SyncLogFileModel, updateSyncLogFileModels 
 	defer session.Close()
 
 	syncLogFileModels := append(delSyncLogFileModels, updateSyncLogFileModels...)
-	belogs.Debug("delCrlsDb(): len(syncLogFileModels):", len(syncLogFileModels))
+	belogs.Info("delCrlsDb(): will del len(syncLogFileModels):", len(syncLogFileModels))
 	for i := range syncLogFileModels {
 		err = delCrlByIdDb(session, syncLogFileModels[i].CertId)
 		if err != nil {
@@ -85,12 +85,13 @@ func delCrlsDb(delSyncLogFileModels []SyncLogFileModel, updateSyncLogFileModels 
 }
 
 func delCrlByIdDb(session *xorm.Session, crlId uint64) (err error) {
-	belogs.Info("delCrlByIdDb(): delete lab_rpki_crl by  crlId:", crlId)
+	belogs.Debug("delCrlByIdDb():delete lab_rpki_crl by crlId:", crlId)
 
 	// rrdp may have id==0, just return nil
 	if crlId <= 0 {
 		return nil
 	}
+	belogs.Info("delCrlByIdDb():delete lab_rpki_crl by crlId, more than 0:", crlId)
 
 	//lab_rpki_crl_revoked_cert
 	res, err := session.Exec("delete from lab_rpki_crl_revoked_cert  where crlId = ?", crlId)

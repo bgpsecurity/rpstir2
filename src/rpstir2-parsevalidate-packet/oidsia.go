@@ -3,10 +3,9 @@ package packet
 import (
 	"bytes"
 
-	model "rpstir2-model"
-
 	"github.com/cpusoft/goutil/asn1util"
 	"github.com/cpusoft/goutil/belogs"
+	model "rpstir2-model"
 )
 
 func ExtractSiaOid(oidPackets *[]OidPacket, fileByte []byte) (subjectInfoAccess model.SiaModel, err error) {

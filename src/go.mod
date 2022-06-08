@@ -20,9 +20,8 @@ replace (
 )
 
 require (
-	github.com/cpusoft/goutil v1.0.33-0.20220322015430-2ec0476bbe08
-	github.com/gin-gonic/gin v1.7.7
-	github.com/guregu/null v4.0.0+incompatible // indirect
+	github.com/cpusoft/goutil v1.0.33-0.20220607031057-949adfc35ea5
+	github.com/gin-gonic/gin v1.8.1
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	rpstir2-chainvalidate v0.0.0-00010101000000-000000000000
 	rpstir2-clear v0.0.0-00010101000000-000000000000

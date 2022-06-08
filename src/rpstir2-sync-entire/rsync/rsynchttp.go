@@ -1,11 +1,10 @@
 package rsync
 
 import (
-	model "rpstir2-model"
-
 	"github.com/cpusoft/goutil/belogs"
 	"github.com/cpusoft/goutil/ginserver"
 	"github.com/gin-gonic/gin"
+	model "rpstir2-model"
 )
 
 // start to rsync from sync
@@ -14,7 +13,7 @@ func RsyncStart(c *gin.Context) {
 
 	syncUrls := model.SyncUrls{}
 	err := c.ShouldBindJSON(&syncUrls)
-	belogs.Debug("RsyncStart(): syncUrls:", syncUrls, err)
+	belogs.Info("RsyncStart(): syncUrls:", syncUrls, err)
 	if err != nil {
 		belogs.Error("RsyncStart(): ShouldBindJSON:", err)
 		ginserver.ResponseFail(c, err, nil)
@@ -32,7 +31,7 @@ func RsyncLocalStart(c *gin.Context) {
 
 	syncUrls := model.SyncUrls{}
 	err := c.ShouldBindJSON(&syncUrls)
-	belogs.Debug("RsyncStart(): syncUrls:", syncUrls, err)
+	belogs.Info("RsyncStart(): syncUrls:", syncUrls, err)
 	if err != nil {
 		belogs.Error("RsyncStart(): ShouldBindJSON:", err)
 		ginserver.ResponseFail(c, err, nil)

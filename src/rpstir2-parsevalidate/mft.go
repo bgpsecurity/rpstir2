@@ -1,23 +1,24 @@
 package parsevalidate
 
 import (
+	"errors"
 	"strconv"
 	"strings"
 	"time"
-
-	model "rpstir2-model"
-	openssl "rpstir2-parsevalidate-openssl"
-	packet "rpstir2-parsevalidate-packet"
 
 	"github.com/cpusoft/goutil/asn1util"
 	"github.com/cpusoft/goutil/belogs"
 	"github.com/cpusoft/goutil/conf"
 	"github.com/cpusoft/goutil/convert"
+	"github.com/cpusoft/goutil/fileutil"
 	"github.com/cpusoft/goutil/hashutil"
 	"github.com/cpusoft/goutil/jsonutil"
 	"github.com/cpusoft/goutil/opensslutil"
 	"github.com/cpusoft/goutil/osutil"
 	"github.com/cpusoft/goutil/regexputil"
+	model "rpstir2-model"
+	openssl "rpstir2-parsevalidate-openssl"
+	packet "rpstir2-parsevalidate-packet"
 )
 
 //Try to store the error in statemode instead of returning err
@@ -48,6 +49,23 @@ func ParseValidateMft(certFile string) (mftModel model.MftModel, stateModel mode
 // some parse may return err, will stop
 func parseMftModel(certFile string, mftModel *model.MftModel, stateModel *model.StateModel) error {
 	belogs.Debug("parseMftModel(): certFile: ", certFile)
+	fileLength, err := fileutil.GetFileLength(certFile)
+	if err != nil {
+		belogs.Error("parseMftModel(): GetFileLength: err: ", err, ": "+certFile)
+		stateMsg := model.StateMsg{Stage: "parsevalidate",
+			Fail:   "Fail to open file",
+			Detail: err.Error()}
+		stateModel.AddError(&stateMsg)
+		return err
+	} else if fileLength == 0 {
+		belogs.Error("parseMftModel(): GetFileLength, fileLenght is emtpy: " + certFile)
+		stateMsg := model.StateMsg{Stage: "parsevalidate",
+			Fail:   "File is empty",
+			Detail: ""}
+		stateModel.AddError(&stateMsg)
+		return errors.New("File " + certFile + " is empty")
+	}
+
 	mftModel.FilePath, mftModel.FileName = osutil.GetFilePathAndFileName(certFile)
 
 	//https://blog.csdn.net/Zhymax/article/details/7683925
@@ -277,7 +295,7 @@ func validateMftModel(mftModel *model.MftModel, stateModel *model.StateModel) (e
 		if len(hash) != 64 {
 			stateMsg := model.StateMsg{Stage: "parsevalidate",
 				Fail:   "The length of the hash in fileList is not 64",
-				Detail: "illegal hash is " + hash}
+				Detail: "The illegal hash is " + hash}
 			stateModel.AddError(&stateMsg)
 		}
 	}

@@ -13,24 +13,32 @@ import (
 
 func GetLastSyncRrdpLogsDb() (syncRrdpLogs map[string]model.LabRpkiSyncRrdpLog, err error) {
 	start := time.Now()
-	sql := `select c.id,  c.syncLogId,  c.notifyUrl,  c.sessionId,  c.lastSerial,  
-			  c.curSerial,  c.rrdpTime,  c.rrdpType  
-		   from lab_rpki_sync_rrdp_log c   
-		   where c.syncLogId = (select syncLogId from lab_rpki_sync_rrdp_log cc  
-								where cc.notifyUrl = c.notifyUrl order by cc.syncLogId desc limit 1)  
-		   order by c.notifyUrl `
+	/*
+		sql := `select c.id,  c.syncLogId,  c.notifyUrl,  c.sessionId,  c.lastSerial,
+				  c.curSerial,  c.rrdpTime,  c.rrdpType
+			   from lab_rpki_sync_rrdp_log c
+			   where c.syncLogId = (select syncLogId from lab_rpki_sync_rrdp_log cc
+									where cc.notifyUrl = c.notifyUrl order by cc.syncLogId desc limit 1)
+			   order by c.notifyUrl `
+	*/
+	sql := `select c.id,  c.syncLogId,  c.notifyUrl,  c.sessionId,  c.lastSerial, 
+	           c.curSerial,  c.rrdpTime,  c.rrdpType 
+	        from lab_rpki_sync_rrdp_log c , lab_rpki_sync_rrdp_log_maxid_view v 
+		    where c.id = v.maxid 
+			order by c.notifyUrl `
 	rrdps := make([]model.LabRpkiSyncRrdpLog, 0)
 	err = xormdb.XormEngine.SQL(sql).Find(&rrdps)
 	if err != nil {
 		belogs.Error("GetLastSyncRrdpLogsDb(): find fail:", err)
 		return nil, err
 	}
-	belogs.Debug("GetLastSyncRrdpLogsDb(): len(rrdps):", len(rrdps), " ,  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Info("GetLastSyncRrdpLogsDb(): len(rrdps):", len(rrdps), " ,  time(s):", time.Now().Sub(start).Seconds())
+
 	syncRrdpLogs = make(map[string]model.LabRpkiSyncRrdpLog)
 	for i := range rrdps {
 		syncRrdpLogs[rrdps[i].NotifyUrl] = rrdps[i]
+		belogs.Info("GetLastSyncRrdpLogsDb(): rrdp :", jsonutil.MarshalJson(rrdps[i]))
 	}
-	belogs.Debug("GetLastSyncRrdpLogsDb(): syncRrdpLogs:", jsonutil.MarshalJson(syncRrdpLogs))
 	belogs.Info("GetLastSyncRrdpLogsDb(): len(syncRrdpLogs):", len(syncRrdpLogs),
 		" ,  time(s):", time.Now().Sub(start).Seconds())
 	return syncRrdpLogs, nil

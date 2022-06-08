@@ -12,6 +12,7 @@ import (
 	rtrclient "rpstir2-rtrclient"
 	rtrproducer "rpstir2-rtrproducer"
 	rtrserver "rpstir2-rtrserver"
+	entiremixsync "rpstir2-sync-entire/mixsync"
 	entirerrdp "rpstir2-sync-entire/rrdp"
 	entirersync "rpstir2-sync-entire/rsync"
 	entiresync "rpstir2-sync-entire/sync"
@@ -66,7 +67,8 @@ func startRpServer() {
 
 	engine.POST("/tal/gettals", tal.GetTals)
 
-	engine.POST("/entiresync/syncstart", entiresync.SyncStart)
+	engine.POST("/entiresync/syncstart", entiremixsync.SyncStart)
+	//engine.POST("/entiresync/syncstart", entiresync.SyncStart)
 	engine.POST("/entiresync/rrdpresult", entiresync.RrdpResult)
 	engine.POST("/entiresync/rsyncresult", entiresync.RsyncResult)
 	engine.POST("/entiresync/rrdpstart", entirerrdp.RrdpStart)

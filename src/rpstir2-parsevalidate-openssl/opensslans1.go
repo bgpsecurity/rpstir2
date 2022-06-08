@@ -236,7 +236,22 @@ func ParseRoaModelByOpensslResults(results []string, roaModel *model.RoaModel) (
 		for _, ad := range one.Addresses {
 			roaIpAddressModel := model.RoaIpAddressModel{}
 			roaIpAddressModel.AddressFamily = uint64(one.AddressFamily[1])
-			roaIpAddressModel.AddressPrefix = iputil.RoaFormtToIp(ad.Address.Bytes, int(one.AddressFamily[1])) + "/" + strconv.Itoa(ad.Address.BitLength)
+			ipAddressTmp := iputil.RoaFormtToIp(ad.Address.Bytes, int(one.AddressFamily[1]))
+			if len(ipAddressTmp) == 0 {
+				belogs.Error("ParseRoaModelByOpensslResults():RoaFormtToIp ip is empty or too long:",
+					"   ad.Address.Bytes ", convert.PrintBytes(ad.Address.Bytes, 8),
+					"   address family:", int(one.AddressFamily[1]))
+				return errors.New("ad.Address.Bytes is empty or too long")
+			}
+			prefixLengthTmp := ad.Address.BitLength
+			if !iputil.CheckPrefixLengthOrMaxLength(prefixLengthTmp, int(one.AddressFamily[1])) {
+				belogs.Error("ParseRoaModelByOpensslResults():CheckPrefixLengthOrMaxLength prefixLength is empty or too long:",
+					"   ad.Address.Bytes ", convert.PrintBytes(ad.Address.Bytes, 8),
+					"   address family:", int(one.AddressFamily[1]))
+				return errors.New("prefixLength is empty or too long")
+			}
+
+			roaIpAddressModel.AddressPrefix = ipAddressTmp + "/" + strconv.Itoa(prefixLengthTmp)
 			roaIpAddressModel.RangeStart, roaIpAddressModel.RangeEnd, err =
 				iputil.AddressPrefixToHexRange(roaIpAddressModel.AddressPrefix, int(roaIpAddressModel.AddressFamily))
 			if err != nil {

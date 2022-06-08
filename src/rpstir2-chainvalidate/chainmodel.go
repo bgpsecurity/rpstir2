@@ -4,10 +4,9 @@ import (
 	"strings"
 	"time"
 
-	model "rpstir2-model"
-
 	"github.com/cpusoft/goutil/belogs"
 	"github.com/cpusoft/goutil/jsonutil"
+	model "rpstir2-model"
 )
 
 // for chain validate
