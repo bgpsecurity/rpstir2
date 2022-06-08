@@ -74,8 +74,10 @@ $ cp /root/rpki/rpstir2/build/tal/*  /root/rpki/data/tal/
 You can modify configuration parameters of programDir, dataDir, mysql, and  port in configuration file(/root/rpki/rpstir2/conf/project.conf). 
 
 ## 3 Running RPSTIR2
+The RPSTIR2 must be started first, you can check for errors by looking at the log files in ./log/ directory.
 
 ### 3.1 Initialize the RPSTIR2
+This command is used to initialize or reset the database. Please check the log files in ./log/ to see if the execution is successful.
 
 ```shell
 $ cd /root/rpki/rpstir2/bin
@@ -84,8 +86,6 @@ $./rpstir2.sh init
 ```
 
 ### 3.2 Start and stop the RPSTIR2
-The RPSTIR2 must be started first, you can check for errors by looking at the log files in ./log/ directory.
-
 ```shell
 $ cd /root/rpki/rpstir2/bin
 $./rpstir2.sh start 
