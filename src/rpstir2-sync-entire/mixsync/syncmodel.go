@@ -7,10 +7,11 @@ import (
 	"sync/atomic"
 	"time"
 
+	model "rpstir2-model"
+
 	"github.com/cpusoft/goutil/belogs"
 	"github.com/cpusoft/goutil/conf"
 	"github.com/cpusoft/goutil/jsonutil"
-	model "rpstir2-model"
 )
 
 // queue for rrdp url of notify.xml

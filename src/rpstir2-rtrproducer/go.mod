@@ -1,4 +1,3 @@
-module rpstir2-rtrproducer
+module labscm.zdns.cn/rpstir2-mod/rpstir2-rtrproducer
 
-go 1.16
-
+go 1.18

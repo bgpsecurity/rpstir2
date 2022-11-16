@@ -34,7 +34,7 @@ func getChainRoas(chains *Chains, wg *sync.WaitGroup) {
 		chains.AddRoa(&chainRoa)
 	}
 
-	belogs.Debug("getChainRoas(): end, len(chainRoaSqls):", len(chainRoaSqls), ",   len(chains.RoaIds):", len(chains.RoaIds), "  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Debug("getChainRoas(): end, len(chainRoaSqls):", len(chainRoaSqls), ",   len(chains.RoaIds):", len(chains.RoaIds), "  time(s):", time.Since(start))
 	return
 }
 
@@ -56,7 +56,7 @@ func validateRoas(chains *Chains, wg *sync.WaitGroup) {
 	roaWg.Wait()
 	close(chainRoaCh)
 
-	belogs.Info("validateRoas(): end, len(roaIds):", len(roaIds), "  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Info("validateRoas(): end, len(roaIds):", len(roaIds), "  time(s):", time.Since(start))
 
 }
 
@@ -162,7 +162,7 @@ func validateRoa(chains *Chains, roaId uint64, wg *sync.WaitGroup, chainRoaCh ch
 		belogs.Debug("validateRoa(): stateModel have errors or warnings, roaId :", roaId, "  stateModel:", jsonutil.MarshalJson(chainRoa.StateModel))
 	}
 	chains.UpdateFileTypeIdToRoa(&chainRoa)
-	belogs.Debug("validateRoa():end UpdateFileTypeIdToRoa, roaId:", roaId, "  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Debug("validateRoa():end UpdateFileTypeIdToRoa, roaId:", roaId, "  time(s):", time.Since(start))
 }
 
 func getRoaParentChainCers(chains *Chains, roaId uint64) (chainCerAlones []ChainCerAlone, err error) {

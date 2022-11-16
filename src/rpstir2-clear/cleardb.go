@@ -64,7 +64,7 @@ func clearSyncLogFileDb() (err error) {
 	if err != nil {
 		return xormdb.RollbackAndLogError(session, "clearSyncLogFileDb(): CommitSession fail:", err)
 	}
-	belogs.Info("clearSyncLogFileDb(): end, time(s):", time.Now().Sub(start).Seconds())
+	belogs.Info("clearSyncLogFileDb(): end, time(s):", time.Since(start))
 	return nil
 }
 
@@ -129,7 +129,7 @@ func clearRtrFullLogRtrIncremet(tableName string, serialNumber int) (err error) 
 		return xormdb.RollbackAndLogError(session, "clearSyncLogFileDb(): CommitSession fail:", err)
 	}
 	belogs.Info("clearRtrFullLogRtrIncremet(): end, serialNumber:", serialNumber,
-		"   deleteRows:", deleteRows, "    tableName:", tableName, "  time(s):", time.Now().Sub(start).Seconds())
+		"   deleteRows:", deleteRows, "    tableName:", tableName, "  time(s):", time.Since(start))
 
 	return nil
 }

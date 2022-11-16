@@ -29,7 +29,7 @@ func getSyncLogFileModelsBySyncLogIdDb(labRpkiSyncLogId uint64) (syncLogFileMode
 	}
 	belogs.Debug("getSyncLogFileModelsBySyncLogIdDb(): len(dbSyncLogFileModels):", len(dbSyncLogFileModels), jsonutil.MarshalJson(dbSyncLogFileModels))
 	syncLogFileModels = NewSyncLogFileModels(labRpkiSyncLogId, dbSyncLogFileModels)
-	belogs.Info("getSyncLogFileModelsBySyncLogIdDb(): end, len(dbSyncLogFileModels),  time(s):", len(dbSyncLogFileModels), time.Now().Sub(start).Seconds())
+	belogs.Info("getSyncLogFileModelsBySyncLogIdDb(): end, len(dbSyncLogFileModels),  time(s):", len(dbSyncLogFileModels), time.Since(start))
 	return syncLogFileModels, nil
 
 }
@@ -42,7 +42,8 @@ func updateSyncLogFilesJsonAllAndStateDb(session *xorm.Session, syncLogFileModel
 	for i := range syncLogFileModels {
 		rtrState := "notNeed"
 		jsonAll := ""
-		if syncLogFileModels[i].FileType == "roa" && syncLogFileModels[i].SyncType != "del" {
+		if (syncLogFileModels[i].FileType == "roa" || syncLogFileModels[i].FileType == "asa") &&
+			syncLogFileModels[i].SyncType != "del" {
 			rtrState = "notYet"
 		}
 

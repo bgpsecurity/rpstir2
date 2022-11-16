@@ -7,13 +7,14 @@ import (
 	"sync/atomic"
 	"time"
 
+	"rpstir2-sync-core/rsync"
+	coresync "rpstir2-sync-core/sync"
+
 	"github.com/cpusoft/goutil/belogs"
 	"github.com/cpusoft/goutil/conf"
 	"github.com/cpusoft/goutil/jsonutil"
 	"github.com/cpusoft/goutil/osutil"
 	"github.com/cpusoft/goutil/urlutil"
-	"rpstir2-sync-core/rsync"
-	coresync "rpstir2-sync-core/sync"
 )
 
 // start server ,wait input channel
@@ -73,7 +74,7 @@ func startSyncServer(spQueue *SyncParseQueue, syncState *SyncState, syncServerWg
 
 			// return out of the for
 			belogs.Info("startSyncServer():end this sync server ssuccess: syncResultJson:", syncResultJson,
-				"  time(s):", time.Now().Sub(start))
+				"  time(s):", time.Since(start))
 			return
 		}
 	}

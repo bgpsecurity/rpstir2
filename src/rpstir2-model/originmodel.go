@@ -238,6 +238,12 @@ func JudgeOrigin(filePath string) (originModel OriginModel) {
 	} else if strings.Index(filePath, "rpki-rsync.e15f.net") > 0 {
 		rir = ORIGIN_RIR_RIPE_NCC
 		repo = "rpki-rsync.e15f.net"
+	} else if strings.Index(filePath, "rrdp.e15f.net") > 0 {
+		rir = ORIGIN_RIR_RIPE_NCC
+		repo = "rrdp.e15f.net"
+	} else if strings.Index(filePath, "rpki.e15f.net") > 0 {
+		rir = ORIGIN_RIR_RIPE_NCC
+		repo = "rpki.e15f.net"
 	} else if strings.Index(filePath, "rpki.caramelfox.net") > 0 {
 		rir = ORIGIN_RIR_RIPE_NCC
 		repo = "rpki.caramelfox.net"
@@ -256,6 +262,12 @@ func JudgeOrigin(filePath string) (originModel OriginModel) {
 	} else if strings.Index(filePath, "rpki-rrdp.us-east-2.amazonaws.com") > 0 {
 		rir = ORIGIN_RIR_ARIN
 		repo = "rpki-rrdp.us-east-2.amazonaws.com"
+	} else if strings.Index(filePath, "rrdp.rp.ki") > 0 {
+		rir = ORIGIN_RIR_RIPE_NCC
+		repo = "rrdp.rp.ki"
+	} else if strings.Index(filePath, "rsync.rp.ki") > 0 {
+		rir = ORIGIN_RIR_RIPE_NCC
+		repo = "rsync.rp.ki"
 	} else {
 		rir = "unknown"
 		if strings.Index(filePath, "afrinic.net") > 0 {

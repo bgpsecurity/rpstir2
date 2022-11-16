@@ -20,6 +20,6 @@ func getSerialNumberCountDb() (myCount uint64, err error) {
 		belogs.Error("getSerialNumberCountDb():select count from lab_rpki_rtr_serial_number, !has:")
 		return 0, errors.New("has no serialNumber")
 	}
-	belogs.Info("getSerialNumberCountDb(): myCount: ", myCount, "  time(s):", time.Now().Sub(start))
+	belogs.Info("getSerialNumberCountDb(): myCount: ", myCount, "  time(s):", time.Since(start))
 	return myCount, nil
 }

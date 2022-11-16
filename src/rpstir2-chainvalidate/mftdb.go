@@ -25,11 +25,11 @@ func getChainMftSqlsDb() (chainCertSqls []ChainCertSql, err error) {
 		belogs.Error("getChainMftSqlsDb(): lab_rpki_mft id fail:", err)
 		return nil, err
 	}
-	belogs.Info("getChainMftSqlsDb(): len(chainCertSqls):", len(chainCertSqls), "  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Info("getChainMftSqlsDb(): len(chainCertSqls):", len(chainCertSqls), "  time(s):", time.Since(start))
 	return chainCertSqls, nil
 }
 
-func GetChainFileHashs(mftId uint64) (chainFileHashs []ChainFileHash, err error) {
+func GetChainFileHashsDb(mftId uint64) (chainFileHashs []ChainFileHash, err error) {
 	start := time.Now()
 	sql := `select  v.file as file, v.hash as hash,CONCAT(IFNULL(cer.filePath,''),IFNULL(crl.filePath,''),IFNULL(roa.filePath,'')) as path 
 			from lab_rpki_mft_file_hash_view v 
@@ -44,9 +44,36 @@ func GetChainFileHashs(mftId uint64) (chainFileHashs []ChainFileHash, err error)
 		return chainFileHashs, err
 	}
 
-	belogs.Debug("GetChainFileHashs():mftId:",
-		mftId, "    len(chainFileHashs)", len(chainFileHashs), "  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Debug("GetChainFileHashsDb():mftId:",
+		mftId, "    len(chainFileHashs)", len(chainFileHashs), "  time(s):", time.Since(start))
 	return chainFileHashs, nil
+}
+
+func GetPreviousMftDb(mftId uint64) (previousMft PreviousMft, err error) {
+	start := time.Now()
+	/* // because using json directly, it will cause ' Out of sort memory, consider increasing server sort buffer size'
+	sql := `select f.jsonAll->>'$.mftNumber' as mftNumber,f.jsonAll->>'$.thisUpdate' as thisUpdate, f.jsonAll->>'$.nextUpdate' as nextUpdate
+	        from  lab_rpki_sync_log_file f ,
+				( select m.mftNumber,m.filePath,m.fileName,m.syncLogId from lab_rpki_mft m where m.id = ? ) t
+			where f.filePath = t.filePath and f.fileName=t.fileName and f.syncLogId < t.syncLogId
+			order by f.syncLogId desc limit 1  `
+	*/
+	// get id ,then select from json
+	sql := `select  ff.jsonAll->>'$.mftNumber' as mftNumber,ff.jsonAll->>'$.thisUpdate' as thisUpdate, ff.jsonAll->>'$.nextUpdate' as nextUpdate 
+			from lab_rpki_sync_log_file ff where ff.id = ( 
+				select f.id from  lab_rpki_sync_log_file f , ( select m.mftNumber,m.filePath,m.fileName,m.syncLogId from lab_rpki_mft m where m.id = ? ) t 
+				where f.filePath = t.filePath and f.fileName=t.fileName and f.syncLogId < t.syncLogId 
+                order by f.syncLogId desc limit 1 
+	     	)`
+	found, err := xormdb.XormEngine.SQL(sql, mftId).Get(&previousMft)
+	if err != nil {
+		belogs.Error("GetPreviousMftDb(): lab_rpki_sync_log_file fail, mftId:", mftId, err, "  time(s):", time.Since(start))
+		return previousMft, err
+	}
+	previousMft.Found = found
+	belogs.Info("GetPreviousMftDb():mftId:", mftId, "   previousMft:", previousMft,
+		"  time(s):", time.Since(start)) //shaodebug
+	return previousMft, nil
 }
 
 func updateMftsDb(chains *Chains, wg *sync.WaitGroup) {
@@ -75,7 +102,7 @@ func updateMftsDb(chains *Chains, wg *sync.WaitGroup) {
 		belogs.Error("updateMftsDb(): CommitSession fail :", err)
 		return
 	}
-	belogs.Debug("updateMftsDb(): len(mftIds):", len(mftIds), "  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Debug("updateMftsDb(): len(mftIds):", len(mftIds), "  time(s):", time.Since(start))
 
 }
 
@@ -100,6 +127,6 @@ func updateMftDb(session *xorm.Session, chains *Chains, mftId uint64) (err error
 		belogs.Error("updateMftDb(): UPDATE lab_rpki_mft fail :", mftId, err)
 		return err
 	}
-	belogs.Debug("updateMftDb():mftId:", mftId, "  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Debug("updateMftDb():mftId:", mftId, "  time(s):", time.Since(start))
 	return nil
 }

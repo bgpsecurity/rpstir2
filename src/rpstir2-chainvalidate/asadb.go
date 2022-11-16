@@ -25,7 +25,7 @@ func getChainAsaSqlsDb() (chainCertSqls []ChainCertSql, err error) {
 		belogs.Error("getChainAsaSqlsDb(): lab_rpki_asa id fail:", err)
 		return nil, err
 	}
-	belogs.Info("getChainAsaSqlsDb(): len(chainCertSqls):", len(chainCertSqls), "  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Info("getChainAsaSqlsDb(): len(chainCertSqls):", len(chainCertSqls), "  time(s):", time.Since(start))
 	return chainCertSqls, nil
 }
 
@@ -55,7 +55,7 @@ func updateAsasDb(chains *Chains, wg *sync.WaitGroup) {
 		belogs.Error("updateAsasDb(): CommitSession fail :", err)
 		return
 	}
-	belogs.Debug("updateAsasDb(): len(asaIds):", len(asaIds), "  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Debug("updateAsasDb(): len(asaIds):", len(asaIds), "  time(s):", time.Since(start))
 
 }
 
@@ -80,6 +80,6 @@ func updateAsaDb(session *xorm.Session, chains *Chains, asaId uint64) (err error
 		belogs.Error("updateAsaDb(): UPDATE lab_rpki_asa fail :", asaId, err)
 		return err
 	}
-	belogs.Debug("updateAsaDb():asaId:", asaId, "  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Debug("updateAsaDb():asaId:", asaId, "  time(s):", time.Since(start))
 	return nil
 }

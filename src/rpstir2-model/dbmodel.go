@@ -186,7 +186,7 @@ type LabRpkiSyncLog struct {
 	State string `json:"state" xorm:"state varchar(16)"`
 }
 
-//lab_rpki_sync_log_file
+// lab_rpki_sync_log_file
 type SyncLogFile struct {
 	Id        uint64 `json:"id" xorm:"pk autoincr"`
 	SyncLogId uint64 `json:"syncLogId" xorm:"syncLogId int"`

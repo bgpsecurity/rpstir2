@@ -44,7 +44,7 @@ func addCersDb(syncLogFileModels []SyncLogFileModel) error {
 		belogs.Error("addCersDb(): CommitSession fail :", err)
 		return err
 	}
-	belogs.Info("addCersDb(): len(syncLogFileModels):", len(syncLogFileModels), "  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Info("addCersDb(): len(syncLogFileModels):", len(syncLogFileModels), "  time(s):", time.Since(start))
 	return nil
 
 }
@@ -81,7 +81,7 @@ func delCersDb(delSyncLogFileModels []SyncLogFileModel, updateSyncLogFileModels 
 		belogs.Error("delCersDb(): CommitSession fail :", err)
 		return err
 	}
-	belogs.Info("delCersDb(): len(cers):", len(syncLogFileModels), "  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Info("delCersDb(): len(cers):", len(syncLogFileModels), "  time(s):", time.Since(start))
 	return nil
 }
 
@@ -176,7 +176,8 @@ func insertCerDb(session *xorm.Session,
 		cerModel.FileHash, xormdb.SqlNullString(jsonutil.MarshalJson(cerModel)), syncLogFileModel.SyncLogId, syncLogFileModel.Id, now,
 		xormdb.SqlNullString(jsonutil.MarshalJson(syncLogFileModel.StateModel)))
 	if err != nil {
-		belogs.Error("insertCerDb(): INSERT lab_rpki_cer Exec:", jsonutil.MarshalJson(syncLogFileModel), err)
+		belogs.Error("insertCerDb(): INSERT lab_rpki_cer fail, cerModel:", jsonutil.MarshalJson(cerModel),
+			"     syncLogFileModel:", jsonutil.MarshalJson(syncLogFileModel), err)
 		return err
 	}
 
@@ -308,7 +309,7 @@ func updateCerStateDb(certIdStateModels []CertIdStateModel) error {
 		belogs.Error("updateCerStateDb(): CommitSession fail :", err)
 		return err
 	}
-	belogs.Info("updateCerStateDb(): len(certIdStateModels):", len(certIdStateModels), "  time(s):", time.Now().Sub(start))
+	belogs.Info("updateCerStateDb(): len(certIdStateModels):", len(certIdStateModels), "  time(s):", time.Since(start))
 
 	return nil
 }

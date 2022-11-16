@@ -32,7 +32,7 @@ func getChainCrlSqlsDb() (chainCertSqls []ChainCertSql, err error) {
 		belogs.Error("getChainCrlSqlsDb(): lab_rpki_crl id fail:", err)
 		return nil, err
 	}
-	belogs.Info("getChainCrlSqlsDb(): len(chainCertSqls):", len(chainCertSqls), "  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Info("getChainCrlSqlsDb(): len(chainCertSqls):", len(chainCertSqls), "  time(s):", time.Since(start))
 	return chainCertSqls, nil
 }
 
@@ -61,7 +61,7 @@ func updateCrlsDb(chains *Chains, wg *sync.WaitGroup) {
 		belogs.Error("updateCrlsDb(): CommitSession fail :", err)
 		return
 	}
-	belogs.Debug("updateCrlsDb():len(crlIds):", len(crlIds), "  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Debug("updateCrlsDb():len(crlIds):", len(crlIds), "  time(s):", time.Since(start))
 
 }
 
@@ -88,6 +88,6 @@ func updateCrlDb(session *xorm.Session, chains *Chains, crlId uint64) (err error
 		belogs.Error("updateCrlDb(): UPDATE lab_rpki_crl fail :", crlId, err)
 		return err
 	}
-	belogs.Debug("updateCrlDb(): crlId:", crlId, "  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Debug("updateCrlDb(): crlId:", crlId, "  time(s):", time.Since(start))
 	return nil
 }

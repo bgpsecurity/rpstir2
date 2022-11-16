@@ -30,11 +30,12 @@ type ChainDbCerModel struct {
 	Id              uint64            `json:"id" xorm:"id int"`
 	ParentChainCers []ChainDbCerModel `json:"parentChainCers,omitempty"`
 
-	// child cer/crl/mft/roa ,just one level
+	// child cer/crl/mft/roa/asa ,just one level
 	ChildChainCrls []ChainDbCrlModel `json:"childChainCrls,omitempty"`
 	ChildChainMfts []ChainDbMftModel `json:"childChainMfts,omitempty"`
 	ChildChainCers []ChainDbCerModel `json:"childChainCers,omitempty"`
 	ChildChainRoas []ChainDbRoaModel `json:"childChainRoas,omitempty"`
+	ChildChainAsas []ChainDbAsaModel `json:"childChainAsas,omitempty"`
 }
 
 func NewChainDbCerModel(chainCer *ChainCer) *ChainDbCerModel {
@@ -76,6 +77,15 @@ func NewChainDbCerModel(chainCer *ChainCer) *ChainDbCerModel {
 	belogs.Debug("NewChainDbCerModel():ChildChainRoas chainDbCerModel.Id:", chainDbCerModel.Id,
 		"     len(chainCer.ChildChainRoas)", len(chainCer.ChildChainRoas),
 		"     len(chainDbCerModel.ChildChainRoas):", len(chainDbCerModel.ChildChainRoas))
+
+	chainDbCerModel.ChildChainAsas = make([]ChainDbAsaModel, 0, len(chainCer.ChildChainAsas))
+	for i := range chainCer.ChildChainAsas {
+		chainDbAsaModel := ChainDbAsaModel{Id: chainCer.ChildChainAsas[i].Id}
+		chainDbCerModel.ChildChainAsas = append(chainDbCerModel.ChildChainAsas, chainDbAsaModel)
+	}
+	belogs.Debug("NewChainDbCerModel():ChildChainAsas chainDbCerModel.Id:", chainDbCerModel.Id,
+		"     len(chainCer.ChildChainAsas)", len(chainCer.ChildChainAsas),
+		"     len(chainDbCerModel.ChildChainAsas):", len(chainDbCerModel.ChildChainAsas))
 
 	chainDbCerModel.ParentChainCers = make([]ChainDbCerModel, 0)
 	for i := range chainCer.ParentChainCerAlones {

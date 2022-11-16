@@ -131,7 +131,7 @@ func SendResponses(conn *net.TCPConn, rtrPduModelResponses []RtrPduModel) (err e
 	sendIntervalMs := conf.Int("rtr:sendIntervalMs")
 	for _, one := range rtrPduModelResponses {
 		sendBytes := one.Bytes()
-		//belogs.Debug("sendResponses(): send by conn :\r\n", convert.Bytes2String(sendBytes))
+		//belogs.Debug("sendResponses(): send by conn :", convert.Bytes2String(sendBytes))
 		//conn.SetWriteBuffer(len(sendBytes))
 		n, err := conn.Write(sendBytes)
 		if err != nil {
@@ -146,7 +146,7 @@ func SendResponses(conn *net.TCPConn, rtrPduModelResponses []RtrPduModel) (err e
 			time.Sleep(time.Duration(sendIntervalMs) * time.Microsecond)
 		}
 	}
-	belogs.Debug("SendResponses(): send len(packets):", len(rtrPduModelResponses), ",   time(s):", time.Now().Sub(start).Seconds())
+	belogs.Debug("SendResponses(): send len(packets):", len(rtrPduModelResponses), ",   time(s):", time.Since(start))
 	return nil
 }
 func SendErrorResponse(conn *net.TCPConn, err error) (er error) {
@@ -163,14 +163,14 @@ func sendErrorResponse(conn *net.TCPConn, rtrError *RtrError) (err error) {
 	start := time.Now()
 	rtrErrorReportModel := NewRtrErrorReportModelByRtrError(rtrError)
 	sendBytes := rtrErrorReportModel.Bytes()
-	belogs.Debug("sendResponses(): send by conn :\r\n", convert.Bytes2String(sendBytes))
+	belogs.Debug("sendResponses(): send by conn:", convert.Bytes2String(sendBytes))
 	//conn.SetWriteBuffer(len(sendBytes))
 	n, err := conn.Write(sendBytes)
 	if err != nil {
 		belogs.Debug("sendResponses():  conn.Write() fail,  ", jsonutil.MarshalJson(rtrErrorReportModel), err)
 		return err
 	}
-	belogs.Info("SendResponses(): send n, packets:", n, jsonutil.MarshalJson(rtrErrorReportModel), ",   time(s):", time.Now().Sub(start).Seconds())
+	belogs.Info("SendResponses(): send n, packets:", n, jsonutil.MarshalJson(rtrErrorReportModel), ",   time(s):", time.Since(start))
 	return nil
 }
 

@@ -42,7 +42,7 @@ func SendSerialNotify() (err error) {
 
 	// send response rtrpdumodels
 	RtrTcpServer.ActiveSend(rtrPduModelResponse.Bytes())
-	belogs.Info("SendSerialNotify(): ok,   rtrPduModelResponse:", jsonutil.MarshalJson(rtrPduModelResponse), "   time(s):", time.Now().Sub(start).Seconds())
+	belogs.Info("SendSerialNotify(): ok,   rtrPduModelResponse:", jsonutil.MarshalJson(rtrPduModelResponse), "   time(s):", time.Since(start))
 	return nil
 
 }

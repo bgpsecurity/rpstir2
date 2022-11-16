@@ -81,7 +81,7 @@ func syncStart(syncStyle model.SyncStyle) (nextStep string, err error) {
 		belogs.Error("syncStart():UpdateSyncLogEndDb fail:", err)
 		return "", err
 	}
-	belogs.Info("syncStart(): end sync, will parsevalidate,  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Info("syncStart(): end sync, will parsevalidate,  time(s):", time.Since(start))
 
 	return "parsevalidate", nil
 
@@ -99,7 +99,7 @@ func getTals() (talModels []model.TalModel, err error) {
 	}
 
 	belogs.Debug("getTals(): talModelsResponse:",
-		jsonutil.MarshalJson(talModelsResponse), "  time(s):", time.Now().Sub(start).Seconds())
+		jsonutil.MarshalJson(talModelsResponse), "  time(s):", time.Since(start))
 
 	if len(talModelsResponse.TalModels) == 0 {
 		belogs.Error("getTals(): there is no tal file")
@@ -290,7 +290,7 @@ func LocalStart() {
 	httpclient.Post("https://"+conf.String("rpstir2-rp::serverHost")+":"+conf.String("rpstir2-rp::serverHttpsPort")+
 		"/sys/servicestate", `{"operate":"leave","state":"sync"}`, false)
 
-	belogs.Info("LocalStart(): sync end , will call parsevalidate,  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Info("LocalStart(): sync end , will call parsevalidate,  time(s):", time.Since(start))
 	// will call parseValidate
 	go func() {
 		httpclient.Post("https://"+conf.String("rpstir2-rp::serverHost")+":"+conf.String("rpstir2-rp::serverHttpsPort")+

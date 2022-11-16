@@ -4,10 +4,9 @@ import (
 	"errors"
 	"time"
 
-	model "rpstir2-model"
-
 	"github.com/cpusoft/goutil/belogs"
 	"github.com/cpusoft/goutil/xormdb"
+	model "rpstir2-model"
 )
 
 func getSessionIdDb() (sessionId uint16, err error) {
@@ -73,7 +72,7 @@ func getRtrIncrementalAndSessionIdAndSerialNumberDb(clientSerialNumber uint32) (
 
 	belogs.Info("getRtrIncrementalAndSessionIdAndSerialNumberDb():len(rtrIncrementals) :", len(rtrIncrementals),
 		"   sessionId:", sessionId, "  serialNumber:", serialNumber,
-		"   clientSerialNumber:", clientSerialNumber, "  time(s):", time.Now().Sub(start))
+		"   clientSerialNumber:", clientSerialNumber, "  time(s):", time.Since(start))
 	return rtrIncrementals, rtrAsaIncrementals, sessionId, serialNumber, nil
 }
 
@@ -114,7 +113,7 @@ func getRtrFullAndSessionIdAndSerialNumberDb() (rtrFulls []model.LabRpkiRtrFull,
 	}
 	belogs.Info("getRtrFullAndSessionIdAndSerialNumberDb():len(rtrFulls) :", len(rtrFulls), "  len(rtrAsaFulls):", len(rtrAsaFulls),
 		"   sessionId:", sessionId, "  serialNumber:", serialNumber,
-		"   time(s):", time.Now().Sub(start))
+		"   time(s):", time.Since(start))
 	return rtrFulls, rtrAsaFulls, sessionId, serialNumber, nil
 }
 func getSessionIdAndSerialNumberDb() (sessionId uint16, serialNumber uint32, err error) {

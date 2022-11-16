@@ -16,54 +16,54 @@ func rtrUpdateByRoaFromSync(curSerialNumberModel, newSerialNumberModel SerialNum
 	// get all roa
 	roaToRtrFullLogs, err := getAllRoasDb()
 	if err != nil {
-		belogs.Error("rtrUpdateByRoaFromSync():getAllRoasDb fail:", err, "  time(s):", time.Now().Sub(start))
+		belogs.Error("rtrUpdateByRoaFromSync():getAllRoasDb fail:", err, "  time(s):", time.Since(start))
 		return err
 	}
 	if len(roaToRtrFullLogs) == 0 {
-		belogs.Info("rtrUpdateByRoaFromSync():roaToRtrFullLogs is empty, time(s):", time.Now().Sub(start))
+		belogs.Info("rtrUpdateByRoaFromSync():roaToRtrFullLogs is empty, time(s):", time.Since(start))
 		return nil
 	}
-	belogs.Info("rtrUpdateByRoaFromSync(): len(roaToRtrFullLogs):", len(roaToRtrFullLogs), "  time(s):", time.Now().Sub(start))
+	belogs.Info("rtrUpdateByRoaFromSync(): len(roaToRtrFullLogs):", len(roaToRtrFullLogs), "  time(s):", time.Since(start))
 
 	// get all slurm
 	effectSlurmToRtrFullLogs, err := getEffectSlurmToRtrFullLogs(curSerialNumberModel)
 	if err != nil {
 		belogs.Error("rtrUpdateByRoaFromSync():getEffectSlurmToRtrFullLogs fail:",
-			jsonutil.MarshalJson(curSerialNumberModel), err, "  time(s):", time.Now().Sub(start))
+			jsonutil.MarshalJson(curSerialNumberModel), err, "  time(s):", time.Since(start))
 		return err
 	}
 	belogs.Info("rtrUpdateByRoaFromSync(): getEffectSlurmToRtrFullLogs,  curSerialNumberModel:", curSerialNumberModel,
-		"  len(effectSlurmToRtrFullLogs):", len(effectSlurmToRtrFullLogs), "  time(s):", time.Now().Sub(start))
+		"  len(effectSlurmToRtrFullLogs):", len(effectSlurmToRtrFullLogs), "  time(s):", time.Since(start))
 
 	// insert to lab_rpki_rtr_full_log
 	err = updateRtrFullLogFromRoaAndSlurmDb(newSerialNumberModel, roaToRtrFullLogs, effectSlurmToRtrFullLogs)
 	if err != nil {
-		belogs.Error("rtrUpdateByRoaFromSync(): full, updateRtrFullLogFromRoaAndSlurmDb fail:", err, "  time(s):", time.Now().Sub(start))
+		belogs.Error("rtrUpdateByRoaFromSync(): full, updateRtrFullLogFromRoaAndSlurmDb fail:", err, "  time(s):", time.Since(start))
 		return err
 	}
 	belogs.Info("rtrUpdateByRoaFromSync(): updateRtrFullLogFromRoaAndSlurmDb,  new SerialNumber:", newSerialNumberModel.SerialNumber,
 		"  len(roaToRtrFullLogs):", len(roaToRtrFullLogs),
-		"  len(effectSlurmToRtrFullLogs):", len(effectSlurmToRtrFullLogs), "  time(s):", time.Now().Sub(start))
+		"  len(effectSlurmToRtrFullLogs):", len(effectSlurmToRtrFullLogs), "  time(s):", time.Since(start))
 
 	// get incrementals from curRtrFullLog and newRtrFullLog different
 	rtrIncrementals, err := getRtrIncrementals(curSerialNumberModel, newSerialNumberModel)
 	if err != nil {
 		belogs.Error("rtrUpdateByRoaFromSync():getRtrIncrementals fail: curSerialNumberModel:", curSerialNumberModel,
-			"   newSerialNumber:", newSerialNumberModel, err, "  time(s):", time.Now().Sub(start))
+			"   newSerialNumber:", newSerialNumberModel, err, "  time(s):", time.Since(start))
 		return err
 	}
 	belogs.Info("rtrUpdateByRoaFromSync():diffRtrFullToRtrIncremental, len(rtrIncrementals)", len(rtrIncrementals),
-		"  curSerialNumberModel:", curSerialNumberModel, "   newSerialNumber:", newSerialNumberModel, "  time(s):", time.Now().Sub(start))
+		"  curSerialNumberModel:", curSerialNumberModel, "   newSerialNumber:", newSerialNumberModel, "  time(s):", time.Since(start))
 
 	// save rtrfull/rtrincr to db
 	err = updateSerailNumberAndRtrFullAndRtrIncrementalDb(newSerialNumberModel, rtrIncrementals)
 	if err != nil {
 		belogs.Error("rtrUpdateByRoaFromSync():updateSerailNumberAndRtrFullAndRtrIncrementalDb: fail: newSerialNumber:",
-			jsonutil.MarshalJson(newSerialNumberModel), "   len(rtrIncrementals):", len(rtrIncrementals), err, "  time(s):", time.Now().Sub(start))
+			jsonutil.MarshalJson(newSerialNumberModel), "   len(rtrIncrementals):", len(rtrIncrementals), err, "  time(s):", time.Since(start))
 		return err
 	}
 	belogs.Info("rtrUpdateByRoaFromSync(): updateSerailNumberAndRtrFullAndRtrIncrementalDb,  newSerialNumberModel:", jsonutil.MarshalJson(newSerialNumberModel),
-		"   len(rtrIncrementals):", len(rtrIncrementals), "  time(s):", time.Now().Sub(start))
+		"   len(rtrIncrementals):", len(rtrIncrementals), "  time(s):", time.Since(start))
 	return nil
 }
 
@@ -129,7 +129,7 @@ func getEffectSlurmToRtrFullLogs(curSerialNumberModel SerialNumberModel) (effect
 		return nil, err
 	}
 	belogs.Debug("getEffectSlurmToRtrFullLogs(): slurmToRtrFullLogs:", len(slurmToRtrFullLogs), jsonutil.MarshalJson(slurmToRtrFullLogs))
-	belogs.Info("getEffectSlurmToRtrFullLogs(): len(slurmToRtrFullLogs):", len(slurmToRtrFullLogs), "  time(s):", time.Now().Sub(start))
+	belogs.Info("getEffectSlurmToRtrFullLogs(): len(slurmToRtrFullLogs):", len(slurmToRtrFullLogs), "  time(s):", time.Since(start))
 
 	// get effect slurm from rtrfulllog
 	effectSlurmToRtrFullLogs, err = getEffectSlurmsFromSlurm(curSerialNumberModel.SerialNumber, slurmToRtrFullLogs)
@@ -140,7 +140,7 @@ func getEffectSlurmToRtrFullLogs(curSerialNumberModel SerialNumberModel) (effect
 	belogs.Debug("getEffectSlurmToRtrFullLogs():cur SerialNumber:", curSerialNumberModel.SerialNumber,
 		"   effectSlurmToRtrFullLogs:", len(effectSlurmToRtrFullLogs), jsonutil.MarshalJson(effectSlurmToRtrFullLogs))
 	belogs.Info("getEffectSlurmToRtrFullLogs():cur SerialNumber:", curSerialNumberModel.SerialNumber,
-		"   len(effectSlurmToRtrFullLogs):", len(effectSlurmToRtrFullLogs), "  time(s):", time.Now().Sub(start))
+		"   len(effectSlurmToRtrFullLogs):", len(effectSlurmToRtrFullLogs), "  time(s):", time.Since(start))
 	return effectSlurmToRtrFullLogs, nil
 }
 
@@ -155,7 +155,7 @@ func getRtrIncrementals(curSerialNumberModel, newSerialNumberModel SerialNumberM
 		return nil, err
 	}
 	belogs.Info("getRtrIncrementals(): getRtrFullFromRtrFullLogDb len(rtrFullCurs):", len(rtrFullCurs),
-		" cur serialNumber:", curSerialNumberModel.SerialNumber, "  time(s):", time.Now().Sub(start))
+		" cur serialNumber:", curSerialNumberModel.SerialNumber, "  time(s):", time.Since(start))
 
 	// get last rtrFull
 	rtrFullNews, err := getRtrFullFromRtrFullLogDb(newSerialNumberModel.SerialNumber)
@@ -164,7 +164,7 @@ func getRtrIncrementals(curSerialNumberModel, newSerialNumberModel SerialNumberM
 		return nil, err
 	}
 	belogs.Info("getRtrIncrementals(): getRtrFullFromRtrFullLogDb, len(rtrFullNews):", len(rtrFullNews),
-		"  new SerialNumber:", newSerialNumberModel.SerialNumber, "  time(s):", time.Now().Sub(start))
+		"  new SerialNumber:", newSerialNumberModel.SerialNumber, "  time(s):", time.Since(start))
 
 	// get rtr incrementals
 	rtrIncrementals, err = diffRtrFullToRtrIncremental(rtrFullCurs, rtrFullNews, newSerialNumberModel.SerialNumber)
@@ -173,6 +173,6 @@ func getRtrIncrementals(curSerialNumberModel, newSerialNumberModel SerialNumberM
 		return nil, err
 	}
 	belogs.Info("getRtrIncrementals():diffRtrFullToRtrIncremental, len(rtrIncrementals)", len(rtrIncrementals),
-		" new  SerialNumber:", newSerialNumberModel.SerialNumber, "  time(s):", time.Now().Sub(start))
+		" new  SerialNumber:", newSerialNumberModel.SerialNumber, "  time(s):", time.Since(start))
 	return rtrIncrementals, nil
 }

@@ -64,7 +64,7 @@ func parseValidateStart() (nextStep string, err error) {
 		return "", err
 	}
 
-	belogs.Info("parseValidateStart(): end, will call chainvalidate,  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Info("parseValidateStart(): end, will call chainvalidate,  time(s):", time.Since(start))
 	return "chainvalidate", nil
 }
 
@@ -118,7 +118,7 @@ func delCertByDelAndUpdate(syncLogFileModels *SyncLogFileModels) (err error) {
 	}
 
 	wg.Wait()
-	belogs.Info("delCertByDelAndUpdate(): end,  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Info("delCertByDelAndUpdate(): end,  time(s):", time.Since(start))
 	return nil
 
 }
@@ -167,7 +167,7 @@ func insertCertByAddAndUpdate(syncLogFileModels *SyncLogFileModels) (err error) 
 	}
 
 	wg.Wait()
-	belogs.Info("InsertCertByInsertAndUpdate(): end,  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Info("InsertCertByInsertAndUpdate(): end,  time(s):", time.Since(start))
 	return nil
 }
 
@@ -190,7 +190,7 @@ func parseValidateAndAddCerts(syncLogFileModels []SyncLogFileModel, fileType str
 	close(parseValidateCh)
 
 	belogs.Info("parseValidateAndAddCerts():end parseValidate, len(syncLogFileModels):", len(syncLogFileModels), "  fileType:", fileType, "  fileType:", fileType,
-		"  time(s):", time.Now().Sub(start).Seconds(), ", and will save to db")
+		"  time(s):", time.Since(start), ", and will save to db")
 
 	// add to db
 	switch fileType {
@@ -205,7 +205,7 @@ func parseValidateAndAddCerts(syncLogFileModels []SyncLogFileModel, fileType str
 	case "asa":
 		addAsasDb(syncLogFileModels)
 	}
-	belogs.Info("parseValidateAndAddCerts():end add***Db(), len(syncLogFileModels):", len(syncLogFileModels), "  fileType:", fileType, "  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Info("parseValidateAndAddCerts():end add***Db(), len(syncLogFileModels):", len(syncLogFileModels), "  fileType:", fileType, "  time(s):", time.Since(start))
 }
 
 func parseValidateCert(syncLogFileModel *SyncLogFileModel,
@@ -227,7 +227,7 @@ func parseValidateCert(syncLogFileModel *SyncLogFileModel,
 	syncLogFileModel.CertModel = certModel
 	syncLogFileModel.StateModel = stateModel
 	belogs.Debug("parseValidateCert(): parseValidateFile file :", file,
-		"   syncType:", syncLogFileModel.SyncType, "  time(s):", time.Now().Sub(start).Seconds())
+		"   syncType:", syncLogFileModel.SyncType, "  time(s):", time.Since(start))
 
 	return "", nil
 
@@ -383,12 +383,11 @@ func parseFileSimple(certFile string) (parseCerSimple model.ParseCerSimple, err 
 func updateCertByCheckAll() (err error) {
 
 	start := time.Now()
-	now := start
 	belogs.Info("updateCertByCheckAll():start:")
 
 	var g errgroup.Group
 	g.Go(func() error {
-		er := updateCerByCheckAll(now)
+		er := updateCerByCheckAll(start)
 		if er != nil {
 			belogs.Error("updateCertByCheckAll(): updateCerByCheckAll:  err:", er)
 		}
@@ -427,9 +426,9 @@ func updateCertByCheckAll() (err error) {
 	})
 
 	if err := g.Wait(); err != nil {
-		belogs.Error("updateCertByCheckAll(): fail, err:", err, "   time(s):", time.Now().Sub(start))
+		belogs.Error("updateCertByCheckAll(): fail, err:", err, "   time(s):", time.Since(start))
 		return err
 	}
-	belogs.Info("updateCertByCheckAll(): ok,   time(s):", time.Now().Sub(start))
+	belogs.Info("updateCertByCheckAll(): ok,   time(s):", time.Since(start))
 	return nil
 }

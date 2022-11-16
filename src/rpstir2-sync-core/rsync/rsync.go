@@ -4,13 +4,12 @@ import (
 	"strings"
 	"time"
 
-	model "rpstir2-model"
-	"rpstir2-sync-core/sync"
-
 	"github.com/cpusoft/goutil/belogs"
 	"github.com/cpusoft/goutil/conf"
 	"github.com/cpusoft/goutil/jsonutil"
 	"github.com/cpusoft/goutil/rsyncutil"
+	model "rpstir2-model"
+	"rpstir2-sync-core/sync"
 )
 
 func InsertSyncLogFiles(syncLogId uint64,
@@ -21,7 +20,7 @@ func InsertSyncLogFiles(syncLogId uint64,
 	rsyncTime := time.Now()
 	syncLogFiles := make([]model.SyncLogFile, 0, 2*(len(addFiles)+len(delFiles)+len(updateFiles)))
 
-	// insert lab_rpki_sync_log_file
+	// add
 	rsyncType := "add"
 	for _, addFile := range addFiles {
 		syncLogFile := ConvertToSyncLogFile(syncLogId, rsyncTime,
@@ -30,6 +29,7 @@ func InsertSyncLogFiles(syncLogId uint64,
 	}
 	belogs.Debug("InsertSyncLogFiles():rsync, after len(addFiles):", syncLogId, len(addFiles))
 
+	// update
 	rsyncType = "update"
 	for _, updateFile := range updateFiles {
 		syncLogFile := ConvertToSyncLogFile(syncLogId, rsyncTime,
@@ -38,6 +38,7 @@ func InsertSyncLogFiles(syncLogId uint64,
 	}
 	belogs.Debug("InsertSyncLogFiles():rsync, after len(updateFiles):", syncLogId, len(updateFiles))
 
+	// del
 	rsyncType = "del"
 	for _, delFile := range delFiles {
 		syncLogFile := ConvertToSyncLogFile(syncLogId, rsyncTime,
@@ -63,7 +64,7 @@ func ConvertToSyncLogFile(syncLogId uint64, rsyncTime time.Time,
 	syncType string, rsyncFileHash *rsyncutil.RsyncFileHash) (syncLogFile model.SyncLogFile) {
 
 	rtr := "notNeed"
-	if rsyncFileHash.FileType == "roa" {
+	if rsyncFileHash.FileType == "roa" || rsyncFileHash.FileType == "asa" {
 		rtr = "notYet"
 	}
 
@@ -76,7 +77,7 @@ func ConvertToSyncLogFile(syncLogId uint64, rsyncTime time.Time,
 	// /root/rpki/data/rrdprepo/rpki.ripe.net/repository/*** --> rsync://rpki.ripe.net/repository/***
 	// so, when replace, keep "/" and add "rsync:/"
 	sourceUrl := strings.Replace(rsyncFileHash.FilePath, conf.VariableString("rsync::destPath"), "rsync:/", -1)
-	//lab_rpki_sync_log_file
+	// syncLogFile
 	syncLogFile = model.SyncLogFile{
 		SyncLogId: syncLogId,
 		FileType:  rsyncFileHash.FileType,

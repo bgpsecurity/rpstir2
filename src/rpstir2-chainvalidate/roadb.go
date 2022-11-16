@@ -25,7 +25,7 @@ func getChainRoaSqlsDb() (chainCertSqls []ChainCertSql, err error) {
 		belogs.Error("getChainRoaSqlsDb(): lab_rpki_roa id fail:", err)
 		return nil, err
 	}
-	belogs.Info("getChainRoaSqlsDb(): len(chainCertSqls):", len(chainCertSqls), "  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Info("getChainRoaSqlsDb(): len(chainCertSqls):", len(chainCertSqls), "  time(s):", time.Since(start))
 	return chainCertSqls, nil
 }
 
@@ -55,7 +55,7 @@ func updateRoasDb(chains *Chains, wg *sync.WaitGroup) {
 		belogs.Error("updateRoasDb(): CommitSession fail :", err)
 		return
 	}
-	belogs.Debug("updateRoasDb(): len(roaIds):", len(roaIds), "  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Debug("updateRoasDb(): len(roaIds):", len(roaIds), "  time(s):", time.Since(start))
 
 }
 
@@ -80,6 +80,6 @@ func updateRoaDb(session *xorm.Session, chains *Chains, roaId uint64) (err error
 		belogs.Error("updateRoaDb(): UPDATE lab_rpki_roa fail :", roaId, err)
 		return err
 	}
-	belogs.Debug("updateRoaDb():roaId:", roaId, "  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Debug("updateRoaDb():roaId:", roaId, "  time(s):", time.Since(start))
 	return nil
 }

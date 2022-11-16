@@ -76,7 +76,7 @@ func ParseValidateFile(c *gin.Context) {
 	belogs.Info("ParseValidateFile():parseValidateFile certType: ", certType,
 		"     certModel:", certModel,
 		"     stateModel:", stateModel,
-		"     time(s):", time.Now().Sub(start).Seconds())
+		"     time(s):", time.Since(start))
 
 	parseCertResponse := model.ParseCertResponse{
 		CertType:   certType,
@@ -114,7 +114,7 @@ func ParseFile(c *gin.Context) {
 		return
 	}
 	belogs.Info("ParseFile(): ok, certModel:", jsonutil.MarshallJsonIndent(certModel),
-		"  time(s):", time.Now().Sub(start).Seconds())
+		"  time(s):", time.Since(start))
 	ginserver.ResponseOk(c, certModel)
 }
 
@@ -145,7 +145,7 @@ func ParseFileSimple(c *gin.Context) {
 		return
 	}
 	belogs.Info("ParseFileSimple():ok, parseCerSimple:",
-		jsonutil.MarshalJson(parseCerSimple), "   time(s):", time.Now().Sub(start).Seconds())
+		jsonutil.MarshalJson(parseCerSimple), "   time(s):", time.Since(start))
 
 	ginserver.ResponseOk(c, parseCerSimple)
 }

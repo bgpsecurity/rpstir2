@@ -90,6 +90,6 @@ func getFilesHashFromDb(destPath string) (files map[string]rsyncutil.RsyncFileHa
 		files[osutil.JoinPathFile(mftFileHashs[i].FilePath, mftFileHashs[i].FileName)] = mftFileHashs[i]
 	}
 	belogs.Debug("getFilesHashFromDb(): len(files):", len(files),
-		"     files:", jsonutil.MarshalJson(files), "  time(s):", time.Now().Sub(start).Seconds())
+		"     files:", jsonutil.MarshalJson(files), "  time(s):", time.Since(start))
 	return files, nil
 }

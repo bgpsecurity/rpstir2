@@ -1,4 +1,4 @@
-module rpstir2-parsevalidate-packet
+module labscm.zdns.cn/rpstir2-mod/rpstir2-parsevalidate-packet
 
-go 1.16
+go 1.18
 

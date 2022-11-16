@@ -1,11 +1,10 @@
 package sync
 
 import (
-	model "rpstir2-model"
-
 	"github.com/cpusoft/goutil/belogs"
 	"github.com/cpusoft/goutil/jsonutil"
 	"github.com/cpusoft/goutil/xormdb"
+	model "rpstir2-model"
 )
 
 func InsertSyncLogFilesDb(syncLogFiles []model.SyncLogFile) error {

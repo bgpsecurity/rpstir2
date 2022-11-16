@@ -43,7 +43,7 @@ func addMftsDb(syncLogFileModels []SyncLogFileModel) error {
 		belogs.Error("addMftsDb(): CommitSession fail :", err)
 		return err
 	}
-	belogs.Info("addMftsDb(): len(syncLogFileModels):", len(syncLogFileModels), "  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Info("addMftsDb(): len(syncLogFileModels):", len(syncLogFileModels), "  time(s):", time.Since(start))
 	return nil
 }
 
@@ -79,7 +79,7 @@ func delMftsDb(delSyncLogFileModels []SyncLogFileModel, updateSyncLogFileModels 
 		belogs.Error("delMftsDb(): CommitSession fail :", err)
 		return err
 	}
-	belogs.Info("delMftsDb(): len(mfts):", len(syncLogFileModels), "  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Info("delMftsDb(): len(mfts):", len(syncLogFileModels), "  time(s):", time.Since(start))
 	return nil
 }
 
@@ -244,7 +244,7 @@ func updateMftStateDb(certIdStateModels []CertIdStateModel) error {
 		belogs.Error("updateMftStateDb(): CommitSession fail :", err)
 		return err
 	}
-	belogs.Info("updateMftStateDb(): len(certIdStateModels):", len(certIdStateModels), "  time(s):", time.Now().Sub(start))
+	belogs.Info("updateMftStateDb(): len(certIdStateModels):", len(certIdStateModels), "  time(s):", time.Since(start))
 
 	return nil
 }

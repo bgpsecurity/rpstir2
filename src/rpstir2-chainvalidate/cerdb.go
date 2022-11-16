@@ -25,7 +25,7 @@ func getChainCerSqlsDb() (chainCertSqls []ChainCertSql, err error) {
 		belogs.Error("getChainCerSqlsDb(): lab_rpki_cer id fail:", err)
 		return nil, err
 	}
-	belogs.Info("getChainCerSqlsDb(): len(chainCertSqls):", len(chainCertSqls), "  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Info("getChainCerSqlsDb(): len(chainCertSqls):", len(chainCertSqls), "  time(s):", time.Since(start))
 	return chainCertSqls, nil
 }
 
@@ -54,7 +54,7 @@ func updateCersDb(chains *Chains, wg *sync.WaitGroup) {
 		belogs.Error("updateCersDb(): CommitSession fail :", err)
 		return
 	}
-	belogs.Debug("updateCersDb(): len(cerIds):", len(cerIds), "  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Debug("updateCersDb(): len(cerIds):", len(cerIds), "  time(s):", time.Since(start))
 	return
 }
 
@@ -81,6 +81,6 @@ func updateCerDb(session *xorm.Session, chains *Chains, cerId uint64) (err error
 		belogs.Error("updateCerDb(): UPDATE lab_rpki_cer fail :", cerId, err)
 		return err
 	}
-	belogs.Debug("updateCerDb(): cerId:", cerId, "  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Debug("updateCerDb(): cerId:", cerId, "  time(s):", time.Since(start))
 	return nil
 }

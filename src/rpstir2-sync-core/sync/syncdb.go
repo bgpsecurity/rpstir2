@@ -58,7 +58,7 @@ func DelByFilePathDb(filePath string) (err error) {
 	if err != nil {
 		return xormdb.RollbackAndLogError(session, "DelByFilePathsDb(): CommitSession fail:", err)
 	}
-	belogs.Info("DelByFilePathsDb(): filePath:", filePath, "  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Info("DelByFilePathsDb(): filePath:", filePath, "  time(s):", time.Since(start))
 
 	return nil
 }

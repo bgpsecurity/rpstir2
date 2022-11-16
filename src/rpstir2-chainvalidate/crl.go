@@ -33,7 +33,7 @@ func getChainCrls(chains *Chains, wg *sync.WaitGroup) {
 		chains.AddCrl(&chainCrl)
 	}
 
-	belogs.Debug("getChainCrls(): end, len(chainCrlSqls):", len(chainCrlSqls), ",   len(chains.CrlIds):", len(chains.CrlIds), "  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Debug("getChainCrls(): end, len(chainCrlSqls):", len(chainCrlSqls), ",   len(chains.CrlIds):", len(chains.CrlIds), "  time(s):", time.Since(start))
 	return
 }
 
@@ -55,7 +55,7 @@ func validateCrls(chains *Chains, wg *sync.WaitGroup) {
 	crlWg.Wait()
 	close(chainCrlCh)
 
-	belogs.Info("validateCrls(): end, len(crlIds):", len(crlIds), "  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Info("validateCrls(): end, len(crlIds):", len(crlIds), "  time(s):", time.Since(start))
 }
 
 func validateCrl(chains *Chains, crlId uint64, wg *sync.WaitGroup, chainCrlCh chan int) {
@@ -209,7 +209,7 @@ func validateCrl(chains *Chains, crlId uint64, wg *sync.WaitGroup, chainCrlCh ch
 		belogs.Debug("validateCrl(): stateModel have errors or warnings, crlId :", crlId, "  stateModel:", jsonutil.MarshalJson(chainCrl.StateModel))
 	}
 	chains.UpdateFileTypeIdToCrl(&chainCrl)
-	belogs.Debug("validateCrl():end UpdateFileTypeIdToCrl crlId:", crlId, "  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Debug("validateCrl():end UpdateFileTypeIdToCrl crlId:", crlId, "  time(s):", time.Since(start))
 
 }
 func getCrlParentChainCers(chains *Chains, crlId uint64) (chainCerAlones []ChainCerAlone, err error) {

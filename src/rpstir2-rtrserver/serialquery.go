@@ -6,11 +6,10 @@ import (
 	"errors"
 	"time"
 
-	model "rpstir2-model"
-
 	"github.com/cpusoft/goutil/belogs"
 	"github.com/cpusoft/goutil/iputil"
 	"github.com/cpusoft/goutil/jsonutil"
+	model "rpstir2-model"
 )
 
 func ParseToSerialQuery(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel RtrPduModel, err error) {
@@ -83,7 +82,7 @@ func ProcessSerialQuery(rtrPduModel RtrPduModel) (serialResponses []RtrPduModel,
 	}
 	belogs.Info("ProcessSerialQuery():  clientSessionId:", clientSessionId, ",  clientSerialNumber:", clientSerialNumber,
 		"  server get serialNumbers between client and server: ", jsonutil.MarshalJson(serialNumbers),
-		"  time(s):", time.Now().Sub(start))
+		"  time(s):", time.Since(start))
 
 	//
 	if len(serialNumbers) == 0 {
@@ -91,7 +90,7 @@ func ProcessSerialQuery(rtrPduModel RtrPduModel) (serialResponses []RtrPduModel,
 		rtrPduModels := assembleEndOfDataResponses(rtrSerialQueryModel.GetProtocolVersion(), clientSessionId, clientSerialNumber)
 		belogs.Info("ProcessSerialQuery(): server get len(serialNumbers) == 0, will just send End Of Data PDU Response,",
 			"  clientSessionId: ", clientSessionId, ",  clientSerialNumber:", clientSerialNumber,
-			",  rtrPduModels:", jsonutil.MarshalJson(rtrPduModels), "  time(s):", time.Now().Sub(start))
+			",  rtrPduModels:", jsonutil.MarshalJson(rtrPduModels), "  time(s):", time.Since(start))
 		return rtrPduModels, nil
 
 	} else if len(serialNumbers) > 2 {
@@ -105,7 +104,7 @@ func ProcessSerialQuery(rtrPduModel RtrPduModel) (serialResponses []RtrPduModel,
 		}
 		belogs.Info("ProcessSerialQuery(): server get len(serialNumbers) >2, will send Cache Reset PDU Response,",
 			" clientSessionId: ", clientSessionId, ", clientSerialNumber:", clientSerialNumber,
-			", len(serialNumbers):", len(serialNumbers), ",  rtrPduModels:", jsonutil.MarshalJson(rtrPduModels), "  time(s):", time.Now().Sub(start))
+			", len(serialNumbers):", len(serialNumbers), ",  rtrPduModels:", jsonutil.MarshalJson(rtrPduModels), "  time(s):", time.Since(start))
 		return rtrPduModels, nil
 	} else if len(serialNumbers) > 0 && len(serialNumbers) <= 2 {
 		// send Cache Response
@@ -128,7 +127,7 @@ func ProcessSerialQuery(rtrPduModel RtrPduModel) (serialResponses []RtrPduModel,
 		}
 		belogs.Info("ProcessSerialQuery():server get  len(serialNumbers) >0 && <=2 , will send Cache Response of rtr incremental,",
 			" clientSessionId: ", clientSessionId, ", clientSerialNumber:", clientSerialNumber,
-			", len(serialNumbers): ", len(serialNumbers), ",  len(rtrPduModels):", len(rtrPduModels), "  time(s):", time.Now().Sub(start))
+			", len(serialNumbers): ", len(serialNumbers), ",  len(rtrPduModels):", len(rtrPduModels), "  time(s):", time.Since(start))
 
 		return rtrPduModels, nil
 	}

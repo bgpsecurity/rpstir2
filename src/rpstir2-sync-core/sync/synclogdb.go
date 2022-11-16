@@ -3,11 +3,10 @@ package sync
 import (
 	"time"
 
-	model "rpstir2-model"
-
 	"github.com/cpusoft/goutil/belogs"
 	"github.com/cpusoft/goutil/jsonutil"
 	"github.com/cpusoft/goutil/xormdb"
+	model "rpstir2-model"
 )
 
 // syncStyle: sync/rsync/rrdp,state: syncing;
@@ -58,17 +57,17 @@ func UpdateSyncLogEndDb(labRpkiSyncLogId uint64, state string, syncState string)
 	if err != nil {
 		belogs.Error("UpdateSyncLogEndDb(): UPDATE lab_rpki_sync_log fail : syncState: "+
 			syncState+"   state:"+state, "    labRpkiSyncLogId:", labRpkiSyncLogId, err,
-			"time(s):", time.Now().Sub(start))
+			"time(s):", time.Since(start))
 		return xormdb.RollbackAndLogError(session, "UpdateSyncLogEndDb(): UPDATE lab_rpki_sync_log fail", err)
 	}
 	err = xormdb.CommitSession(session)
 	if err != nil {
 		belogs.Error("UpdateSyncLogEndDb(): CommitSession fail : syncState: "+
 			syncState+"   state:"+state, "    labRpkiSyncLogId:", labRpkiSyncLogId, err,
-			"time(s):", time.Now().Sub(start))
+			"time(s):", time.Since(start))
 		return xormdb.RollbackAndLogError(session, "UpdateSyncLogEndDb(): CommitSession fail:", err)
 	}
 	belogs.Info("UpdateSyncLogEndDb(): ok, labRpkiSyncLogId:", labRpkiSyncLogId,
-		"   state:", state, "time(s):", time.Now().Sub(start))
+		"   state:", state, "time(s):", time.Since(start))
 	return nil
 }

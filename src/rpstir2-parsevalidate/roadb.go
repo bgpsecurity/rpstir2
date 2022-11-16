@@ -42,7 +42,7 @@ func addRoasDb(syncLogFileModels []SyncLogFileModel) error {
 		belogs.Error("addRoasDb(): CommitSession fail :", err)
 		return err
 	}
-	belogs.Info("addRoasDb(): len(syncLogFileModels):", len(syncLogFileModels), "  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Info("addRoasDb(): len(syncLogFileModels):", len(syncLogFileModels), "  time(s):", time.Since(start))
 	return nil
 }
 
@@ -80,7 +80,7 @@ func delRoasDb(delSyncLogFileModels []SyncLogFileModel, updateSyncLogFileModels 
 		belogs.Error("delRoasDb(): CommitSession fail :", err)
 		return err
 	}
-	belogs.Info("delRoasDb(): len(roas), ", len(syncLogFileModels), "  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Info("delRoasDb(): len(roas), ", len(syncLogFileModels), "  time(s):", time.Since(start))
 	return nil
 }
 
@@ -269,7 +269,7 @@ func updateRoaStateDb(certIdStateModels []CertIdStateModel) error {
 		belogs.Error("updateRoaStateDb(): CommitSession fail :", err)
 		return err
 	}
-	belogs.Info("updateRoaStateDb(): len(certIdStateModels):", len(certIdStateModels), "  time(s):", time.Now().Sub(start))
+	belogs.Info("updateRoaStateDb(): len(certIdStateModels):", len(certIdStateModels), "  time(s):", time.Since(start))
 
 	return nil
 }

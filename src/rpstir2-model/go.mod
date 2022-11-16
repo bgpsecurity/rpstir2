@@ -1,4 +1,3 @@
-module rpstir2-model
+module labscm.zdns.cn/rpstir2-mod/rpstir2-model
 
-go 1.16
-
+go 1.18

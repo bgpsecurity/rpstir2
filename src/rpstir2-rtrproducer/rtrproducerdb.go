@@ -85,7 +85,7 @@ func updateRtrFullOrFullLogFromSlurmDb(tableName string, newSerialNumber uint64,
 		return xormdb.RollbackAndLogError(session, "updateRtrFullOrFullLogFromSlurmDb(): CommitSession fail: ", err)
 	}
 	belogs.Info("updateRtrFullOrFullLogFromSlurmDb():CommitSession ok,  len(effectSlurmToRtrFullLogs):", len(effectSlurmToRtrFullLogs),
-		" time(s):", time.Now().Sub(start))
+		" time(s):", time.Since(start))
 	return nil
 }
 
@@ -143,7 +143,7 @@ func getEffectSlurmsFromSlurmDb(curSerialNumber uint64, slurmToRtrFullLog model.
 	}
 	belogs.Info("getEffectSlurmsFromSlurmDb():curSerialNumber:", curSerialNumber,
 		"     slurmToRtrFullLogs:", jsonutil.MarshalJson(slurmToRtrFullLog),
-		"     filterSlurms:", jsonutil.MarshalJson(filterSlurms), "   time(s):", time.Now().Sub(start))
+		"     filterSlurms:", jsonutil.MarshalJson(filterSlurms), "   time(s):", time.Since(start))
 	return filterSlurms, nil
 
 }

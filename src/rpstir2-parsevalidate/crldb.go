@@ -43,7 +43,7 @@ func addCrlsDb(syncLogFileModels []SyncLogFileModel) error {
 		belogs.Error("addCrlsDb(): CommitSession fail :", err)
 		return err
 	}
-	belogs.Info("addCrlsDb(): len(syncLogFileModels):", len(syncLogFileModels), "  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Info("addCrlsDb(): len(syncLogFileModels):", len(syncLogFileModels), "  time(s):", time.Since(start))
 	return nil
 
 }
@@ -80,7 +80,7 @@ func delCrlsDb(delSyncLogFileModels []SyncLogFileModel, updateSyncLogFileModels 
 		belogs.Error("delCrlsDb(): CommitSession fail :", err)
 		return err
 	}
-	belogs.Info("delCrlsDb(): len(crls):", len(syncLogFileModels), "  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Info("delCrlsDb(): len(crls):", len(syncLogFileModels), "  time(s):", time.Since(start))
 	return nil
 }
 
@@ -199,7 +199,7 @@ func updateCrlStateDb(certIdStateModels []CertIdStateModel) error {
 		belogs.Error("updateCrlStateDb(): CommitSession fail :", err)
 		return err
 	}
-	belogs.Info("updateCrlStateDb(): len(certIdStateModels):", len(certIdStateModels), "  time(s):", time.Now().Sub(start))
+	belogs.Info("updateCrlStateDb(): len(certIdStateModels):", len(certIdStateModels), "  time(s):", time.Since(start))
 
 	return nil
 }

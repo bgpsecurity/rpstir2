@@ -62,7 +62,7 @@ func updateRtrFullAndFullLogAndIncrementalFromSlurmDb(curSerialNumberModel Seria
 		return err
 	}
 
-	belogs.Info("updateRtrFullAndFullLogAndIncrementalFromSlurmDb():CommitSession ok,  time(s):", time.Now().Sub(start))
+	belogs.Info("updateRtrFullAndFullLogAndIncrementalFromSlurmDb():CommitSession ok,  time(s):", time.Since(start))
 	return nil
 }
 
@@ -86,7 +86,7 @@ func delRtrFullFromSlurmDb() (err error) {
 		return xormdb.RollbackAndLogError(session, "delRtrFullFromSlurmDb(): CommitSession fail: ", err)
 	}
 
-	belogs.Info("delRtrFullFromSlurmDb(): CommitSession ok: time(s):", time.Now().Sub(start))
+	belogs.Info("delRtrFullFromSlurmDb(): CommitSession ok: time(s):", time.Since(start))
 	return nil
 
 }
@@ -128,7 +128,7 @@ func insertRtrIncrementalByEffectSlurmDb(newSerialNumberModel SerialNumberModel,
 	}
 
 	belogs.Info("insertRtrIncrementalByEffectSlurmDb(): CommitSession ok: len(effectSlurmToRtrFullLogs):", len(effectSlurmToRtrFullLogs),
-		"   newSerialNumberModel:", jsonutil.MarshalJson(newSerialNumberModel), " time(s):", time.Now().Sub(start))
+		"   newSerialNumberModel:", jsonutil.MarshalJson(newSerialNumberModel), " time(s):", time.Since(start))
 	return nil
 }
 
@@ -153,7 +153,7 @@ func updateRtrFullByNewSerailNumberDb(newSerialNumberModel SerialNumberModel) (e
 		return xormdb.RollbackAndLogError(session, "updateRtrFullByNewSerailNumberDb(): CommitSession fail: ", err)
 	}
 	belogs.Info("updateRtrFullByNewSerailNumberDb(): CommitSession ok: newSerialNumberModel:", jsonutil.MarshalJson(newSerialNumberModel),
-		"   time(s):", time.Now().Sub(start))
+		"   time(s):", time.Since(start))
 	return nil
 }
 
@@ -184,7 +184,7 @@ func insertRtrFullLogFromCurSerialNumberDb(curSerialNumberModel SerialNumberMode
 		return xormdb.RollbackAndLogError(session, "insertRtrFullLogFromCurSerialNumberDb(): CommitSession fail: ", err)
 	}
 	belogs.Info("insertRtrFullLogFromCurSerialNumberDb(): CommitSession ok: curSerialNumberModel:", jsonutil.MarshalJson(curSerialNumberModel),
-		"   newSerialNumberModel:", jsonutil.MarshalJson(newSerialNumberModel), "   time(s):", time.Now().Sub(start))
+		"   newSerialNumberModel:", jsonutil.MarshalJson(newSerialNumberModel), "   time(s):", time.Since(start))
 	return nil
 
 }

@@ -77,7 +77,7 @@ func getRtrAsaFullFromRtrFullLogDb(serialNumber uint64) (rtrAsaFulls map[string]
 		rtrAsaFulls[key] = rtrAsaFs[i]
 	}
 	belogs.Info("getRtrAsaFullFromRtrFullLogDb():map LabRpkiRtrAsaFull, serialNumber, len(rtrAsaFs):",
-		serialNumber, len(rtrAsaFs), "   time(s):", time.Now().Sub(start))
+		serialNumber, len(rtrAsaFs), "   time(s):", time.Since(start))
 	return rtrAsaFulls, nil
 
 }
@@ -96,7 +96,7 @@ func updateRtrAsaFullLogFromAsaDb(newSerialNumberModel SerialNumberModel, asaToR
 		return err
 	}
 	belogs.Info("updateRtrAsaFullLogFromAsaDb():insertRtrAsaFullLogFromAsaDb new serialNumber:", newSerialNumberModel.SerialNumber,
-		"   len(asaToRtrFullLogs):", len(asaToRtrFullLogs), "  time(s):", time.Now().Sub(start))
+		"   len(asaToRtrFullLogs):", len(asaToRtrFullLogs), "  time(s):", time.Since(start))
 	return nil
 }
 
@@ -134,7 +134,7 @@ func insertRtrAsaFullLogFromAsaDb(newSerialNumber uint64, asaToRtrFullLogs []mod
 		belogs.Error("insertRtrAsaFullLogFromAsaDb(): CommitSession fail :", err)
 		return xormdb.RollbackAndLogError(session, "insertRtrAsaFullLogFromAsaDb(): CommitSession fail: ", err)
 	}
-	belogs.Info("insertRtrAsaFullLogFromAsaDb(): CommitSession ok, len(asaToRtrFullLogs): ", len(asaToRtrFullLogs), "   time(s):", time.Now().Sub(start))
+	belogs.Info("insertRtrAsaFullLogFromAsaDb(): CommitSession ok, len(asaToRtrFullLogs): ", len(asaToRtrFullLogs), "   time(s):", time.Since(start))
 	return nil
 }
 
@@ -206,6 +206,6 @@ func updateSerailNumberAndRtrAsaFullAndRtrAsaIncrementalDb(newSerialNumberModel 
 	}
 
 	belogs.Info("updateSerailNumberAndRtrAsaFullAndRtrAsaIncrementalDb(): CommitSession ok: newSerialNumberModel:", jsonutil.MarshalJson(newSerialNumberModel),
-		"   len(rtrAsaIncrementals):", len(rtrAsaIncrementals), "   time(s):", time.Now().Sub(start))
+		"   len(rtrAsaIncrementals):", len(rtrAsaIncrementals), "   time(s):", time.Since(start))
 	return nil
 }

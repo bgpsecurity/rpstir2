@@ -24,7 +24,7 @@ func rtrUpdateFromSlurm() (err error) {
 		return err
 	}
 	belogs.Debug("rtrUpdateFromSlurm(): slurmToRtrFullLogs:", len(slurmToRtrFullLogs), jsonutil.MarshalJson(slurmToRtrFullLogs))
-	belogs.Info("rtrUpdateFromSlurm(): len(slurmToRtrFullLogs):", len(slurmToRtrFullLogs), "  time(s):", time.Now().Sub(start))
+	belogs.Info("rtrUpdateFromSlurm(): len(slurmToRtrFullLogs):", len(slurmToRtrFullLogs), "  time(s):", time.Since(start))
 
 	if len(slurmToRtrFullLogs) == 0 {
 		belogs.Info("rtrUpdateFromSlurm(): len(slurmToRtrFullLogs) is empty, will return 'end' ")
@@ -60,7 +60,7 @@ func rtrUpdateFromSlurm() (err error) {
 	belogs.Info("rtrUpdateFromSlurm(): rushNodeIsTopResult:", jsonutil.MarshalJson(rushNodeIsTopResult),
 		"   curSerialNumberModel:", jsonutil.MarshalJson(curSerialNumberModel),
 		"   newSerialNumberModel:", jsonutil.MarshalJson(newSerialNumberModel),
-		"   time(s):", time.Now().Sub(start))
+		"   time(s):", time.Since(start))
 
 	// get effect slurm from rtrfulllog
 	effectSlurmToRtrFullLogs, err := getEffectSlurmsFromSlurm(curSerialNumberModel.SerialNumber, slurmToRtrFullLogs)
@@ -71,7 +71,7 @@ func rtrUpdateFromSlurm() (err error) {
 	belogs.Debug("rtrUpdateFromSlurm():cur SerialNumber:", curSerialNumberModel.SerialNumber,
 		"    effectSlurmToRtrFullLogs:", len(effectSlurmToRtrFullLogs), jsonutil.MarshalJson(effectSlurmToRtrFullLogs))
 	belogs.Info("rtrUpdateFromSlurm(): cur SerialNumber:", curSerialNumberModel.SerialNumber,
-		"    len(effectSlurmToRtrFullLogs):", len(effectSlurmToRtrFullLogs), "  time(s):", time.Now().Sub(start))
+		"    len(effectSlurmToRtrFullLogs):", len(effectSlurmToRtrFullLogs), "  time(s):", time.Since(start))
 
 	// update lab_rpki_rtr_full_log, lab_rpki_rtr_full and lab_rpki_rtr_incremental
 	err = updateRtrFullAndFullLogAndIncrementalFromSlurmDb(curSerialNumberModel,
@@ -81,6 +81,6 @@ func rtrUpdateFromSlurm() (err error) {
 		return err
 	}
 	belogs.Info("rtrUpdateFromSlurm(): end, new SerialNumber:", newSerialNumberModel.GlobalSerialNumber,
-		"  time(s):", time.Now().Sub(start))
+		"  time(s):", time.Since(start))
 	return nil
 }

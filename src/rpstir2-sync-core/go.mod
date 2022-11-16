@@ -1,4 +1,4 @@
-module rpstir2-sync-core
+module labscm.zdns.cn/rpstir2-mod/rpstir2-sync-core
 
-go 1.16
+go 1.18
 

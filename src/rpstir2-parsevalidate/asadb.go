@@ -42,7 +42,7 @@ func addAsasDb(syncLogFileModels []SyncLogFileModel) error {
 		belogs.Error("addAsasDb(): CommitSession fail :", err)
 		return err
 	}
-	belogs.Info("addAsasDb(): len(syncLogFileModels):", len(syncLogFileModels), "  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Info("addAsasDb(): len(syncLogFileModels):", len(syncLogFileModels), "  time(s):", time.Since(start))
 	return nil
 }
 
@@ -80,7 +80,7 @@ func delAsasDb(delSyncLogFileModels []SyncLogFileModel, updateSyncLogFileModels 
 		belogs.Error("delAsasDb(): CommitSession fail :", err)
 		return err
 	}
-	belogs.Info("delAsasDb(): len(asas), ", len(syncLogFileModels), "  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Info("delAsasDb(): len(asas), ", len(syncLogFileModels), "  time(s):", time.Since(start))
 	return nil
 }
 
@@ -269,7 +269,7 @@ func updateAsaStateDb(certIdStateModels []CertIdStateModel) error {
 		belogs.Error("updateAsaStateDb(): CommitSession fail :", err)
 		return err
 	}
-	belogs.Info("updateAsaStateDb(): len(certIdStateModels):", len(certIdStateModels), "  time(s):", time.Now().Sub(start))
+	belogs.Info("updateAsaStateDb(): len(certIdStateModels):", len(certIdStateModels), "  time(s):", time.Since(start))
 
 	return nil
 }

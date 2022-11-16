@@ -8,14 +8,15 @@ import (
 	"sync/atomic"
 	"time"
 
+	model "rpstir2-model"
+	"rpstir2-sync-core/rrdp"
+
 	"github.com/cpusoft/goutil/belogs"
 	"github.com/cpusoft/goutil/conf"
 	"github.com/cpusoft/goutil/httpclient"
 	"github.com/cpusoft/goutil/jsonutil"
 	"github.com/cpusoft/goutil/osutil"
 	"github.com/cpusoft/goutil/randutil"
-	model "rpstir2-model"
-	"rpstir2-sync-core/rrdp"
 )
 
 var rrQueue *RrdpParseQueue
@@ -94,7 +95,7 @@ func startRrdpServer() {
 			}
 
 			// return out of the for
-			belogs.Info("startRrdpServer():end this rrdp success: rrdpResultJson:", rrdpResultJson, "  time(s):", time.Now().Sub(start).Seconds())
+			belogs.Info("startRrdpServer():end this rrdp success: rrdpResultJson:", rrdpResultJson, "  time(s):", time.Since(start))
 			return
 		}
 	}
@@ -138,7 +139,7 @@ func rrdpByUrl(rrdpModelChan RrdpModelChan) {
 
 	if err != nil {
 		rrQueue.RrdpResult.FailUrls.Store(rrdpModelChan.Url, err.Error())
-		belogs.Error("RrdpByUrl():RrdpByUrlImpl fail, rrdpModelChan.Url:", rrdpModelChan.Url, "   err:", err, "  time(s):", time.Now().Sub(start).Seconds())
+		belogs.Error("RrdpByUrl():RrdpByUrlImpl fail, rrdpModelChan.Url:", rrdpModelChan.Url, "   err:", err, "  time(s):", time.Since(start))
 		belogs.Debug("RrdpByUrl():RrdpByUrlImpl fail, before RrdpingParsingCount-1:", atomic.LoadInt64(&rrQueue.RrdpingParsingCount))
 		atomic.AddInt64(&rrQueue.RrdpingParsingCount, -1)
 		belogs.Debug("RrdpByUrl():RrdpByUrlImpl fail, after RrdpingParsingCount-1:", atomic.LoadInt64(&rrQueue.RrdpingParsingCount))
@@ -175,7 +176,7 @@ func rrdpByUrl(rrdpModelChan RrdpModelChan) {
 		"    len(filePathNames):", len(filePathNames),
 		"    len(rrdpFiles):", len(rrdpFiles),
 		//	"    rrQueue.RrdpResult:", jsonutil.MarshalJson(rrQueue.RrdpResult),
-		"    time(s):", time.Now().Sub(start).Seconds())
+		"    time(s):", time.Since(start))
 
 	rrQueue.ParseModelChan <- parseModelChan
 
@@ -252,7 +253,7 @@ func parseCerAndGetRpkiNotify(cerFile string) (rpkiNotify string) {
 
 	// get the sub repo url in cer, and send it to rpqueue
 	belogs.Info("parseCerAndGetRpkiNotify(): cerFile:", cerFile, "    parseCerSimple:", jsonutil.MarshalJson(parseCerSimple),
-		"  time(s):", time.Now().Sub(start).Seconds())
+		"  time(s):", time.Since(start))
 	return parseCerSimple.RpkiNotify
 
 }

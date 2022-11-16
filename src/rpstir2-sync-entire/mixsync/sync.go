@@ -53,7 +53,7 @@ func syncStart(syncStyle model.SyncStyle) (nextStep string, err error) {
 		belogs.Error("syncStart():UpdateSyncLogEndDb fail:", err)
 		return "", err
 	}
-	belogs.Info("syncStart(): end sync, will parsevalidate,  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Info("syncStart(): end sync, will parsevalidate,  time(s):", time.Since(start))
 
 	return "parsevalidate", nil
 
@@ -71,7 +71,7 @@ func getTals() (talModels []model.TalModel, err error) {
 	}
 
 	belogs.Debug("getTals(): talModelsResponse:",
-		jsonutil.MarshalJson(talModelsResponse), "  time(s):", time.Now().Sub(start))
+		jsonutil.MarshalJson(talModelsResponse), "  time(s):", time.Since(start))
 
 	if len(talModelsResponse.TalModels) == 0 {
 		belogs.Error("getTals(): there is no tal file")
@@ -130,7 +130,7 @@ func callSync(syncLogId uint64, talModels []model.TalModel, syncState *SyncState
 		}
 	}
 	syncServerWg.Wait()
-	belogs.Info("callSync():end success: syncState:", jsonutil.MarshalJson(syncState), " time(s):", time.Now().Sub(start))
+	belogs.Info("callSync():end success: syncState:", jsonutil.MarshalJson(syncState), " time(s):", time.Since(start))
 	return nil
 }
 
@@ -199,7 +199,7 @@ func parseCerAndGetSubRepoUrl(spQueue *SyncParseQueue, cerFile string) (subRepoU
 		return "", errors.New("parseCerAndGetSubRepoUrl(): all rsyncUrl or rrdpUrl is empty:" + cerFile + ",  " + jsonutil.MarshalJson(parseCerSimple))
 	}
 	belogs.Info("parseCerAndGetSubRepoUrl(): cerFile:", cerFile, "  caRepository:", jsonutil.MarshalJson(parseCerSimple),
-		"  subRepoUrl:", subRepoUrl, "  time(s):", time.Now().Sub(start).Seconds())
+		"  subRepoUrl:", subRepoUrl, "  time(s):", time.Since(start))
 	return subRepoUrl, nil
 
 }

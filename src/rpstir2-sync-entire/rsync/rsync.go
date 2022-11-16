@@ -5,12 +5,13 @@ import (
 	"sync/atomic"
 	"time"
 
+	model "rpstir2-model"
+	"rpstir2-sync-core/rsync"
+
 	"github.com/cpusoft/goutil/belogs"
 	"github.com/cpusoft/goutil/conf"
 	"github.com/cpusoft/goutil/httpclient"
 	"github.com/cpusoft/goutil/jsonutil"
-	model "rpstir2-model"
-	"rpstir2-sync-core/rsync"
 )
 
 var rpQueue *RsyncParseQueue
@@ -92,7 +93,7 @@ func startRsyncServer() {
 			rpQueue.Close()
 
 			// return out of the for
-			belogs.Info("startRsyncServer():end this rsync success: rsyncResultJson:", rsyncResultJson, "  time(s):", time.Now().Sub(start).Seconds())
+			belogs.Info("startRsyncServer():end this rsync success: rsyncResultJson:", rsyncResultJson, "  time(s):", time.Since(start))
 			return
 		}
 	}
@@ -111,7 +112,7 @@ func LocalStart(syncUrls *model.SyncUrls) (rsyncResult model.SyncResult, err err
 	rsyncResult.EndTime = time.Now()
 
 	belogs.Info("LocalStart():end this rsync success: rsyncResultJson:", jsonutil.MarshalJson(rsyncResult),
-		"  time(s):", time.Now().Sub(start).Seconds())
+		"  time(s):", time.Since(start))
 	return rsyncResult, nil
 
 }

@@ -14,43 +14,43 @@ func rtrUpdateByAsaFromSync(curSerialNumberModel, newSerialNumberModel SerialNum
 		"    newSerialNumberModel:", jsonutil.MarshalJson(newSerialNumberModel))
 	asaToRtrFullLogs, err := getAllAsasDb()
 	if err != nil {
-		belogs.Error("rtrUpdateByAsaFromSync():getAllAsasDb:", err, "  time(s):", time.Now().Sub(start))
+		belogs.Error("rtrUpdateByAsaFromSync():getAllAsasDb:", err, "  time(s):", time.Since(start))
 		return err
 	}
 	if len(asaToRtrFullLogs) == 0 {
-		belogs.Info("rtrUpdateByAsaFromSync():asaToRtrFullLogs is empty, time(s):", time.Now().Sub(start))
+		belogs.Info("rtrUpdateByAsaFromSync():asaToRtrFullLogs is empty, time(s):", time.Since(start))
 		return nil
 	}
 
-	belogs.Info("rtrUpdateByAsaFromSync(): len(asaToRtrFullLogs):", len(asaToRtrFullLogs), "  time(s):", time.Now().Sub(start))
+	belogs.Info("rtrUpdateByAsaFromSync(): len(asaToRtrFullLogs):", len(asaToRtrFullLogs), "  time(s):", time.Since(start))
 
 	// insert to lab_rpki_rtr_asa_full_log
 	err = updateRtrAsaFullLogFromAsaDb(newSerialNumberModel, asaToRtrFullLogs)
 	if err != nil {
-		belogs.Error("rtrUpdateByAsaFromSync(): full, updateRtrAsaFullLogFromAsaDb fail:", err, "  time(s):", time.Now().Sub(start))
+		belogs.Error("rtrUpdateByAsaFromSync(): full, updateRtrAsaFullLogFromAsaDb fail:", err, "  time(s):", time.Since(start))
 		return err
 	}
 	belogs.Info("rtrUpdateByAsaFromSync(): updateRtrAsaFullLogFromAsaDb,  new SerialNumber:", newSerialNumberModel.SerialNumber,
-		"  len(asaToRtrFullLogs):", len(asaToRtrFullLogs), "  time(s):", time.Now().Sub(start))
+		"  len(asaToRtrFullLogs):", len(asaToRtrFullLogs), "  time(s):", time.Since(start))
 
 	// get incrementals from curRtrFullLog and newRtrFullLog different
 	rtrAsaIncrementals, err := getRtrAsaIncrementals(curSerialNumberModel, newSerialNumberModel)
 	if err != nil {
 		belogs.Error("rtrUpdateByAsaFromSync():getRtrAsaIncrementals fail: curSerialNumberModel:", curSerialNumberModel,
-			"   newSerialNumber:", newSerialNumberModel, err, "  time(s):", time.Now().Sub(start))
+			"   newSerialNumber:", newSerialNumberModel, err, "  time(s):", time.Since(start))
 		return err
 	}
 	belogs.Info("rtrUpdateByAsaFromSync():getRtrAsaIncrementals, len(rtrAsaIncrementals)", len(rtrAsaIncrementals),
-		"  curSerialNumberModel:", curSerialNumberModel, "   newSerialNumber:", newSerialNumberModel, "  time(s):", time.Now().Sub(start))
+		"  curSerialNumberModel:", curSerialNumberModel, "   newSerialNumber:", newSerialNumberModel, "  time(s):", time.Since(start))
 
 	err = updateSerailNumberAndRtrAsaFullAndRtrAsaIncrementalDb(newSerialNumberModel, rtrAsaIncrementals)
 	if err != nil {
 		belogs.Error("rtrUpdateByAsaFromSync():updateSerailNumberAndRtrAsaFullAndRtrAsaIncrementalDb: fail: newSerialNumber:",
-			jsonutil.MarshalJson(newSerialNumberModel), "   len(rtrAsaIncrementals):", len(rtrAsaIncrementals), err, "  time(s):", time.Now().Sub(start))
+			jsonutil.MarshalJson(newSerialNumberModel), "   len(rtrAsaIncrementals):", len(rtrAsaIncrementals), err, "  time(s):", time.Since(start))
 		return err
 	}
 	belogs.Info("rtrUpdateByAsaFromSync(): updateSerailNumberAndRtrAsaFullAndRtrAsaIncrementalDb,  newSerialNumberModel:", jsonutil.MarshalJson(newSerialNumberModel),
-		"   len(rtrAsaIncrementals):", len(rtrAsaIncrementals), "  time(s):", time.Now().Sub(start))
+		"   len(rtrAsaIncrementals):", len(rtrAsaIncrementals), "  time(s):", time.Since(start))
 	return nil
 }
 
@@ -65,7 +65,7 @@ func getRtrAsaIncrementals(curSerialNumberModel, newSerialNumberModel SerialNumb
 		return nil, err
 	}
 	belogs.Info("getRtrAsaIncrementals(): getRtrAsaFullFromRtrFullLogDb len(rtrAsaFullCurs):", len(rtrAsaFullCurs),
-		" cur serialNumber:", curSerialNumberModel.SerialNumber, "  time(s):", time.Now().Sub(start))
+		" cur serialNumber:", curSerialNumberModel.SerialNumber, "  time(s):", time.Since(start))
 
 	// get last rtrFull
 	rtrAsaFullNews, err := getRtrAsaFullFromRtrFullLogDb(newSerialNumberModel.SerialNumber)
@@ -74,7 +74,7 @@ func getRtrAsaIncrementals(curSerialNumberModel, newSerialNumberModel SerialNumb
 		return nil, err
 	}
 	belogs.Info("getRtrAsaIncrementals(): getRtrAsaFullFromRtrFullLogDb, len(rtrAsaFullNews):", len(rtrAsaFullNews),
-		"  new SerialNumber:", newSerialNumberModel.SerialNumber, "  time(s):", time.Now().Sub(start))
+		"  new SerialNumber:", newSerialNumberModel.SerialNumber, "  time(s):", time.Since(start))
 
 	// get rtr incrementals
 	rtrAsaIncrementals, err = diffRtrAsaFullToRtrAsaIncremental(rtrAsaFullCurs, rtrAsaFullNews, newSerialNumberModel.SerialNumber)
@@ -83,7 +83,7 @@ func getRtrAsaIncrementals(curSerialNumberModel, newSerialNumberModel SerialNumb
 		return nil, err
 	}
 	belogs.Info("getRtrAsaIncrementals():diffRtrAsaFullToRtrAsaIncremental, len(rtrAsaIncrementals)", len(rtrAsaIncrementals),
-		" new  SerialNumber:", newSerialNumberModel.SerialNumber, "  time(s):", time.Now().Sub(start))
+		" new  SerialNumber:", newSerialNumberModel.SerialNumber, "  time(s):", time.Since(start))
 	return rtrAsaIncrementals, nil
 }
 
