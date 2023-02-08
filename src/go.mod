@@ -32,7 +32,6 @@ require (
 )
 
 require (
-	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	rpstir2-model v0.0.0-00010101000000-000000000000 // indirect
 	rpstir2-parsevalidate-openssl v0.0.0-00010101000000-000000000000 // indirect
 	rpstir2-parsevalidate-packet v0.0.0-00010101000000-000000000000 // indirect
