@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"errors"
 
+	model "rpstir2-model"
+
 	"github.com/cpusoft/goutil/asn1util"
 	"github.com/cpusoft/goutil/belogs"
 	convert "github.com/cpusoft/goutil/convert"
-	model "rpstir2-model"
 )
 
 func ExtractMftOid(oidPackets *[]OidPacket, certFile string, fileByte []byte, mftModel *model.MftModel) (err error) {

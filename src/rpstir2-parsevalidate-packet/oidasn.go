@@ -1,9 +1,10 @@
 package packet
 
 import (
+	model "rpstir2-model"
+
 	"github.com/cpusoft/goutil/asn1util"
 	"github.com/cpusoft/goutil/belogs"
-	model "rpstir2-model"
 )
 
 func ExtractASNOid(oidPackets *[]OidPacket) (asnModel model.AsnModel, err error) {

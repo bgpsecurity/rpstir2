@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"testing"
 
+	model "rpstir2-model"
+
 	"github.com/cpusoft/goutil/fileutil"
 	"github.com/cpusoft/goutil/jsonutil"
-	model "rpstir2-model"
 )
 
 func TestParseSigModelByOpensslResults(t *testing.T) {

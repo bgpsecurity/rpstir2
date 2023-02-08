@@ -4,12 +4,13 @@ import (
 	"bytes"
 	"errors"
 
+	model "rpstir2-model"
+
 	"github.com/cpusoft/goutil/asn1util"
 	"github.com/cpusoft/goutil/belogs"
 	"github.com/cpusoft/goutil/convert"
 	"github.com/cpusoft/goutil/iputil"
 	"github.com/cpusoft/goutil/jsonutil"
-	model "rpstir2-model"
 )
 
 func ExtractRoaOid(oidPackets *[]OidPacket, certFile string, fileByte []byte, roaModel *model.RoaModel) (err error) {

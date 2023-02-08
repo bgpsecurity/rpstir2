@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"errors"
 
+	model "rpstir2-model"
+
 	"github.com/cpusoft/goutil/asn1util"
 	"github.com/cpusoft/goutil/belogs"
-	model "rpstir2-model"
 )
 
 func ExtractAiaOid(oidPackets *[]OidPacket, fileByte []byte) (authorityInfoAccess model.AiaModel, err error) {

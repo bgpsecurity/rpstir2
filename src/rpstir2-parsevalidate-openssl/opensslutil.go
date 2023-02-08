@@ -3,11 +3,12 @@ package openssl
 import (
 	"errors"
 
+	model "rpstir2-model"
+
 	"github.com/cpusoft/goutil/belogs"
 	"github.com/cpusoft/goutil/convert"
 	"github.com/cpusoft/goutil/jsonutil"
 	"github.com/guregu/null"
-	model "rpstir2-model"
 )
 
 func convertAsProviderAttestationToCustomerAsns(asProviderAttestation AsProviderAttestation) (customerAsns []model.CustomerAsn, err error) {
