@@ -16,7 +16,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-//
 func InitReset(c *gin.Context) {
 	belogs.Debug("InitReset()")
 	sysStyle := SysStyle{}
@@ -113,6 +112,10 @@ func ExportRoas(c *gin.Context) {
 	c.JSON(http.StatusOK, r)
 }
 
+// export all rtrs for manrs to valdations
+// https://github.com/manrs-tools/MANRS-IXP-validation-tool
+// https://github.com/manrs-tools/MANRS-IXP-validation-tool/blob/main/validator/tests/roa_test.json
+// https://github.com/manrs-tools/MANRS-IXP-validation-tool/blob/main/validator/tests/test_validate.py
 func ExportRtrForManrs(c *gin.Context) {
 	belogs.Info("ExportRtrForManrs()")
 	r, err := exportRtrForManrs()
@@ -121,7 +124,7 @@ func ExportRtrForManrs(c *gin.Context) {
 		return
 	}
 	belogs.Info("ExportRtrForManrs():exportRtrForManrs:", jsonutil.MarshalJson(r))
-	c.JSON(http.StatusOK, jsonutil.MarshallJsonIndent(r))
+	c.JSON(http.StatusOK, r)
 }
 
 func ExportRtrForManrsConsole() (err error) {

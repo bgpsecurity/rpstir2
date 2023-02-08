@@ -8,13 +8,14 @@ import (
 	"sync/atomic"
 	"time"
 
+	model "rpstir2-model"
+	"rpstir2-sync-core/rrdp"
+	coresync "rpstir2-sync-core/sync"
+
 	"github.com/cpusoft/goutil/belogs"
 	"github.com/cpusoft/goutil/conf"
 	"github.com/cpusoft/goutil/httpclient"
 	"github.com/cpusoft/goutil/jsonutil"
-	model "rpstir2-model"
-	"rpstir2-sync-core/rrdp"
-	coresync "rpstir2-sync-core/sync"
 )
 
 func syncStart(syncStyle model.SyncStyle) (nextStep string, err error) {
