@@ -6,12 +6,13 @@ import (
 	"sync"
 	"time"
 
+	model "rpstir2-model"
+
 	"github.com/cpusoft/goutil/belogs"
 	"github.com/cpusoft/goutil/certutil"
 	"github.com/cpusoft/goutil/conf"
 	"github.com/cpusoft/goutil/jsonutil"
 	"github.com/cpusoft/goutil/osutil"
-	model "rpstir2-model"
 )
 
 func getChainCrls(chains *Chains, wg *sync.WaitGroup) {
