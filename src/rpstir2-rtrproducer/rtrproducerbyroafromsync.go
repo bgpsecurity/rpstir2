@@ -3,9 +3,10 @@ package rtrproducer
 import (
 	"time"
 
+	model "rpstir2-model"
+
 	"github.com/cpusoft/goutil/belogs"
 	"github.com/cpusoft/goutil/jsonutil"
-	model "rpstir2-model"
 )
 
 func rtrUpdateByRoaFromSync(curSerialNumberModel, newSerialNumberModel SerialNumberModel) (err error) {

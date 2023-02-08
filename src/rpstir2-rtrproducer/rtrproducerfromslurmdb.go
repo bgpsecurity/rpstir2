@@ -3,11 +3,12 @@ package rtrproducer
 import (
 	"time"
 
+	model "rpstir2-model"
+
 	"github.com/cpusoft/goutil/belogs"
 	"github.com/cpusoft/goutil/convert"
 	"github.com/cpusoft/goutil/jsonutil"
 	"github.com/cpusoft/goutil/xormdb"
-	model "rpstir2-model"
 )
 
 func updateRtrFullAndFullLogAndIncrementalFromSlurmDb(curSerialNumberModel SerialNumberModel, newSerialNumberModel SerialNumberModel,
