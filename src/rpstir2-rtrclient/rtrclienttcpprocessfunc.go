@@ -5,10 +5,11 @@ import (
 	"net"
 	"time"
 
+	rtrserver "rpstir2-rtrserver"
+
 	"github.com/cpusoft/goutil/belogs"
 	"github.com/cpusoft/goutil/convert"
 	"github.com/cpusoft/goutil/jsonutil"
-	rtrserver "rpstir2-rtrserver"
 )
 
 type RtrTcpClientProcessFunc struct {
