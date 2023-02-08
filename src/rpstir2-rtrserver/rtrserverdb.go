@@ -4,9 +4,10 @@ import (
 	"errors"
 	"time"
 
+	model "rpstir2-model"
+
 	"github.com/cpusoft/goutil/belogs"
 	"github.com/cpusoft/goutil/xormdb"
-	model "rpstir2-model"
 )
 
 func getSessionIdDb() (sessionId uint16, err error) {

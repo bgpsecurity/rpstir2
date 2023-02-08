@@ -6,10 +6,11 @@ import (
 	"errors"
 	"time"
 
+	model "rpstir2-model"
+
 	"github.com/cpusoft/goutil/belogs"
 	"github.com/cpusoft/goutil/iputil"
 	"github.com/cpusoft/goutil/jsonutil"
-	model "rpstir2-model"
 )
 
 func ParseToSerialQuery(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel RtrPduModel, err error) {

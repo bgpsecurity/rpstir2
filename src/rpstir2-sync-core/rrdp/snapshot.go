@@ -3,11 +3,12 @@ package rrdp
 import (
 	"os"
 
+	model "rpstir2-model"
+
 	"github.com/cpusoft/goutil/belogs"
 	"github.com/cpusoft/goutil/jsonutil"
 	"github.com/cpusoft/goutil/rrdputil"
 	"github.com/cpusoft/goutil/urlutil"
-	model "rpstir2-model"
 )
 
 func getRrdpSnapshot(notificationModel *rrdputil.NotificationModel) (snapshotModel rrdputil.SnapshotModel, err error) {
