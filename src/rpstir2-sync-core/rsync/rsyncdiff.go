@@ -3,9 +3,10 @@ package rsync
 import (
 	"time"
 
+	model "rpstir2-model"
+
 	"github.com/cpusoft/goutil/belogs"
 	"github.com/cpusoft/goutil/rsyncutil"
-	model "rpstir2-model"
 )
 
 // destPath: when it is "", will diff all. if not, just diff destPath

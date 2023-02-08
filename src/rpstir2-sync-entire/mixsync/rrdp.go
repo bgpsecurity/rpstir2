@@ -4,10 +4,11 @@ import (
 	"sync/atomic"
 	"time"
 
+	"rpstir2-sync-core/rrdp"
+
 	"github.com/cpusoft/goutil/belogs"
 	"github.com/cpusoft/goutil/jsonutil"
 	"github.com/cpusoft/goutil/osutil"
-	"rpstir2-sync-core/rrdp"
 )
 
 func rrdpByUrl(spQueue *SyncParseQueue, syncChan SyncChan) {

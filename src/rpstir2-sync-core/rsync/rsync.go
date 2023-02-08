@@ -4,12 +4,13 @@ import (
 	"strings"
 	"time"
 
+	model "rpstir2-model"
+	"rpstir2-sync-core/sync"
+
 	"github.com/cpusoft/goutil/belogs"
 	"github.com/cpusoft/goutil/conf"
 	"github.com/cpusoft/goutil/jsonutil"
 	"github.com/cpusoft/goutil/rsyncutil"
-	model "rpstir2-model"
-	"rpstir2-sync-core/sync"
 )
 
 func InsertSyncLogFiles(syncLogId uint64,
