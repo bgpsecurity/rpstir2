@@ -5,13 +5,14 @@ import (
 	"os"
 	"time"
 
+	model "rpstir2-model"
+
 	"github.com/cpusoft/goutil/belogs"
 	"github.com/cpusoft/goutil/conf"
 	"github.com/cpusoft/goutil/ginserver"
 	"github.com/cpusoft/goutil/httpclient"
 	"github.com/cpusoft/goutil/jsonutil"
 	"github.com/gin-gonic/gin"
-	model "rpstir2-model"
 )
 
 func ParseValidateStart(c *gin.Context) {

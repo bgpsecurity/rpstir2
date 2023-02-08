@@ -3,14 +3,15 @@ package parsevalidate
 import (
 	"errors"
 
+	model "rpstir2-model"
+	openssl "rpstir2-parsevalidate-openssl"
+
 	"github.com/cpusoft/goutil/belogs"
 	"github.com/cpusoft/goutil/fileutil"
 	"github.com/cpusoft/goutil/hashutil"
 	"github.com/cpusoft/goutil/jsonutil"
 	"github.com/cpusoft/goutil/opensslutil"
 	"github.com/cpusoft/goutil/osutil"
-	model "rpstir2-model"
-	openssl "rpstir2-parsevalidate-openssl"
 )
 
 //Try to store the error in statemode instead of returning err

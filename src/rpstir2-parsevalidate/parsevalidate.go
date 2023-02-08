@@ -6,12 +6,13 @@ import (
 	"sync"
 	"time"
 
+	model "rpstir2-model"
+
 	"github.com/cpusoft/goutil/belogs"
 	"github.com/cpusoft/goutil/conf"
 	"github.com/cpusoft/goutil/jsonutil"
 	"github.com/cpusoft/goutil/osutil"
 	"golang.org/x/sync/errgroup"
-	model "rpstir2-model"
 )
 
 // ParseValidateStart: start
@@ -46,7 +47,7 @@ func parseValidateStart() (nextStep string, err error) {
 	// process "add" and "update" rsyncLogFile
 	err = insertCertByAddAndUpdate(syncLogFileModels)
 	if err != nil {
-		belogs.Error("parseValidateStart():InsertCertByInsertAndUpdate fail:", err)
+		belogs.Error("parseValidateStart():insertCertByAddAndUpdate fail:", err)
 		return "", err
 	}
 
@@ -127,47 +128,47 @@ func delCertByDelAndUpdate(syncLogFileModels *SyncLogFileModels) (err error) {
 func insertCertByAddAndUpdate(syncLogFileModels *SyncLogFileModels) (err error) {
 
 	start := time.Now()
-	belogs.Debug("InsertCertByInsertAndUpdate(): syncLogFileModels.SyncLogId:", syncLogFileModels.SyncLogId)
+	belogs.Debug("insertCertByAddAndUpdate(): syncLogFileModels.SyncLogId:", syncLogFileModels.SyncLogId)
 
 	var wg sync.WaitGroup
 
 	// add/update crl
-	belogs.Info("InsertCertByInsertAndUpdate():len(syncLogFileModels.UpdateCerSyncLogFileModels):", len(syncLogFileModels.UpdateCerSyncLogFileModels))
+	belogs.Info("insertCertByAddAndUpdate():len(syncLogFileModels.UpdateCerSyncLogFileModels):", len(syncLogFileModels.UpdateCerSyncLogFileModels))
 	if len(syncLogFileModels.UpdateCerSyncLogFileModels) > 0 {
 		wg.Add(1)
 		go parseValidateAndAddCerts(syncLogFileModels.UpdateCerSyncLogFileModels, "cer", &wg)
 	}
 
 	// add/update crl
-	belogs.Info("InsertCertByInsertAndUpdate():len(syncLogFileModels.UpdateCrlSyncLogFileModels):", len(syncLogFileModels.UpdateCrlSyncLogFileModels))
+	belogs.Info("insertCertByAddAndUpdate():len(syncLogFileModels.UpdateCrlSyncLogFileModels):", len(syncLogFileModels.UpdateCrlSyncLogFileModels))
 	if len(syncLogFileModels.UpdateCrlSyncLogFileModels) > 0 {
 		wg.Add(1)
 		go parseValidateAndAddCerts(syncLogFileModels.UpdateCrlSyncLogFileModels, "crl", &wg)
 	}
 
 	// add/update mft
-	belogs.Info("InsertCertByInsertAndUpdate():len(syncLogFileModels.UpdateMftSyncLogFileModels):", len(syncLogFileModels.UpdateMftSyncLogFileModels))
+	belogs.Info("insertCertByAddAndUpdate():len(syncLogFileModels.UpdateMftSyncLogFileModels):", len(syncLogFileModels.UpdateMftSyncLogFileModels))
 	if len(syncLogFileModels.UpdateMftSyncLogFileModels) > 0 {
 		wg.Add(1)
 		go parseValidateAndAddCerts(syncLogFileModels.UpdateMftSyncLogFileModels, "mft", &wg)
 	}
 
 	// add/update roa
-	belogs.Info("InsertCertByInsertAndUpdate():len(syncLogFileModels.UpdateRoaSyncLogFileModels):", len(syncLogFileModels.UpdateRoaSyncLogFileModels))
+	belogs.Info("insertCertByAddAndUpdate():len(syncLogFileModels.UpdateRoaSyncLogFileModels):", len(syncLogFileModels.UpdateRoaSyncLogFileModels))
 	if len(syncLogFileModels.UpdateRoaSyncLogFileModels) > 0 {
 		wg.Add(1)
 		go parseValidateAndAddCerts(syncLogFileModels.UpdateRoaSyncLogFileModels, "roa", &wg)
 	}
 
 	// add/update asa
-	belogs.Info("InsertCertByInsertAndUpdate():len(syncLogFileModels.UpdateAsaSyncLogFileModels):", len(syncLogFileModels.UpdateAsaSyncLogFileModels))
+	belogs.Info("insertCertByAddAndUpdate():len(syncLogFileModels.UpdateAsaSyncLogFileModels):", len(syncLogFileModels.UpdateAsaSyncLogFileModels))
 	if len(syncLogFileModels.UpdateAsaSyncLogFileModels) > 0 {
 		wg.Add(1)
 		go parseValidateAndAddCerts(syncLogFileModels.UpdateAsaSyncLogFileModels, "asa", &wg)
 	}
 
 	wg.Wait()
-	belogs.Info("InsertCertByInsertAndUpdate(): end,  time(s):", time.Since(start))
+	belogs.Info("insertCertByAddAndUpdate(): end,  time(s):", time.Since(start))
 	return nil
 }
 
