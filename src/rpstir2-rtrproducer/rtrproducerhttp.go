@@ -1,31 +1,30 @@
 package rtrproducer
 
 import (
-	model "rpstir2-model"
-
 	"github.com/cpusoft/goutil/belogs"
 	"github.com/cpusoft/goutil/conf"
 	"github.com/cpusoft/goutil/ginserver"
 	"github.com/cpusoft/goutil/httpclient"
-	"github.com/cpusoft/goutil/jsonutil"
 	"github.com/gin-gonic/gin"
+	rtrslurm "rpstir2-rtrproducer/slurm"
+	rtrsync "rpstir2-rtrproducer/sync"
 )
 
 // start to update
 func RtrUpdateFromSync(c *gin.Context) {
-	belogs.Info("RtrUpdateFromSync(): start")
+	belogs.Info("RtrUpdateFromSync(): http start")
 
 	//check serviceState
 	httpclient.Post("https://"+conf.String("rpstir2-rp::serverHost")+":"+conf.String("rpstir2-rp::serverHttpsPort")+
 		"/sys/servicestate", `{"operate":"enter","state":"rtr"}`, false)
 
 	go func() {
-		nextStep, err := rtrUpdateFromSync()
-		belogs.Debug("RtrUpdateFromSync():  rtrUpdateFromSync end,  nextStep is :", nextStep, err)
+		nextStep, err := rtrsync.RtrUpdateFromSync()
+		belogs.Debug("RtrUpdateFromSync(): http RtrUpdateFromSync end,  nextStep is :", nextStep, err)
 		// leave serviceState
 		if err != nil {
 			// will end this whole sync
-			belogs.Error("RtrUpdateFromSync():rtrUpdateFromSync fail", err)
+			belogs.Error("RtrUpdateFromSync():http RtrUpdateFromSync fail", err)
 			httpclient.Post("https://"+conf.String("rpstir2-rp::serverHost")+":"+conf.String("rpstir2-rp::serverHttpsPort")+
 				"/sys/servicestate", `{"operate":"leave","state":"end"}`, false)
 		} else {
@@ -46,12 +45,12 @@ func RtrUpdateFromSync(c *gin.Context) {
 			} else if nextStep == "incr" {
 				path = "/rushtransfer/triggerpushincr"
 			}
-			belogs.Debug("RtrUpdateFromSync():  nextStep:", nextStep, "  path:", path)
+			belogs.Debug("RtrUpdateFromSync(): http nextStep:", nextStep, "  path:", path)
 			// call transfer to push incremental
 			go httpclient.Post("https://"+conf.String("rpstir2-vc::serverHost")+":"+conf.String("rpstir2-vc::transferHttpsPort")+
 				path, `{"lastStep":"rtrUpdateFromSync"}`, false)
 
-			belogs.Info("RtrUpdateFromSync():  rtrUpdateFromSync end,  nextStep is :", nextStep)
+			belogs.Info("RtrUpdateFromSync(): http RtrUpdateFromSync end,  nextStep is :", nextStep)
 		}
 
 	}()
@@ -61,34 +60,28 @@ func RtrUpdateFromSync(c *gin.Context) {
 
 // start to update
 func RtrUpdateFromSlurm(c *gin.Context) {
-	belogs.Debug("RtrUpdateFromSlurm(): start")
+	belogs.Debug("RtrUpdateFromSlurm(): http start")
 
-	scheduleModel := model.ScheduleModel{}
-	c.ShouldBindJSON(&scheduleModel)
-	belogs.Info("RtrUpdateFromSlurm(): scheduleModel:", jsonutil.MarshalJson(scheduleModel))
-
-	err := rtrUpdateFromSlurm()
+	err := rtrslurm.RtrUpdateFromSlurm()
 	// leave serviceState
 	if err != nil {
 		// will end this whole sync
-		belogs.Error("RtrUpdateFromSlurm():  rtrUpdateFromSlurm fail", err)
+		belogs.Error("RtrUpdateFromSlurm(): http  rtrUpdateFromSlurm fail", err)
 		ginserver.ResponseFail(c, err, "")
 		return
 	} else {
 
-		belogs.Info("RtrUpdateFromSlurm(): ok: will call /rtr/server/sendserialnotify, ",
-			" and may be call /rushtransfer/triggerpushincr,  scheduleModel:", jsonutil.MarshalJson(scheduleModel))
+		belogs.Info("RtrUpdateFromSlurm(): http ok: will call /rtr/server/sendserialnotify, ",
+			" and call /rushtransfer/triggerpushincr")
 		// call serial notify to rtr client
 		go httpclient.Post("https://"+conf.String("rpstir2-vc::serverHost")+":"+conf.String("rpstir2-vc::serverHttpsPort")+
 			"/rtr/server/sendserialnotify", "", false)
 
-		if !(scheduleModel.LastStep == "receiveIncr" ||
-			scheduleModel.LastStep == "receiveFull") {
-			// call transfer to push incremental
-			go httpclient.Post("https://"+conf.String("rpstir2-vc::serverHost")+":"+conf.String("rpstir2-vc::transferHttpsPort")+
-				"/rushtransfer/triggerpushincr", `{"lastStep":"rtrUpdateFromSlurm"}`, false)
-		}
-		belogs.Info("RtrUpdateFromSlurm():  rtrUpdateFromSlurm end:")
+		// call transfer to push incremental
+		go httpclient.Post("https://"+conf.String("rpstir2-vc::serverHost")+":"+conf.String("rpstir2-vc::transferHttpsPort")+
+			"/rushtransfer/triggerpushincr", `{"lastStep":"rtrUpdateFromSlurm"}`, false)
+
+		belogs.Info("RtrUpdateFromSlurm(): http  rtrUpdateFromSlurm end:")
 		ginserver.ResponseOk(c, nil)
 		return
 	}

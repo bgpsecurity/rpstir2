@@ -16,7 +16,7 @@ func ParseToCacheReset(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel Rt
 	// get zero
 	err = binary.Read(buf, binary.BigEndian, &zero)
 	if err != nil {
-		belogs.Error("ParseToCacheReset(): PDU_TYPE_CACHE_RESET get zero fail: ", buf, err)
+		belogs.Error("ParseToCacheReset(): PDU_TYPE_CACHE_RESET get zero fail,  buf:", buf, err)
 		rtrError := NewRtrError(
 			err,
 			true, protocolVersion, PDU_TYPE_ERROR_CODE_CORRUPT_DATA,
@@ -27,7 +27,7 @@ func ParseToCacheReset(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel Rt
 	// get length
 	err = binary.Read(buf, binary.BigEndian, &length)
 	if err != nil {
-		belogs.Error("ParseToCacheReset(): PDU_TYPE_CACHE_RESET get length fail: ", buf, err)
+		belogs.Error("ParseToCacheReset(): PDU_TYPE_CACHE_RESET get length fail, buf:", buf, err)
 		rtrError := NewRtrError(
 			err,
 			true, protocolVersion, PDU_TYPE_ERROR_CODE_CORRUPT_DATA,
@@ -35,7 +35,7 @@ func ParseToCacheReset(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel Rt
 		return rtrPduModel, rtrError
 	}
 	if length != 8 {
-		belogs.Error("ParseToCacheReset():PDU_TYPE_CACHE_RESET,  length must be 8 ", buf, length)
+		belogs.Error("ParseToCacheReset():PDU_TYPE_CACHE_RESET,  length must be 8, buf:", buf, "  length:", length)
 		rtrError := NewRtrError(
 			errors.New("pduType is CACHE RESET, length must be 8"),
 			true, protocolVersion, PDU_TYPE_ERROR_CODE_CORRUPT_DATA,
@@ -44,7 +44,7 @@ func ParseToCacheReset(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel Rt
 
 	}
 	sq := NewRtrCacheResetModel(protocolVersion)
-	belogs.Debug("ParseToCacheReset():get PDU_TYPE_CACHE_RESET ", buf, jsonutil.MarshalJson(sq))
+	belogs.Debug("ParseToCacheReset():get PDU_TYPE_CACHE_RESET, buf:", buf, "  sq:", jsonutil.MarshalJson(sq))
 	return sq, nil
 }
 func assembleCacheResetResponses(protocolVersion uint8) (rtrPduModels []RtrPduModel, err error) {

@@ -30,11 +30,11 @@ func ParseToRtrPduModel(buf *bytes.Reader) (rtrPduModel RtrPduModel, err error) 
 	// get protocolVersion, pduType
 	protocolVersion, pduType, err := parseProtocolVersionAndPduType(buf)
 	if err != nil {
-		belogs.Error("ParseToRtrPduModel():parseProtocolVersionAndPduType err: ", err)
+		belogs.Error("ParseToRtrPduModel(): parseProtocolVersionAndPduType fail: ", err)
 		return rtrPduModel, err
 	}
 
-	belogs.Info("ParseToRtrPduModel():  protocolVersion, pduType:", protocolVersion, pduType)
+	belogs.Info("ParseToRtrPduModel(): protocolVersion:", protocolVersion, " pduType:", pduType)
 	switch pduType {
 	case PDU_TYPE_SERIAL_NOTIFY:
 		return ParseToSerialNotify(buf, protocolVersion)
@@ -88,7 +88,7 @@ func ProcessRtrPduModel(buf *bytes.Reader, rtrPduModel RtrPduModel) (rtrResponse
 	case PDU_TYPE_SERIAL_QUERY:
 		serialResponse, err := ProcessSerialQuery(rtrPduModel)
 		if err != nil {
-			belogs.Error("processRtrPduModel(): ProcessSerialQuery fail: ", err)
+			belogs.Error("processRtrPduModel(): ProcessSerialQuery fail:", err)
 			rtrError := NewRtrError(
 				err,
 				false, rtrPduModel.GetProtocolVersion(), PDU_TYPE_ERROR_CODE_INTERNAL_ERROR,
@@ -131,14 +131,13 @@ func SendResponses(conn *net.TCPConn, rtrPduModelResponses []RtrPduModel) (err e
 	sendIntervalMs := conf.Int("rtr:sendIntervalMs")
 	for _, one := range rtrPduModelResponses {
 		sendBytes := one.Bytes()
-		//belogs.Debug("sendResponses(): send by conn :", convert.Bytes2String(sendBytes))
 		//conn.SetWriteBuffer(len(sendBytes))
 		n, err := conn.Write(sendBytes)
 		if err != nil {
 			belogs.Debug("sendResponses():  conn.Write() fail,  ", jsonutil.MarshalJson(one), n, err)
 			return err
 		}
-		belogs.Info("SendResponses():send batchId:", batchId, ", rtrPduModel:", jsonutil.MarshalJson(one),
+		belogs.Debug("SendResponses():send batchId:", batchId, ", rtrPduModel:", jsonutil.MarshalJson(one),
 			", len(sendBytes):", len(sendBytes), ",  sendBytes:\n"+convert.PrintBytes(sendBytes, 8))
 
 		// avoid tcp sticky packets
@@ -179,7 +178,7 @@ func parseProtocolVersionAndPduType(buf *bytes.Reader) (protocolVersion, pduType
 	// get protocol version
 	err = binary.Read(buf, binary.BigEndian, &protocolVersion)
 	if err != nil {
-		belogs.Error("parseToPduModel(): get protocolVersion from recvByte fail: ", buf, err)
+		belogs.Error("parseToPduModel(): get protocolVersion from recvByte fail, buf:", buf, err)
 		rtrError := NewRtrError(
 			err,
 			true, PDU_PROTOCOL_VERSION_0, PDU_TYPE_ERROR_CODE_UNSUPPORTED_PROTOCOL_VERSION,
@@ -190,7 +189,7 @@ func parseProtocolVersionAndPduType(buf *bytes.Reader) (protocolVersion, pduType
 
 	if protocolVersion != PDU_PROTOCOL_VERSION_0 && protocolVersion != PDU_PROTOCOL_VERSION_1 &&
 		protocolVersion != PDU_PROTOCOL_VERSION_2 {
-		belogs.Error("parseToPduModel(): protocolVersion is illegal: ", buf, protocolVersion)
+		belogs.Error("parseToPduModel(): protocolVersion is illegal, buf:", buf, protocolVersion)
 		rtrError := NewRtrError(
 			errors.New("protocolVersion is neigher 0 nor 1, "+strconv.Itoa(int(protocolVersion))),
 			true, PDU_PROTOCOL_VERSION_0, PDU_TYPE_ERROR_CODE_UNSUPPORTED_PROTOCOL_VERSION,
@@ -201,7 +200,7 @@ func parseProtocolVersionAndPduType(buf *bytes.Reader) (protocolVersion, pduType
 	// get pdu type
 	err = binary.Read(buf, binary.BigEndian, &pduType)
 	if err != nil {
-		belogs.Error("parseToPduModel(): get protocolVersion from recvByte fail: ", buf, err)
+		belogs.Error("parseToPduModel(): get protocolVersion from recvByte fail, buf:", buf, err)
 		rtrError := NewRtrError(
 			err,
 			true, protocolVersion, PDU_TYPE_ERROR_CODE_UNSUPPORTED_PDU_TYPE,
@@ -211,7 +210,7 @@ func parseProtocolVersionAndPduType(buf *bytes.Reader) (protocolVersion, pduType
 	belogs.Debug("parseToPduModel():Read pduType:", pduType)
 
 	if pduType > PDU_TYPE_ASA {
-		belogs.Error("parseToPduModel(): pduType is illegal: ", buf, pduType)
+		belogs.Error("parseToPduModel(): pduType is illegal, buf:", buf, pduType)
 		rtrError := NewRtrError(
 			errors.New("get Itoa is error "+strconv.Itoa(int(pduType))),
 			true, PDU_PROTOCOL_VERSION_0, PDU_TYPE_ERROR_CODE_UNSUPPORTED_PDU_TYPE,
@@ -219,9 +218,19 @@ func parseProtocolVersionAndPduType(buf *bytes.Reader) (protocolVersion, pduType
 		return 0, 0, rtrError
 	}
 	if pduType == PDU_TYPE_ROUTER_KEY && protocolVersion == 0 {
-		belogs.Error("parseToPduModel():pduType is PDU_TYPE_ROUTER_KEY,  protocolVersion must be 1 ", buf, pduType, protocolVersion)
+		belogs.Error("parseToPduModel():pduType is PDU_TYPE_ROUTER_KEY,  protocolVersion must be more than 0, buf:", buf,
+			"  pduType:", pduType, "  protocolVersion:", protocolVersion)
 		rtrError := NewRtrError(
-			errors.New("pduType is ROUTER KEY,  protocolVersion must be 1"),
+			errors.New("pduType is ROUTER KEY,  protocolVersion must be more than 0"),
+			true, PDU_PROTOCOL_VERSION_0, PDU_TYPE_ERROR_CODE_UNSUPPORTED_PROTOCOL_VERSION,
+			buf, "Fail to get pduType")
+		return 0, 0, rtrError
+	}
+	if pduType == PDU_TYPE_ASA && (protocolVersion == 0 || protocolVersion == 1) {
+		belogs.Error("parseToPduModel():pduType is PDU_TYPE_ASA,  protocolVersion must be more than 1, buf:", buf,
+			"  pduType:", pduType, "  protocolVersion:", protocolVersion)
+		rtrError := NewRtrError(
+			errors.New("pduType is PDU_TYPE_ASA,  protocolVersion must be more than 1"),
 			true, PDU_PROTOCOL_VERSION_0, PDU_TYPE_ERROR_CODE_UNSUPPORTED_PROTOCOL_VERSION,
 			buf, "Fail to get pduType")
 		return 0, 0, rtrError

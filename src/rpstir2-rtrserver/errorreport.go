@@ -30,7 +30,7 @@ func ParseToErrorReport(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel R
 	// get errorCode
 	err = binary.Read(buf, binary.BigEndian, &errorCode)
 	if err != nil {
-		belogs.Error("ParseToErrorReport(): PDU_TYPE_ERROR_REPORT get errorCode fail: ", buf, err)
+		belogs.Error("ParseToErrorReport(): PDU_TYPE_ERROR_REPORT get errorCode fail, buf:", buf, err)
 		rtrError := NewRtrError(
 			err,
 			false, protocolVersion, PDU_TYPE_ERROR_CODE_CORRUPT_DATA,
@@ -41,7 +41,7 @@ func ParseToErrorReport(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel R
 	// get length
 	err = binary.Read(buf, binary.BigEndian, &length)
 	if err != nil {
-		belogs.Error("ParseToErrorReport(): PDU_TYPE_ERROR_REPORT get length fail: ", buf, err)
+		belogs.Error("ParseToErrorReport(): PDU_TYPE_ERROR_REPORT get length fail, buf:", buf, err)
 		rtrError := NewRtrError(
 			err,
 			false, protocolVersion, PDU_TYPE_ERROR_CODE_CORRUPT_DATA,
@@ -52,7 +52,7 @@ func ParseToErrorReport(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel R
 	// get lengthOfEncapsulated
 	err = binary.Read(buf, binary.BigEndian, &lengthOfEncapsulated)
 	if err != nil {
-		belogs.Error("ParseToErrorReport(): PDU_TYPE_ERROR_REPORT get LengthOfEncapsulated fail: ", buf, err)
+		belogs.Error("ParseToErrorReport(): PDU_TYPE_ERROR_REPORT get LengthOfEncapsulated fail, buf:", buf, err)
 		rtrError := NewRtrError(
 			err,
 			false, protocolVersion, PDU_TYPE_ERROR_CODE_CORRUPT_DATA,
@@ -64,7 +64,7 @@ func ParseToErrorReport(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel R
 	erroneousPdu := make([]byte, lengthOfEncapsulated)
 	err = binary.Read(buf, binary.BigEndian, &erroneousPdu)
 	if err != nil {
-		belogs.Error("ParseToErrorReport(): PDU_TYPE_ERROR_REPORT get erroneousPdu fail: ", buf, err)
+		belogs.Error("ParseToErrorReport(): PDU_TYPE_ERROR_REPORT get erroneousPdu fail, buf:", buf, err)
 		rtrError := NewRtrError(
 			err,
 			false, protocolVersion, PDU_TYPE_ERROR_CODE_CORRUPT_DATA,
@@ -75,7 +75,7 @@ func ParseToErrorReport(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel R
 	// get lengthOfErrorText
 	err = binary.Read(buf, binary.BigEndian, &lengthOfErrorText)
 	if err != nil {
-		belogs.Error("ParseToErrorReport(): PDU_TYPE_ERROR_REPORT get lengthOfErrorText fail: ", buf, err)
+		belogs.Error("ParseToErrorReport(): PDU_TYPE_ERROR_REPORT get lengthOfErrorText fail, buf:", buf, err)
 		rtrError := NewRtrError(
 			err,
 			false, protocolVersion, PDU_TYPE_ERROR_CODE_CORRUPT_DATA,
@@ -87,7 +87,7 @@ func ParseToErrorReport(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel R
 	errorDiagnosticMessage := make([]byte, lengthOfErrorText)
 	err = binary.Read(buf, binary.BigEndian, &errorDiagnosticMessage)
 	if err != nil {
-		belogs.Error("ParseToErrorReport(): PDU_TYPE_ERROR_REPORT get erroneousPdu fail: ", buf, err)
+		belogs.Error("ParseToErrorReport(): PDU_TYPE_ERROR_REPORT get erroneousPdu fail, buf:", buf, err)
 		rtrError := NewRtrError(
 			err,
 			false, protocolVersion, PDU_TYPE_ERROR_CODE_CORRUPT_DATA,
@@ -99,7 +99,7 @@ func ParseToErrorReport(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel R
 		erroneousPdu, errorDiagnosticMessage)
 	belogs.Error("ParseToErrorReport(): RtrErrorReportModel: erroneousPdu:", erroneousPdu,
 		"  errorDiagnosticMessage:", string(errorDiagnosticMessage))
-	belogs.Debug("ParseToErrorReport():get PDU_TYPE_ERROR_REPORT ", buf, jsonutil.MarshalJson(sq))
+	belogs.Debug("ParseToErrorReport():get PDU_TYPE_ERROR_REPORT, buf:", buf, "  sq:", jsonutil.MarshalJson(sq))
 	return sq, nil
 }
 

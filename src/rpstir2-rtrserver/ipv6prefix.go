@@ -34,7 +34,7 @@ func ParseToIpv6Prefix(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel Rt
 	// get zero0
 	err = binary.Read(buf, binary.BigEndian, &zero0)
 	if err != nil {
-		belogs.Error("ParseToIpv6Prefix(): PDU_TYPE_IPV6_PREFIX get zero0 fail: ", buf, err)
+		belogs.Error("ParseToIpv6Prefix(): PDU_TYPE_IPV6_PREFIX get zero0 fail, buf:", buf, err)
 		rtrError := NewRtrError(
 			err,
 			true, protocolVersion, PDU_TYPE_ERROR_CODE_CORRUPT_DATA,
@@ -45,7 +45,7 @@ func ParseToIpv6Prefix(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel Rt
 	// get length
 	err = binary.Read(buf, binary.BigEndian, &length)
 	if err != nil {
-		belogs.Error("ParseToIpv6Prefix(): PDU_TYPE_IPV6_PREFIX get length fail: ", buf, err)
+		belogs.Error("ParseToIpv6Prefix(): PDU_TYPE_IPV6_PREFIX get length fail, buf:", buf, err)
 		rtrError := NewRtrError(
 			err,
 			true, protocolVersion, PDU_TYPE_ERROR_CODE_CORRUPT_DATA,
@@ -53,7 +53,7 @@ func ParseToIpv6Prefix(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel Rt
 		return rtrPduModel, rtrError
 	}
 	if length != 32 {
-		belogs.Error("ParseToIpv6Prefix():PDU_TYPE_IPV6_PREFIX, length must be 32,  ", buf, length)
+		belogs.Error("ParseToIpv6Prefix():PDU_TYPE_IPV6_PREFIX, length must be 32, buf:", buf, "  length:", length)
 		rtrError := NewRtrError(
 			errors.New("pduType is IPV4 PREFIX, length must be 32"),
 			true, protocolVersion, PDU_TYPE_ERROR_CODE_CORRUPT_DATA,
@@ -64,7 +64,7 @@ func ParseToIpv6Prefix(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel Rt
 	// get flags
 	err = binary.Read(buf, binary.BigEndian, &flags)
 	if err != nil {
-		belogs.Error("ParseToIpv6Prefix(): PDU_TYPE_IPV6_PREFIX get flags fail: ", buf, err)
+		belogs.Error("ParseToIpv6Prefix(): PDU_TYPE_IPV6_PREFIX get flags fail, buf:", buf, err)
 		rtrError := NewRtrError(
 			err,
 			true, protocolVersion, PDU_TYPE_ERROR_CODE_CORRUPT_DATA,
@@ -72,7 +72,7 @@ func ParseToIpv6Prefix(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel Rt
 		return rtrPduModel, rtrError
 	}
 	if flags != 0 && flags != 1 {
-		belogs.Error("ParseToIpv6Prefix():PDU_TYPE_IPV6_PREFIX, flags must be 0 or 1, ", buf, flags)
+		belogs.Error("ParseToIpv6Prefix():PDU_TYPE_IPV6_PREFIX, flags must be 0 or 1, buf:", buf, "  flags:", flags)
 		rtrError := NewRtrError(
 			errors.New("pduType is IPV6 PREFIX, flags must be 0 or 1"),
 			true, protocolVersion, PDU_TYPE_ERROR_CODE_CORRUPT_DATA,
@@ -83,7 +83,7 @@ func ParseToIpv6Prefix(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel Rt
 	// get prefixLength
 	err = binary.Read(buf, binary.BigEndian, &prefixLength)
 	if err != nil {
-		belogs.Error("ParseToIpv6Prefix(): PDU_TYPE_IPV6_PREFIX get prefixLength fail: ", buf, err)
+		belogs.Error("ParseToIpv6Prefix(): PDU_TYPE_IPV6_PREFIX get prefixLength fail, buf:", buf, err)
 		rtrError := NewRtrError(
 			err,
 			true, protocolVersion, PDU_TYPE_ERROR_CODE_CORRUPT_DATA,
@@ -105,7 +105,7 @@ func ParseToIpv6Prefix(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel Rt
 	// get zero1
 	err = binary.Read(buf, binary.BigEndian, &zero1)
 	if err != nil {
-		belogs.Error("ParseToIpv6Prefix(): PDU_TYPE_IPV6_PREFIX get zero1 fail: ", buf, err)
+		belogs.Error("ParseToIpv6Prefix(): PDU_TYPE_IPV6_PREFIX get zero1 fail, buf:", buf, err)
 		rtrError := NewRtrError(
 			err,
 			true, protocolVersion, PDU_TYPE_ERROR_CODE_CORRUPT_DATA,
@@ -116,7 +116,7 @@ func ParseToIpv6Prefix(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel Rt
 	// get ipv6Prefix
 	err = binary.Read(buf, binary.BigEndian, &ipv6Prefix)
 	if err != nil {
-		belogs.Error("ParseToIpv6Prefix(): PDU_TYPE_IPV6_PREFIX get ipv6Prefix fail: ", buf, err)
+		belogs.Error("ParseToIpv6Prefix(): PDU_TYPE_IPV6_PREFIX get ipv6Prefix fail, buf:", buf, err)
 		rtrError := NewRtrError(
 			err,
 			true, protocolVersion, PDU_TYPE_ERROR_CODE_CORRUPT_DATA,
@@ -126,7 +126,7 @@ func ParseToIpv6Prefix(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel Rt
 
 	err = binary.Read(buf, binary.BigEndian, &asn)
 	if err != nil {
-		belogs.Error("ParseToIpv6Prefix(): PDU_TYPE_IPV6_PREFIX get asn fail: ", buf, err)
+		belogs.Error("ParseToIpv6Prefix(): PDU_TYPE_IPV6_PREFIX get asn fail, buf:", buf, err)
 		rtrError := NewRtrError(
 			err,
 			true, protocolVersion, PDU_TYPE_ERROR_CODE_CORRUPT_DATA,
@@ -137,6 +137,6 @@ func ParseToIpv6Prefix(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel Rt
 	sq := NewRtrIpv6PrefixModel(protocolVersion, flags, prefixLength,
 		maxLength, ipv6Prefix, asn)
 
-	belogs.Debug("ParseToIpv6Prefix():get PDU_TYPE_IPV6_PREFIX ", buf, jsonutil.MarshalJson(sq))
+	belogs.Debug("ParseToIpv6Prefix():get PDU_TYPE_IPV6_PREFIX, buf:", buf, "  sq:", jsonutil.MarshalJson(sq))
 	return sq, nil
 }

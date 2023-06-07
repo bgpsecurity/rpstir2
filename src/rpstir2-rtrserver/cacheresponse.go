@@ -16,7 +16,7 @@ func ParseToCacheResponse(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel
 	// get sessionId
 	err = binary.Read(buf, binary.BigEndian, &sessionId)
 	if err != nil {
-		belogs.Error("ParseToCacheResponse(): PDU_TYPE_CACHE_RESPONSE get sessionId fail: ", buf, err)
+		belogs.Error("ParseToCacheResponse(): PDU_TYPE_CACHE_RESPONSE get sessionId fail, buf:", buf, err)
 		rtrError := NewRtrError(
 			err,
 			true, protocolVersion, PDU_TYPE_ERROR_CODE_CORRUPT_DATA,
@@ -27,7 +27,7 @@ func ParseToCacheResponse(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel
 	// get length
 	err = binary.Read(buf, binary.BigEndian, &length)
 	if err != nil {
-		belogs.Error("ParseToCacheResponse(): PDU_TYPE_CACHE_RESPONSE get length fail: ", buf, err)
+		belogs.Error("ParseToCacheResponse(): PDU_TYPE_CACHE_RESPONSE get length fail, buf:", buf, err)
 		rtrError := NewRtrError(
 			err,
 			true, protocolVersion, PDU_TYPE_ERROR_CODE_CORRUPT_DATA,
@@ -35,7 +35,7 @@ func ParseToCacheResponse(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel
 		return rtrPduModel, rtrError
 	}
 	if length != 8 {
-		belogs.Error("ParseToCacheResponse():PDU_TYPE_CACHE_RESPONSE,  length must be 8 ", buf, length)
+		belogs.Error("ParseToCacheResponse():PDU_TYPE_CACHE_RESPONSE,  length must be 8, buf:", buf, "  length:", length)
 		rtrError := NewRtrError(
 			errors.New("pduType is CACHE RESPONSE, length must be 8"),
 			true, protocolVersion, PDU_TYPE_ERROR_CODE_CORRUPT_DATA,
@@ -44,6 +44,6 @@ func ParseToCacheResponse(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel
 	}
 
 	sq := NewRtrCacheResponseModel(protocolVersion, sessionId)
-	belogs.Debug("ParseToCacheResponse():get PDU_TYPE_CACHE_RESPONSE ", buf, jsonutil.MarshalJson(sq))
+	belogs.Debug("ParseToCacheResponse():get PDU_TYPE_CACHE_RESPONSE, buf:", buf, " sq:", jsonutil.MarshalJson(sq))
 	return sq, nil
 }
