@@ -8,10 +8,9 @@ import (
 )
 
 var RtrTcpClient *ts.TcpClient
+var rtrClientSerialQueryModel *RtrClientSerialQueryModel
 
 func clientStart(rtrClientStartModel RtrClientStartModel) {
-	//tcpserver := conf.String("rpstir2-vc::serverHost")
-	//tcpport := conf.String("rpstir2-vc::serverTcpPort")
 	rtrTcpClientProcessFunc := new(RtrTcpClientProcessFunc)
 	belogs.Info("clientStart():Rtr Tcp Client: connect to tcpserver:", rtrClientStartModel.Server, "    tcpport:", rtrClientStartModel.Port)
 

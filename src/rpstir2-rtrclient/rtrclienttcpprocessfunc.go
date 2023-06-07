@@ -5,11 +5,10 @@ import (
 	"net"
 	"time"
 
-	rtrserver "rpstir2-rtrserver"
-
 	"github.com/cpusoft/goutil/belogs"
 	"github.com/cpusoft/goutil/convert"
 	"github.com/cpusoft/goutil/jsonutil"
+	rtrserver "rpstir2-rtrserver"
 )
 
 type RtrTcpClientProcessFunc struct {
@@ -21,7 +20,7 @@ func (rq *RtrTcpClientProcessFunc) ActiveSend(conn *net.TCPConn, tcpClientProces
 	if "resetquery" == tcpClientProcessChan {
 		rtrPduModel = rtrserver.NewRtrResetQueryModel(rtrserver.PDU_PROTOCOL_VERSION_2)
 	} else if "serialquery" == tcpClientProcessChan {
-		rtrPduModel = rtrserver.NewRtrSerialQueryModel(rtrserver.PDU_PROTOCOL_VERSION_2, 1, 1)
+		rtrPduModel = rtrserver.NewRtrSerialQueryModel(rtrserver.PDU_PROTOCOL_VERSION_2, rtrClientSerialQueryModel.SessionId, rtrClientSerialQueryModel.SerialNumber)
 	}
 	sendBytes := rtrPduModel.Bytes()
 	belogs.Debug("ActiveSend():client:", convert.Bytes2String(sendBytes))
