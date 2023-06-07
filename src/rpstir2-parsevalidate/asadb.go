@@ -1,14 +1,14 @@
 package parsevalidate
 
 import (
+	"errors"
 	"sync"
 	"time"
-
-	model "rpstir2-model"
 
 	"github.com/cpusoft/goutil/belogs"
 	"github.com/cpusoft/goutil/jsonutil"
 	"github.com/cpusoft/goutil/xormdb"
+	model "rpstir2-model"
 	"xorm.io/xorm"
 )
 
@@ -44,6 +44,66 @@ func addAsasDb(syncLogFileModels []SyncLogFileModel) error {
 		return err
 	}
 	belogs.Info("addAsasDb(): len(syncLogFileModels):", len(syncLogFileModels), "  time(s):", time.Since(start))
+	return nil
+}
+
+func addAsaDb(syncLogFileModel *SyncLogFileModel) (err error) {
+	start := time.Now()
+	belogs.Debug("addAsaDb(): will add asa file:", syncLogFileModel.FilePath, syncLogFileModel.FileName,
+		"  fileType:", syncLogFileModel.FileType)
+
+	session, err := xormdb.NewSession()
+	defer session.Close()
+
+	err = insertAsaDb(session, syncLogFileModel, start)
+	if err != nil {
+		belogs.Error("addAsaDb(): insertAsaDb fail, syncLogFileModel:", jsonutil.MarshalJson(syncLogFileModel), err)
+		return xormdb.RollbackAndLogError(session, "addAsaDb(): insertAsaDb fail, syncLogFileModel:"+jsonutil.MarshalJson(syncLogFileModel), err)
+	}
+
+	err = updateSyncLogFileJsonAllAndStateDb(session, syncLogFileModel)
+	if err != nil {
+		belogs.Error("addAsaDb(): updateSyncLogFileJsonAllAndStateDb fail, syncLogFileModel:", jsonutil.MarshalJson(syncLogFileModel), err)
+		return xormdb.RollbackAndLogError(session, "addAsaDb(): updateSyncLogFileJsonAllAndStateDb fail, syncLogFileModel:"+jsonutil.MarshalJson(syncLogFileModel), err)
+	}
+
+	err = xormdb.CommitSession(session)
+	if err != nil {
+		belogs.Error("addAsaDb(): CommitSession fail :", err)
+		return err
+	}
+	belogs.Info("addAsaDb(): asa file:", syncLogFileModel.FilePath, syncLogFileModel.FileName, "  time(s):", time.Since(start))
+	return nil
+}
+
+func delAsaDb(syncLogFileModel *SyncLogFileModel) (err error) {
+	start := time.Now()
+	belogs.Debug("delAsaDb(): will del asa file:", syncLogFileModel.FilePath, syncLogFileModel.FileName)
+
+	session, err := xormdb.NewSession()
+	defer session.Close()
+
+	err = delAsaByIdDb(session, syncLogFileModel.CertId)
+	if err != nil {
+		belogs.Error("delAsaDb(): delAsaByIdDb fail, syncLogFileModel:", jsonutil.MarshalJson(syncLogFileModel), err)
+		return xormdb.RollbackAndLogError(session, "delAsaDb(): delAsaByIdDb fail, syncLogFileModel:"+jsonutil.MarshalJson(syncLogFileModel), err)
+	}
+	// only del,will update syncLogFile.
+	// when is add/update, will update syncLogFile in addAsaDb()
+	if syncLogFileModel.SyncType == "del" {
+		err = updateSyncLogFileJsonAllAndStateDb(session, syncLogFileModel)
+		if err != nil {
+			belogs.Error("delAsaDb(): updateSyncLogFileJsonAllAndStateDb fail, syncLogFileModel:", jsonutil.MarshalJson(syncLogFileModel), err)
+			return xormdb.RollbackAndLogError(session, "delAsaDb(): updateSyncLogFileJsonAllAndStateDb fail, syncLogFileModel:"+jsonutil.MarshalJson(syncLogFileModel), err)
+		}
+	}
+
+	err = xormdb.CommitSession(session)
+	if err != nil {
+		belogs.Error("delAsaDb(): CommitSession fail :", err)
+		return err
+	}
+	belogs.Info("delAsaDb(): asa file:", syncLogFileModel.FilePath, syncLogFileModel.FileName, "  time(s):", time.Since(start))
 	return nil
 }
 
@@ -146,7 +206,12 @@ func delAsaByIdDb(session *xorm.Session, asaId uint64) (err error) {
 func insertAsaDb(session *xorm.Session,
 	syncLogFileModel *SyncLogFileModel, now time.Time) error {
 
-	asaModel := syncLogFileModel.CertModel.(model.AsaModel)
+	asaModel, ok := syncLogFileModel.CertModel.(model.AsaModel)
+	if !ok {
+		belogs.Error("insertAsaDb(): is not asaModel, syncLogFileModel:", jsonutil.MarshalJson(syncLogFileModel))
+		return errors.New("CertModel is not asaModel type")
+	}
+
 	//lab_rpki_asa
 	sqlStr := `INSERT lab_rpki_asa(
 	                ski, aki, filePath,fileName, 
@@ -202,10 +267,10 @@ func insertAsaDb(session *xorm.Session,
 	//lab_rpki_asa_customer_asn
 	belogs.Debug("insertAsaDb(): asaModel.CustomerAsns:", jsonutil.MarshalJson(asaModel.CustomerAsns))
 	if asaModel.CustomerAsns != nil && len(asaModel.CustomerAsns) > 0 {
-		customerSqlStr := `INSERT lab_rpki_asa_customer_asn(asaId, addressFamily,customerAsn)
-						VALUES(?,?,?)`
+		customerSqlStr := `INSERT lab_rpki_asa_customer_asn(asaId, customerAsn)
+						VALUES(?,?)`
 		for _, customerAsn := range asaModel.CustomerAsns {
-			res, err = session.Exec(customerSqlStr, asaId, customerAsn.AddressFamily, customerAsn.CustomerAsn)
+			res, err = session.Exec(customerSqlStr, asaId, customerAsn.CustomerAsn)
 			if err != nil {
 				belogs.Error("insertAsaDb(): INSERT lab_rpki_asa_customer_asn Exec :", jsonutil.MarshalJson(syncLogFileModel), err)
 				return err

@@ -1,15 +1,15 @@
 package parsevalidate
 
 import (
+	"errors"
 	"sync"
 	"time"
-
-	model "rpstir2-model"
 
 	"github.com/cpusoft/goutil/belogs"
 	"github.com/cpusoft/goutil/convert"
 	"github.com/cpusoft/goutil/jsonutil"
 	"github.com/cpusoft/goutil/xormdb"
+	model "rpstir2-model"
 	"xorm.io/xorm"
 )
 
@@ -49,6 +49,35 @@ func addCrlsDb(syncLogFileModels []SyncLogFileModel) error {
 
 }
 
+func addCrlDb(syncLogFileModel *SyncLogFileModel) (err error) {
+	start := time.Now()
+	belogs.Debug("addCrlDb(): will add crl file:", syncLogFileModel.FilePath, syncLogFileModel.FileName,
+		"  fileType:", syncLogFileModel.FileType)
+
+	session, err := xormdb.NewSession()
+	defer session.Close()
+
+	err = insertCrlDb(session, syncLogFileModel, start)
+	if err != nil {
+		belogs.Error("addCrlDb(): insertCrlDb fail, syncLogFileModel:", jsonutil.MarshalJson(syncLogFileModel), err)
+		return xormdb.RollbackAndLogError(session, "addCrlDb(): insertCrlDb fail, syncLogFileModel:"+jsonutil.MarshalJson(syncLogFileModel), err)
+	}
+
+	err = updateSyncLogFileJsonAllAndStateDb(session, syncLogFileModel)
+	if err != nil {
+		belogs.Error("addCrlDb(): updateSyncLogFileJsonAllAndStateDb fail, syncLogFileModel:", jsonutil.MarshalJson(syncLogFileModel), err)
+		return xormdb.RollbackAndLogError(session, "addCrlDb(): updateSyncLogFileJsonAllAndStateDb fail, syncLogFileModel:"+jsonutil.MarshalJson(syncLogFileModel), err)
+	}
+
+	err = xormdb.CommitSession(session)
+	if err != nil {
+		belogs.Error("addCrlDb(): CommitSession fail :", err)
+		return err
+	}
+	belogs.Info("addCrlDb(): crl file:", syncLogFileModel.FilePath, syncLogFileModel.FileName, "  time(s):", time.Since(start))
+	return nil
+}
+
 // del
 func delCrlsDb(delSyncLogFileModels []SyncLogFileModel, updateSyncLogFileModels []SyncLogFileModel, wg *sync.WaitGroup) (err error) {
 	defer func() {
@@ -85,6 +114,37 @@ func delCrlsDb(delSyncLogFileModels []SyncLogFileModel, updateSyncLogFileModels 
 	return nil
 }
 
+func delCrlDb(syncLogFileModel *SyncLogFileModel) (err error) {
+	start := time.Now()
+	belogs.Debug("delCrlDb(): will del crl file:", syncLogFileModel.FilePath, syncLogFileModel.FileName)
+
+	session, err := xormdb.NewSession()
+	defer session.Close()
+
+	err = delCrlByIdDb(session, syncLogFileModel.CertId)
+	if err != nil {
+		belogs.Error("delCrlDb(): delCrlByIdDb fail, syncLogFileModel:", jsonutil.MarshalJson(syncLogFileModel), err)
+		return xormdb.RollbackAndLogError(session, "delCersDb(): delCrlByIdDb fail, syncLogFileModel:"+jsonutil.MarshalJson(syncLogFileModel), err)
+	}
+	// only del,will update syncLogFile.
+	// when is add/update, will update syncLogFile in addAsaDb()
+	if syncLogFileModel.SyncType == "del" {
+		err = updateSyncLogFileJsonAllAndStateDb(session, syncLogFileModel)
+		if err != nil {
+			belogs.Error("delCrlDb(): updateSyncLogFileJsonAllAndStateDb fail, syncLogFileModel:", jsonutil.MarshalJson(syncLogFileModel), err)
+			return xormdb.RollbackAndLogError(session, "delCersDb(): updateSyncLogFileJsonAllAndStateDb fail, syncLogFileModel:"+jsonutil.MarshalJson(syncLogFileModel), err)
+		}
+	}
+
+	err = xormdb.CommitSession(session)
+	if err != nil {
+		belogs.Error("delCrlDb(): CommitSession fail :", err)
+		return err
+	}
+	belogs.Info("delCrlDb(): crl file:", syncLogFileModel.FilePath, syncLogFileModel.FileName, "  time(s):", time.Since(start))
+	return nil
+}
+
 func delCrlByIdDb(session *xorm.Session, crlId uint64) (err error) {
 	belogs.Debug("delCrlByIdDb():delete lab_rpki_crl by crlId:", crlId)
 
@@ -118,8 +178,15 @@ func delCrlByIdDb(session *xorm.Session, crlId uint64) (err error) {
 
 func insertCrlDb(session *xorm.Session,
 	syncLogFileModel *SyncLogFileModel, now time.Time) error {
+	belogs.Debug("insertCrlDb(): file:", syncLogFileModel.FilePath, syncLogFileModel.FileName,
+		"  fileType:", syncLogFileModel.FileType)
 
-	crlModel := syncLogFileModel.CertModel.(model.CrlModel)
+	crlModel, ok := syncLogFileModel.CertModel.(model.CrlModel)
+	if !ok {
+		belogs.Error("insertCrlDb(): is not crlModel, syncLogFileModel:", jsonutil.MarshalJson(syncLogFileModel))
+		return errors.New("CertModel is not crlModel type")
+	}
+
 	thisUpdate := crlModel.ThisUpdate
 	nextUpdate := crlModel.NextUpdate
 	belogs.Debug("insertCrlDb(): crlModel:", jsonutil.MarshalJson(crlModel), "  now ", now)

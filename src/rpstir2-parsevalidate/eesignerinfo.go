@@ -4,14 +4,13 @@ import (
 	"net/url"
 	"time"
 
-	model "rpstir2-model"
-	openssl "rpstir2-parsevalidate-openssl"
-
 	"github.com/cpusoft/goutil/belogs"
 	"github.com/cpusoft/goutil/conf"
 	"github.com/cpusoft/goutil/convert"
 	"github.com/cpusoft/goutil/jsonutil"
 	"github.com/cpusoft/goutil/opensslutil"
+	model "rpstir2-model"
+	openssl "rpstir2-parsevalidate-openssl"
 )
 
 //Try to store the error in statemode instead of returning err
@@ -63,7 +62,7 @@ func ValidateEeCertModel(stateModel *model.StateModel, eeCertModel *model.EeCert
 	if eeCertModel.DigestAlgorithm != "SHA256-RSA" {
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
 			Fail:   "Digest Algorithm of EE is not sha256WithRSAEncryption",
-			Detail: "Digest algorithm is" + eeCertModel.DigestAlgorithm}
+			Detail: "Digest algorithm is " + eeCertModel.DigestAlgorithm}
 		stateModel.AddError(&stateMsg)
 	}
 	now := time.Now()

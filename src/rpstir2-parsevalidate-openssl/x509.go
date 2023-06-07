@@ -6,12 +6,11 @@ import (
 	"strconv"
 	"time"
 
-	model "rpstir2-model"
-
 	"github.com/cpusoft/goutil/asn1util"
 	"github.com/cpusoft/goutil/belogs"
 	"github.com/cpusoft/goutil/convert"
 	"github.com/cpusoft/goutil/jsonutil"
+	model "rpstir2-model"
 )
 
 func ParseCerModelByX509(fileByte []byte, cerModel *model.CerModel) (err error) {
