@@ -20,7 +20,7 @@ func handleServiceState(ssp model.ServiceStateRequest) (*model.ServiceState, err
 	} else if ssp.Operate == "get" {
 		return serviceState, nil
 	}
-	return nil, errors.New("param is error")
+	return nil, errors.New("operate is error")
 }
 
 /*

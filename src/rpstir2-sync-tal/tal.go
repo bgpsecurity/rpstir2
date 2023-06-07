@@ -10,8 +10,6 @@ import (
 	"sync"
 	"time"
 
-	model "rpstir2-model"
-
 	"github.com/cpusoft/goutil/base64util"
 	"github.com/cpusoft/goutil/belogs"
 	"github.com/cpusoft/goutil/conf"
@@ -22,6 +20,7 @@ import (
 	"github.com/cpusoft/goutil/rrdputil"
 	"github.com/cpusoft/goutil/rsyncutil"
 	"github.com/cpusoft/goutil/urlutil"
+	model "rpstir2-model"
 )
 
 func getTals() (passTalModels []model.TalModel, err error) {
@@ -230,6 +229,8 @@ func syncToLocalAndParseValidateCer(tmpDir, talUrl, subjectPublicKeyInfo string,
 
 	} else if strings.HasPrefix(talUrl, "rsync:") {
 		// rsycn to local file
+		rsyncutil.SetTimeout(24)
+		defer rsyncutil.ResetAllTimeout()
 		rsyncDestPath, _, err := rsyncutil.RsyncQuiet(talUrl, tmpDir)
 		if err != nil {
 			belogs.Error("syncToLocalAndParseValidateCer(): RsyncQuiet fail, url, tmpDir, err:", talUrl, tmpDir, err)
@@ -291,7 +292,7 @@ func parseAndValidateCer(talUrl, subjectPublicKeyInfo, tmpDir string, talSyncUrl
 		belogs.Debug("parseAndValidateCer(): test rrdp is ok:", parseCerSimple.RpkiNotify)
 		_, err = rrdputil.GetRrdpNotification(parseCerSimple.RpkiNotify)
 		if err != nil {
-			belogs.Error("GetRrdpSnapshot(): rrdputil.GetRrdpNotification fail:", parseCerSimple.RpkiNotify,
+			belogs.Error("parseAndValidateCer(): rrdputil.GetRrdpNotification fail:", parseCerSimple.RpkiNotify,
 				"  time(s):", time.Since(start), err)
 			talSyncUrl.SupportRrdp = false
 		} else {
@@ -309,6 +310,8 @@ func parseAndValidateCer(talUrl, subjectPublicKeyInfo, tmpDir string, talSyncUrl
 		// must start with "rsync", otherwise root cer cannot  download by rsync
 		if strings.HasPrefix(talSyncUrl.TalUrl, "rsync:") {
 			belogs.Debug("parseAndValidateCer(): test rsync is ok:", talSyncUrl.TalUrl)
+			rsyncutil.SetTimeout(24)
+			defer rsyncutil.ResetAllTimeout()
 			_, _, err := rsyncutil.RsyncQuiet(talUrl, tmpDir)
 			if err != nil {
 				belogs.Error("parseAndValidateCer(): RsyncQuiet fail, url,err:", talSyncUrl.TalUrl, err)

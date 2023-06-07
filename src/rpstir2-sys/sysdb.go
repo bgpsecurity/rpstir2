@@ -5,11 +5,10 @@ import (
 	"math/rand"
 	"time"
 
-	model "rpstir2-model"
-
 	"github.com/cpusoft/goutil/belogs"
 	"github.com/cpusoft/goutil/jsonutil"
 	"github.com/cpusoft/goutil/xormdb"
+	model "rpstir2-model"
 	"xorm.io/xorm"
 )
 
@@ -50,12 +49,13 @@ var initSqls []string = []string{
 	`drop table if exists lab_rpki_sync_log`,
 	`drop table if exists lab_rpki_sync_rrdp_log`,
 	`drop table if exists lab_rpki_sync_url`,
+	`drop table if exists lab_rpki_sync_rrdp_notify`,
+	`drop table if exists lab_rpki_sync_rrdp_delta`,
 	`drop view if exists lab_rpki_crl_revoked_cert_view`,
 	`drop view if exists lab_rpki_mft_file_hash_view`,
 	`drop view if exists lab_rpki_roa_ipaddress_count_view`,
 	`drop view if exists lab_rpki_roa_ipaddress_view`,
 	`drop view if exists lab_rpki_sync_rrdp_log_maxid_view`,
-
 	`
 #################################
 ## main table for cer/crl/roa/mft
@@ -389,7 +389,6 @@ CREATE TABLE lab_rpki_asa_customer_asn (
 	id int(10) unsigned not null primary key auto_increment,
 	asaId int(10) unsigned not null,
 	customerAsn int(10) unsigned not null,
-	addressFamily int(10) unsigned,
 	key customerAsn (customerAsn),
 	foreign key (asaId) references lab_rpki_asa(id)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='asa customerAsn'
@@ -412,7 +411,7 @@ CREATE TABLE lab_rpki_asa_provider_asn (
 
 	`
 ################################################
-## recored every sync log for cer/crl/roa/mft
+## recored every sync log for cer/crl/roa/mft/asa
 ################################################
 CREATE TABLE lab_rpki_sync_log (
 	id int(10) unsigned not null primary key auto_increment,
@@ -467,16 +466,42 @@ CREATE TABLE lab_rpki_sync_rrdp_log (
 	`
 CREATE TABLE lab_rpki_sync_url (
 	id int(10) unsigned not null primary key auto_increment,
-	rrdpUrl varchar(256) comment 'rrdp url',
-	rrdpUrlState json comment '{state:valid/invalid}', 
-	rrdpUpdateTime datetime comment 'rrdp update time', 
-	rsyncUrls varchar(512) not null comment 'rsync url',
-	rsyncUrlState json not null comment '{state:valid/invalid}', 
-	rsyncUpdateTime datetime not null comment 'rsync update time',
+	syncStyle varchar(16) not null comment 'rrdp/rsync',
+	url varchar(256) not null comment 'rrdp/rsync url',
+	state json not null comment '{state:valid/invalid,****}', 
+	updateTime datetime comment 'rrdp update time', 
 	addTime datetime not null comment 'add time',
-	index rrdpUrl (rrdpUrl),
-	unique syncUrlRrdpUrlRsyncUrls (rrdpUrl , rsyncUrls) 
+	unique syncUrl (url) 
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='all rsync/rrdp url'
+`,
+	`
+CREATE TABLE lab_rpki_sync_rrdp_notify (
+	id int(10) unsigned not null primary key auto_increment,
+	notifyUrl varchar(512) not null comment 'notification.xml url',
+	version varchar(16) not null comment 'version',
+	sessionId varchar(512) not null comment 'session_id',
+	snapshotUrl varchar(512) not null comment 'snapshot url',
+	snapshotHash varchar(512) not null comment 'snapshot hash',
+	maxSerial int(10) unsigned comment 'max serial',
+	minSerial int(10) unsigned comment 'min serial',
+	curSerial int(10) unsigned comment 'current serial',
+	state json comment '{state:valid}',
+	updateTime datetime not null comment 'update time',
+	unique notifyUrl (notifyUrl) 
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='rrdp url'
+`,
+	`
+CREATE TABLE lab_rpki_sync_rrdp_delta (
+	id int(10) unsigned not null primary key auto_increment,
+	notifyUrl varchar(512) not null comment 'notification.xml url',
+	deltaUrl  varchar(512) not null comment 'delta url',
+	serial int(10) unsigned comment 'serial',
+	deltaHash varchar(512) not null comment 'delta hash',
+	state json comment '{state:valid}',
+	updateTime datetime not null comment 'update time',
+	index notifyUrl (notifyUrl) ,
+	index serial (serial)
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='rrdp url'
 `,
 
 	`
@@ -501,12 +526,12 @@ CREATE TABLE lab_rpki_rtr_serial_number (
 	serialNumber bigint(20) unsigned not null comment 'serialNumber for rtr_full, rtr_incremental',
 	globalSerialNumber bigint(20) unsigned not null comment 'serialNumber for center vc update by sync and slurm',
 	subpartSerialNumber bigint(20) unsigned not null comment 'serialNumber for sub vc update by slurm',
-	createTime datetime NOT NULL
+	createTime datetime NOT NULL,
+	unique rtrserialNumber (serialNumber) 
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='after every sync repo, serial num  will generate new serialnumber'
 `,
 
 	`
-
 CREATE TABLE lab_rpki_rtr_full (
 	id int(10) unsigned not null primary key auto_increment,
 	serialNumber bigint(20) unsigned not null,
@@ -564,13 +589,14 @@ CREATE TABLE lab_rpki_rtr_incremental (
 CREATE TABLE lab_rpki_rtr_asa_full (
 	id int(10) unsigned not null primary key auto_increment,
 	serialNumber bigint(20) unsigned not null,
-	addressFamily int(10) unsigned,
 	customerAsn int(10) unsigned not null comment 'customer asn',
-	providerAsns varchar(255) comment '[{"providerAsn":65000},{"providerAsn":65001},{"providerAsn":65002}]',
+	providerAsn int(10) unsigned not null comment 'provider asn',
+	addressFamily int(10) unsigned,
 	sourceFrom json not null comment 'come from : {souce:sync/slurm/rush,syncLogId/syncLogFileId/slurmId/slurmFileId/rushDataLogId}',
 	key serialNumber(serialNumber),
 	key customerAsn(customerAsn),
-	unique rtrAsaFullSerialNumberCustomerAsnProviderAsns(serialNumber,customerAsn,providerAsns)
+	key providerAsn(providerAsn),
+	unique rtrAsaFull(serialNumber,customerAsn,providerAsn,addressFamily)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='full rtr asa'
 `,
 
@@ -578,12 +604,13 @@ CREATE TABLE lab_rpki_rtr_asa_full (
 CREATE TABLE lab_rpki_rtr_asa_full_log (
 	id int(10) unsigned not null primary key auto_increment,
 	serialNumber bigint(20) unsigned not null,
-	addressFamily int(10) unsigned,
 	customerAsn int(10) unsigned not null comment 'customer asn',
-	providerAsns varchar(255) comment '[{"providerAsn":65000},{"providerAsn":65001},{"providerAsn":65002}]',
+	providerAsn int(10) unsigned not null comment 'provider asn',
+	addressFamily int(10) unsigned,
 	sourceFrom json not null comment 'come from : {souce:sync/slurm/rush,syncLogId/syncLogFileId/slurmId/slurmFileId/rushDataLogId}',
 	key serialNumber(serialNumber),
-	key customerAsn(customerAsn)
+	key customerAsn(customerAsn),
+	key providerAsn(providerAsn)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='full rtr asa log history'
 `,
 
@@ -592,13 +619,14 @@ CREATE TABLE lab_rpki_rtr_asa_incremental (
 	id int(10) unsigned not null primary key auto_increment,
 	serialNumber bigint(20) unsigned not null,
 	style varchar(16) not null comment 'announce/withdraw, is 1/0 in protocol',
-	addressFamily int(10) unsigned,
 	customerAsn int(10) unsigned not null comment 'customer asn',
-	providerAsns varchar(255) comment '[{"providerAsn":65000},{"providerAsn":65001},{"providerAsn":65002}]',
+	providerAsn int(10) unsigned not null comment 'provider asn',
+	addressFamily int(10) unsigned,
 	sourceFrom json not null comment 'come from : {souce:sync/slurm/rush,syncLogId/syncLogFileId/slurmId/slurmFileId/rushDataLogId}',
 	key serialNumber(serialNumber),
 	key customerAsn(customerAsn),
-	unique rtrIncrementalSerialNumberCustomerAsnProviderAsns(serialNumber,customerAsn,providerAsns)
+	key providerAsn(providerAsn),
+	unique rtrAsaIncremental(serialNumber,customerAsn,providerAsn,addressFamily)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='incremental rtr asa'
 `,
 
@@ -609,18 +637,30 @@ CREATE TABLE lab_rpki_rtr_asa_incremental (
 CREATE TABLE lab_rpki_slurm (
 	id int(10) unsigned not null primary key auto_increment,
 	version int(10) unsigned default 1,
-	style varchar(128) not null comment 'prefixFilter/bgpsecFilter/prefixAssertion/bgpsecAssertion',
-	asn bigint(20) signed ,
-	addressPrefix varchar(512) comment '198.51.100.0/24 or 2001:DB8::/32',
-	maxLength int(10) unsigned ,
-	ski varchar(256) comment 'some base64 ski',
-	routerPublicKey varchar(256) comment 'some base64 ski', 
+	style varchar(128) not null comment 'prefixFilter/bgpsecFilter/prefixAssertion/bgpsecAssertion/aspaFilter/aspaAssertion',
+
+	asn int(10) unsigned comment 'prefix asn',
+	addressPrefix varchar(512) comment 'prefix address: 198.51.100.0/24 or 2001:DB8::/32',
+	maxLength int(10) unsigned  comment 'prefix maxlength',
+
+	ski varchar(256) comment 'bgpsec base64 ski',
+	routerPublicKey varchar(256) comment 'bgpsec base64 ski', 
+
+	customerAsn int(10) unsigned comment 'asa customerAsn',
+	providerAsn  int(10) unsigned comment 'asa providerAsn',
+	addressFamily varchar(16) comment 'asa addressFamily',
+
 	comment varchar(256),
 	treatLevel varchar(64) comment 'critical/major/normal',
 	slurmLogId int(10) unsigned not null comment 'lab_rpki_slurm_log.id',
 	slurmLogFileId int(10) unsigned not null comment 'lab_rpki_slurm_log_file.id',
 	state json not null comment '[rtr:notYet/finished]',
-	unique slurmAsnAddressPrefix_maxLength (asn,addressPrefix,maxLength)
+
+	key asn(asn),
+	key addressPrefix(addressPrefix),
+	key customerAsn(customerAsn),
+	key providerAsn(providerAsn),
+	unique slurmPrefixAsa (asn,addressPrefix,maxLength,customerAsn,providerAsn,addressFamily)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='valid slurms'
 `,
 
@@ -732,6 +772,8 @@ var fullSyncSqls []string = []string{
 	`truncate  table  lab_rpki_sync_log_file`,
 	`truncate  table  lab_rpki_sync_log`,
 	`truncate  table  lab_rpki_sync_url`,
+	`truncate  table  lab_rpki_sync_rrdp_notify`,
+	`truncate  table  lab_rpki_sync_rrdp_delta`,
 }
 var resetAllOtherSqls []string = []string{
 	`truncate  table  lab_rpki_conf`,
@@ -773,6 +815,8 @@ var optimizeSqls []string = []string{
 	`optimize  table  lab_rpki_sync_rrdp_log`,
 	`optimize  table  lab_rpki_sync_log`,
 	`optimize  table  lab_rpki_sync_url`,
+	`optimize  table  lab_rpki_sync_rrdp_notify`,
+	`optimize  table  lab_rpki_sync_rrdp_delta`,
 	`optimize  table  lab_rpki_rtr_session`,
 	`optimize  table  lab_rpki_rtr_serial_number`,
 	`optimize  table  lab_rpki_rtr_full`,

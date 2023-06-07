@@ -5,8 +5,6 @@ import (
 	"net/http"
 	"os"
 
-	model "rpstir2-model"
-
 	"github.com/cpusoft/goutil/belogs"
 	"github.com/cpusoft/goutil/conf"
 	"github.com/cpusoft/goutil/fileutil"
@@ -14,6 +12,7 @@ import (
 	"github.com/cpusoft/goutil/httpclient"
 	"github.com/cpusoft/goutil/jsonutil"
 	"github.com/gin-gonic/gin"
+	model "rpstir2-model"
 )
 
 func InitReset(c *gin.Context) {
@@ -40,7 +39,7 @@ func InitReset(c *gin.Context) {
 				conf.String("rpstir2-rp::serverHttpsPort")
 			var path string
 			if sysStyle.SyncPolicy == "direct" {
-				path = url + "/directsync/directurlstart"
+				path = url + "/directsync/urlstart"
 				belogs.Info("initReset(): will call direct url first:", path)
 				err = httpclient.PostAndUnmarshalResponseModel(path, ``, false, nil)
 				if err != nil {
@@ -49,7 +48,7 @@ func InitReset(c *gin.Context) {
 					return
 				}
 
-				path = url + "/directsync/directsyncstart"
+				path = url + "/directsync/syncstart"
 				belogs.Info("initReset(): will call direct sync second:", path)
 				go httpclient.Post(path, ``, false)
 
