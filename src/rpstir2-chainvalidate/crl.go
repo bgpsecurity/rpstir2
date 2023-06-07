@@ -6,13 +6,12 @@ import (
 	"sync"
 	"time"
 
-	model "rpstir2-model"
-
 	"github.com/cpusoft/goutil/belogs"
 	"github.com/cpusoft/goutil/certutil"
 	"github.com/cpusoft/goutil/conf"
 	"github.com/cpusoft/goutil/jsonutil"
 	"github.com/cpusoft/goutil/osutil"
+	model "rpstir2-model"
 )
 
 func getChainCrls(chains *Chains, wg *sync.WaitGroup) {
@@ -146,7 +145,7 @@ func validateCrl(chains *Chains, crlId uint64, wg *sync.WaitGroup, chainCrlCh ch
 				belogs.Error("validateCrl():same crl files is not self, aki:", sameAkiChainCrls[0].FileName, chainCrl.FileName, chainCrl.Aki)
 				stateMsg := model.StateMsg{Stage: "chainvalidate",
 					Fail:   "Fail to get CRL under specific AKI",
-					Detail: "aki is" + chainCrl.Aki + "  fileName is " + chainCrl.FileName}
+					Detail: "aki is " + chainCrl.Aki + "  fileName is " + chainCrl.FileName}
 				chainCrl.StateModel.AddError(&stateMsg)
 			}
 		} else if len(sameAkiChainCrls) == 0 {

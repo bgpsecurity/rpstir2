@@ -7,8 +7,6 @@ import (
 	"sync"
 	"time"
 
-	model "rpstir2-model"
-
 	"github.com/cpusoft/goutil/belogs"
 	"github.com/cpusoft/goutil/certutil"
 	"github.com/cpusoft/goutil/conf"
@@ -16,6 +14,7 @@ import (
 	"github.com/cpusoft/goutil/hashutil"
 	"github.com/cpusoft/goutil/jsonutil"
 	"github.com/cpusoft/goutil/osutil"
+	model "rpstir2-model"
 )
 
 func getChainMfts(chains *Chains, wg *sync.WaitGroup) {
@@ -45,7 +44,7 @@ func getChainMfts(chains *Chains, wg *sync.WaitGroup) {
 			belogs.Error("getChainMfts(): GetPreviousMftDb fail:", chainMft.Id, err)
 			return
 		}
-		belogs.Info("getChainMfts():i:", i, " chainMft.PreviousMft:", chainMft.PreviousMft) //shaodebug
+		belogs.Debug("getChainMfts():i:", i, " chainMft.PreviousMft:", chainMft.PreviousMft) //shaodebug
 
 		chains.MftIds = append(chains.MftIds, chainMftSqls[i].Id)
 		chains.AddMft(&chainMft)
@@ -263,7 +262,7 @@ func validateMft(chains *Chains, mftId uint64, wg *sync.WaitGroup, chainMftCh ch
 			belogs.Debug("validateMft():same mft files is not self, aki:", sameAkiChainMfts[0].FileName, chainMft.FileName, chainMft.Aki)
 			stateMsg := model.StateMsg{Stage: "chainvalidate",
 				Fail:   "Fail to get Manifest under specific AKI",
-				Detail: "aki is" + chainMft.Aki + "  fileName is " + chainMft.FileName + "  same aki file is " + sameAkiChainMfts[0].FileName}
+				Detail: "aki is " + chainMft.Aki + "  fileName is " + chainMft.FileName + "  same aki file is " + sameAkiChainMfts[0].FileName}
 			chainMft.StateModel.AddError(&stateMsg)
 		}
 	} else if len(sameAkiChainMfts) == 0 {
@@ -329,68 +328,68 @@ func validateMft(chains *Chains, mftId uint64, wg *sync.WaitGroup, chainMftCh ch
 		chainMft.StateModel.AddError(&stateMsg)
 	}
 
-	belogs.Info("validateMft(): check previous mft,  mftId:", chainMft.Id, "   chainMft.PreviousMft:", chainMft.PreviousMft) //shaodebug
+	belogs.Debug("validateMft(): check previous mft,  mftId:", chainMft.Id, "   chainMft.PreviousMft:", chainMft.PreviousMft) //shaodebug
 	if chainMft.PreviousMft.Found {
 		// compare prev Number and cur NUmber
 		prevMftNumber, okPrev := new(big.Int).SetString(chainMft.PreviousMft.MftNumber, 16)
 		curMftNumber, ok := new(big.Int).SetString(chainMft.MftNumber, 16)
 		// shaodebug
-		belogs.Info("validateMft(): found previous mft,  mftId:", chainMft.Id,
+		belogs.Debug("validateMft(): found previous mft,  mftId:", chainMft.Id,
 			"   prevMftNumber:", prevMftNumber, "   okPrev:", okPrev, "   curMftNumber:", curMftNumber, "  ok:", ok)
 		// should be hex
 		if !ok || !okPrev {
 			belogs.Info("validateMft(): !ok || !okPrev   mftId:", chainMft.Id) //shaodebug
 			stateMsg := model.StateMsg{Stage: "chainvalidate",
 				Fail:   "The Number of this Manifest or the previous Number is not a Hexadecimal number",
-				Detail: "The Number of this Manifest is " + chainMft.MftNumber + ", and the previouse Number is" + chainMft.PreviousMft.MftNumber}
+				Detail: "The Number of this Manifest is " + chainMft.MftNumber + ", and the previouse Number is " + chainMft.PreviousMft.MftNumber}
 			chainMft.StateModel.AddError(&stateMsg)
 		} else {
 
 			comp := curMftNumber.Cmp(prevMftNumber)
-			belogs.Info("validateMft(): comp, prevMftNumber:", prevMftNumber, "   curMftNumber:", curMftNumber, "  comp:", comp) //shaodebug
+			belogs.Debug("validateMft(): comp, prevMftNumber:", prevMftNumber, "   curMftNumber:", curMftNumber, "  comp:", comp) //shaodebug
 			if comp < 0 {
 				// if cur < prev, then error
 				stateMsg := model.StateMsg{Stage: "chainvalidate",
 					Fail:   "The Number of this Manifest is less than the previous Number",
-					Detail: "The Number of this Manifest is " + curMftNumber.String() + ", and the previouse Number is" + prevMftNumber.String()}
+					Detail: "The Number of this Manifest is " + curMftNumber.String() + ", and the previouse Number is " + prevMftNumber.String()}
 				chainMft.StateModel.AddError(&stateMsg)
 			} else if comp == 0 {
 				// if cur == prev, then warning
 				stateMsg := model.StateMsg{Stage: "chainvalidate",
 					Fail:   "The Number of this Manifest is equal to the previous Number",
-					Detail: "The Number of this Manifest is " + curMftNumber.String() + ", and the previouse Number is" + prevMftNumber.String()}
+					Detail: "The Number of this Manifest is " + curMftNumber.String() + ", and the previouse Number is " + prevMftNumber.String()}
 				chainMft.StateModel.AddWarning(&stateMsg)
 			} else {
 				// cur > prev
 				// if cur - prev == 1 ,then ok, else warning
 				one := big.NewInt(1)
 				sub := big.NewInt(0).Sub(curMftNumber, prevMftNumber)
-				belogs.Info("validateMft(): comp, one:", one, "   sub:", sub) //shaodebug
+				belogs.Debug("validateMft(): comp, one:", one, "   sub:", sub) //shaodebug
 				// just bigger 1, ok
 				if sub.Cmp(one) != 0 {
 					stateMsg := model.StateMsg{Stage: "chainvalidate",
 						Fail:   "The Number of this Manifest is not exactly 1 larger than the previous Number",
-						Detail: "The Number of this Manifest is " + curMftNumber.String() + ", and the previouse Number is" + prevMftNumber.String()}
+						Detail: "The Number of this Manifest is " + curMftNumber.String() + ", and the previouse Number is " + prevMftNumber.String()}
 					chainMft.StateModel.AddWarning(&stateMsg)
 				}
 			}
 		}
-		belogs.Info("validateMft(): prevMftNumber and curMftNumber,   mftId:", chainMft.Id, "  chainMft.StateModel:", jsonutil.MarshalJson(chainMft.StateModel)) //shaodebug
+		belogs.Debug("validateMft(): prevMftNumber and curMftNumber,   mftId:", chainMft.Id, "  chainMft.StateModel:", jsonutil.MarshalJson(chainMft.StateModel)) //shaodebug
 
 		// compare prev thisUpdate/nextUpdate and cur thisUpdate/nextUpdate
 		if !chainMft.ThisUpdate.After(chainMft.PreviousMft.ThisUpdate) {
 			stateMsg := model.StateMsg{Stage: "chainvalidate",
 				Fail:   "The ThisUpdate of this Manifest is is later than the previous ThisUpdate",
-				Detail: "The ThisUpdate of this Manifest is " + chainMft.ThisUpdate.String() + ", and the previouse ThisUpdate is" + chainMft.PreviousMft.ThisUpdate.String()}
+				Detail: "The ThisUpdate of this Manifest is " + chainMft.ThisUpdate.String() + ", and the previouse ThisUpdate is " + chainMft.PreviousMft.ThisUpdate.String()}
 			chainMft.StateModel.AddError(&stateMsg)
 		}
 		if !chainMft.NextUpdate.After(chainMft.PreviousMft.NextUpdate) {
 			stateMsg := model.StateMsg{Stage: "chainvalidate",
 				Fail:   "The NextUpdate of this Manifest is is later than the previous NextUpdate",
-				Detail: "The NextUpdate of this Manifest is " + chainMft.NextUpdate.String() + ", and the previouse NextUpdate is" + chainMft.PreviousMft.NextUpdate.String()}
+				Detail: "The NextUpdate of this Manifest is " + chainMft.NextUpdate.String() + ", and the previouse NextUpdate is " + chainMft.PreviousMft.NextUpdate.String()}
 			chainMft.StateModel.AddError(&stateMsg)
 		}
-		belogs.Info("validateMft(): ThisUpdate and NextUpdate,   mftId:", chainMft.Id, "  chainMft.StateModel:", jsonutil.MarshalJson(chainMft.StateModel)) //shaodebug
+		belogs.Debug("validateMft(): ThisUpdate and NextUpdate,   mftId:", chainMft.Id, "  chainMft.StateModel:", jsonutil.MarshalJson(chainMft.StateModel)) //shaodebug
 
 	}
 
@@ -587,7 +586,7 @@ func updateChainByMft(chains *Chains, invalidMftEffect string) (err error) {
 					chainCer.StateModel.AddError(&stateMsg)
 				}
 				chains.UpdateFileTypeIdToCer(&chainCer)
-				belogs.Info("updateChainByMft(): mftId:", mftId, "   chainMft:", chainMft.FilePath, chainMft.FileName,
+				belogs.Debug("updateChainByMft(): mftId:", mftId, "   chainMft:", chainMft.FilePath, chainMft.FileName,
 					" chainCer:", chainCer.FilePath, chainCer.FileName, jsonutil.MarshalJson(chainCer.StateModel))
 			case "crl":
 				chainCrl, err := chains.GetCrlByFileTypeId(fileTypeId)
@@ -601,7 +600,7 @@ func updateChainByMft(chains *Chains, invalidMftEffect string) (err error) {
 					chainCrl.StateModel.AddError(&stateMsg)
 				}
 				chains.UpdateFileTypeIdToCrl(&chainCrl)
-				belogs.Info("updateChainByMft(): mftId:", mftId, "   chainMft:", chainMft.FilePath, chainMft.FileName,
+				belogs.Debug("updateChainByMft(): mftId:", mftId, "   chainMft:", chainMft.FilePath, chainMft.FileName,
 					" chainCrl:", chainCrl.FilePath, chainCrl.FileName, jsonutil.MarshalJson(chainCrl.StateModel))
 			case "roa":
 				chainRoa, err := chains.GetRoaByFileTypeId(fileTypeId)
@@ -615,7 +614,7 @@ func updateChainByMft(chains *Chains, invalidMftEffect string) (err error) {
 					chainRoa.StateModel.AddError(&stateMsg)
 				}
 				chains.UpdateFileTypeIdToRoa(&chainRoa)
-				belogs.Info("updateChainByMft(): mftId:", mftId, "   chainMft:", chainMft.FilePath, chainMft.FileName,
+				belogs.Debug("updateChainByMft(): mftId:", mftId, "   chainMft:", chainMft.FilePath, chainMft.FileName,
 					" chainRoa:", chainRoa.FilePath, chainRoa.FileName, jsonutil.MarshalJson(chainRoa.StateModel))
 			case "asa":
 				chainAsa, err := chains.GetAsaByFileTypeId(fileTypeId)
@@ -629,7 +628,7 @@ func updateChainByMft(chains *Chains, invalidMftEffect string) (err error) {
 					chainAsa.StateModel.AddError(&stateMsg)
 				}
 				chains.UpdateFileTypeIdToAsa(&chainAsa)
-				belogs.Info("updateChainByMft(): mftId:", mftId, "   chainMft:", chainMft.FilePath, chainMft.FileName,
+				belogs.Debug("updateChainByMft(): mftId:", mftId, "   chainMft:", chainMft.FilePath, chainMft.FileName,
 					" chainAsa:", chainAsa.FilePath, chainAsa.FileName, jsonutil.MarshalJson(chainAsa.StateModel))
 			default:
 				// do nothing

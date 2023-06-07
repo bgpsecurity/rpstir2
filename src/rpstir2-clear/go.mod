@@ -1,3 +1,3 @@
 module rpstir2-clear
 
-go 1.18
+go 1.19

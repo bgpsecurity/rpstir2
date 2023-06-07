@@ -25,57 +25,75 @@ type OriginModel struct {
 
 func JudgeOrigin(filePath string) (originModel OriginModel) {
 	/*
-		ca.rg.net
-		rpki-repository.nic.ad.jp
-		rpki.rand.apnic.net
-		krill.heficed.net
-		rpki.admin.freerangecloud.com
-		rpki.ripe.net
-		repository.lacnic.net
-		rpki.afrinic.net
-		rpki.tools.westconnect.ca
-		repository.rpki.rocks
-		rpki.apnic.net
-		rpki-as0.apnic.net
-		rpkica.mckay.com
-		rpki.arin.net
-		rpkica.twnic.tw
-		rpki-ca.idnic.net
-		rpki.cnnic.cn
-		rsync.rpki.nlnetlabs.nl
-		rpki-repo.registro.br
-		rpki.qs.nu
-		repo-rpki.idnic.net
-		sakuya.nat.moe
+				ca.rg.net
+				rpki-repository.nic.ad.jp
+				rpki.rand.apnic.net
+				krill.heficed.net
+				rpki.admin.freerangecloud.com
+				rpki.ripe.net
+				repository.lacnic.net
+				rpki.afrinic.net
+				rpki.tools.westconnect.ca
+				repository.rpki.rocks
+				rpki.apnic.net
+				rpki-as0.apnic.net
+				rpkica.mckay.com
+				rpki.arin.net
+				rpkica.twnic.tw
+				rpki-ca.idnic.net
+				rpki.cnnic.cn
+				rsync.rpki.nlnetlabs.nl
+				rpki-repo.registro.br
+				rpki.qs.nu
+				repo-rpki.idnic.net
+				sakuya.nat.moe
+				ca.nat.moe  arin-rpki-ta
+				cb.rg.net    ripe-ncc-ta
+				chloe.sobornost.net           ripe-ncc-ta
+				krill-eval-ctec.charter.com  arin-rpki-ta
+				nostromo.heficed.net     ripe-ncc-ta
+				rpki.admin.freerangecloud.com   ripe-ncc-ta
+				rpki.apernet.io/repo/APERNET/1/       apnic-rpki-root-iana-origin
+				rpki.apernet.io/repo/APERNET/0/       arin-rpki-ta
+				rpki.multacom.com        arin-rpki-ta
+				rpki.xindi.eu    ripe-ncc-ta
+				rpki1.terratransit.de  ripe-ncc-ta
+				cc.rg.net  ripe-ncc-ta
+				rpki.sailx.co  arin-rpki-ta
+				rpki.luys.cloud arin-rpki-ta
+				rpki-rsync.mnihyc.com apnic-rpki-root-iana-origin
+				rrdp.twnic.tw  ORIGIN_RIR_APNIC
+				rpki.blade.sh  ORIGIN_RIR_APNIC
+				rpki1.rpki-test.sit.fraunhofer.de  ripe-ncc-ta
+				kube-ingress.as207960.net ripe-ncc-ta
+				rpki-repo.as207960.net ripe
+				rpki.dataplane.org  arin
+				rpki.august.tw
 
-		ca.nat.moe  arin-rpki-ta
-		cb.rg.net    ripe-ncc-ta
-		chloe.sobornost.net           ripe-ncc-ta
-		krill-eval-ctec.charter.com  arin-rpki-ta
-		nostromo.heficed.net     ripe-ncc-ta
-		rpki.admin.freerangecloud.com   ripe-ncc-ta
-		rpki.apernet.io/repo/APERNET/1/       apnic-rpki-root-iana-origin
-		rpki.apernet.io/repo/APERNET/0/       arin-rpki-ta
-		rpki.multacom.com        arin-rpki-ta
-		rpki.xindi.eu    ripe-ncc-ta
-		rpki1.terratransit.de  ripe-ncc-ta
-
-		cc.rg.net  ripe-ncc-ta
-		rpki.sailx.co  arin-rpki-ta
-		rpki.luys.cloud arin-rpki-ta
-		rpki-rsync.mnihyc.com apnic-rpki-root-iana-origin
+				krill.accuristechnologies.ca  arin-rpki-ta.cer
+				cloudie-repo.rpki.app/repo/CLOUDIE-RPKI/2/  arin-rpki-ta
+				cloudie-repo.rpki.app/repo/SVENS-RPKI/0/   rpki-rps.arin.net
+				cloudie-repo.rpki.app/repo/SVENS-RPKI/1/   rpki-rps.arin.net
+				rpki.pedjoeang.group     rpki-rps.arin.net
+				rpki-rsync.us-east-2.amazonaws.com   arin-rpki-ta
+				repo.kagl.me   arin-rpki-ta
+				rpki.zappiehost.com/repo/NORTHLAYER_UID_13864/0/  rpki-rps.arin.net
+				rpki.zappiehost.com/repo/NORTHLAYER_UID_13864/1/ rpki-rps.arin.net
+				rpki.zappiehost.com/repo/NORTHLAYER_UID_13864/2/
+				rpki.zappiehost.com/repo/HAZEL_UID_18860/0/  rpki-rps.arin.net
+				rpki.zappiehost.com/repo/TERITUM_UID_18858/0/ rpki-rps.arin.net
+				rpki.zappiehost.com/repo/TERITUM_UID_18858/1/
+				rpki.cc   arin-rpki-ta
 
 
-		rrdp.twnic.tw  ORIGIN_RIR_APNIC
-		rpki.blade.sh  ORIGIN_RIR_APNIC
-		rpki1.rpki-test.sit.fraunhofer.de  ripe-ncc-ta
-		kube-ingress.as207960.net ripe-ncc-ta
+		        rpki.berrybyte.network  ripe-ncc-ta
+				rpki-01.pdxnet.uk ripe-ncc-ta
+				krill.rayhaan.net  ripe-ncc-ta
+				rpki.services.vm.n1.i.bm-x0.w420.net ripe-ncc-ta
+				rpki-repository.haruue.net  ripe-ncc-ta
+				rsync.roa.tohunet.com  arin
+				rpki.folf.systems  ripe ncc
 
-
-		rpki-repo.as207960.net ripe
-		rpki.dataplane.org  arin
-
-		rpki.august.tw
 	*/
 	var rir string
 	var repo string
@@ -268,7 +286,108 @@ func JudgeOrigin(filePath string) (originModel OriginModel) {
 	} else if strings.Index(filePath, "rsync.rp.ki") > 0 {
 		rir = ORIGIN_RIR_RIPE_NCC
 		repo = "rsync.rp.ki"
+	} else if strings.Index(filePath, "rpki.as207960.net") > 0 {
+		rir = ORIGIN_RIR_RIPE_NCC
+		repo = "rpki.as207960.net"
+	} else if strings.Index(filePath, "invalid.rov.koenvanhove.nl") > 0 {
+		rir = ORIGIN_RIR_APNIC
+		repo = "invalid.rov.koenvanhove.nl"
+	} else if strings.Index(filePath, "child.rov.koenvanhove.nl") > 0 {
+		rir = ORIGIN_RIR_RIPE_NCC
+		repo = "child.rov.koenvanhove.nl"
+	} else if strings.Index(filePath, "rrdp.paas.rpki.ripe.net") > 0 {
+		rir = ORIGIN_RIR_RIPE_NCC
+		repo = "rrdp.paas.rpki.ripe.net"
+	} else if strings.Index(filePath, "parent.rov.koenvanhove.nl/repo/KoenvanHove/0/") > 0 {
+		rir = ORIGIN_RIR_RIPE_NCC
+		repo = "parent.rov.koenvanhove.nl"
+	} else if strings.Index(filePath, "parent.rov.koenvanhove.nl/repo/KoenvanHove/1/") > 0 {
+		rir = ORIGIN_RIR_APNIC
+		repo = "parent.rov.koenvanhove.nl"
+	} else if strings.Index(filePath, "cloudie-repo.rpki.app/repo/CLOUDIE-RPKI/0/") > 0 {
+		rir = ORIGIN_RIR_RIPE_NCC
+		repo = "cloudie-repo.rpki.app"
+	} else if strings.Index(filePath, "cloudie-repo.rpki.app/repo/CLOUDIE-RPKI/1/") > 0 {
+		rir = ORIGIN_RIR_ARIN
+		repo = "cloudie-repo.rpki.app"
+	} else if strings.Index(filePath, "rpki.telecentras.lt") > 0 {
+		rir = ORIGIN_RIR_RIPE_NCC
+		repo = "rpki.telecentras.lt"
+	} else if strings.Index(filePath, "rpki.zappiehost.com/repo/ZAPPIE-RPKI/1/") > 0 {
+		rir = ORIGIN_RIR_ARIN
+		repo = "rpki.zappiehost.com"
+	} else if strings.Index(filePath, "rpki.zappiehost.com/repo/ZAPPIE-RPKI/2/") > 0 {
+		rir = ORIGIN_RIR_RIPE_NCC
+		repo = "rpki.zappiehost.com"
+	} else if strings.Index(filePath, "rpki.zappiehost.com/repo/ZAPPIE-RPKI/3/ ") > 0 {
+		rir = ORIGIN_RIR_APNIC
+		repo = "rpki.zappiehost.com"
+
+	} else if strings.Index(filePath, "krill.accuristechnologies.ca") > 0 { //  arin-rpki-ta.cer
+		rir = ORIGIN_RIR_ARIN
+		repo = "krill.accuristechnologies.ca"
+	} else if strings.Index(filePath, "cloudie-repo.rpki.app/repo/CLOUDIE-RPKI/2/") > 0 {
+		rir = ORIGIN_RIR_ARIN
+		repo = "cloudie-repo.rpki.app"
+	} else if strings.Index(filePath, "cloudie-repo.rpki.app/repo/SVENS-RPKI/0/") > 0 {
+		rir = ORIGIN_RIR_ARIN
+		repo = "cloudie-repo.rpki.app"
+	} else if strings.Index(filePath, "cloudie-repo.rpki.app/repo/SVENS-RPKI/1/") > 0 {
+		rir = ORIGIN_RIR_ARIN
+		repo = "cloudie-repo.rpki.app"
+	} else if strings.Index(filePath, "rpki.pedjoeang.group") > 0 {
+		rir = ORIGIN_RIR_ARIN
+		repo = "rpki.pedjoeang.group"
+	} else if strings.Index(filePath, "rpki-rsync.us-east-2.amazonaws.com") > 0 {
+		rir = ORIGIN_RIR_ARIN
+		repo = "rpki-rsync.us-east-2.amazonaws.com"
+	} else if strings.Index(filePath, "repo.kagl.me") > 0 {
+		rir = ORIGIN_RIR_ARIN
+		repo = "repo.kagl.me"
+	} else if strings.Index(filePath, "rpki.zappiehost.com/repo/NORTHLAYER_UID_13864/0/") > 0 {
+		rir = ORIGIN_RIR_ARIN
+		repo = "rpki.zappiehost.com"
+	} else if strings.Index(filePath, "rpki.zappiehost.com/repo/NORTHLAYER_UID_13864/1/") > 0 {
+		rir = ORIGIN_RIR_ARIN
+		repo = "rpki.zappiehost.com"
+	} else if strings.Index(filePath, "rpki.zappiehost.com/repo/NORTHLAYER_UID_13864/2/") > 0 {
+		rir = ORIGIN_RIR_ARIN
+		repo = "rpki.zappiehost.com"
+	} else if strings.Index(filePath, "rpki.zappiehost.com/repo/HAZEL_UID_18860/0/") > 0 {
+		rir = ORIGIN_RIR_ARIN
+		repo = "rpki.zappiehost.com"
+	} else if strings.Index(filePath, "rpki.zappiehost.com/repo/TERITUM_UID_18858/0/") > 0 {
+		rir = ORIGIN_RIR_ARIN
+		repo = "rpki.zappiehost.com"
+	} else if strings.Index(filePath, "rpki.zappiehost.com/repo/TERITUM_UID_18858/1/") > 0 {
+		rir = ORIGIN_RIR_ARIN
+		repo = "rpki.zappiehost.com"
+	} else if strings.Index(filePath, "rpki.cc") > 0 {
+		rir = ORIGIN_RIR_ARIN
+		repo = "rpki.cc"
+	} else if strings.Index(filePath, "rpki.berrybyte.network") > 0 {
+		rir = ORIGIN_RIR_RIPE_NCC
+		repo = "rpki.berrybyte.network"
+	} else if strings.Index(filePath, "rpki-01.pdxnet.uk") > 0 {
+		rir = ORIGIN_RIR_RIPE_NCC
+		repo = "rpki-01.pdxnet.uk"
+	} else if strings.Index(filePath, "krill.rayhaan.net") > 0 {
+		rir = ORIGIN_RIR_RIPE_NCC
+		repo = "krill.rayhaan.net"
+	} else if strings.Index(filePath, "rpki.services.vm.n1.i.bm-x0.w420.net") > 0 {
+		rir = ORIGIN_RIR_RIPE_NCC
+		repo = "rpki.services.vm.n1.i.bm-x0.w420.net"
+	} else if strings.Index(filePath, "rpki-repository.haruue.net") > 0 {
+		rir = ORIGIN_RIR_RIPE_NCC
+		repo = "rpki-repository.haruue.net"
+	} else if strings.Index(filePath, "rpki.folf.systems") > 0 {
+		rir = ORIGIN_RIR_RIPE_NCC
+		repo = "rpki.folf.systems"
+	} else if strings.Index(filePath, "rsync.roa.tohunet.com") > 0 {
+		rir = ORIGIN_RIR_ARIN
+		repo = "rsync.roa.tohunet.com"
 	} else {
+		// not found rir: magellan.ipxo.io
 		rir = "unknown"
 		if strings.Index(filePath, "afrinic.net") > 0 {
 			rir = ORIGIN_RIR_AFRINIC

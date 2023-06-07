@@ -1,16 +1,15 @@
 package model
 
 import (
-	"database/sql"
 	"time"
 
 	"github.com/guregu/null"
 )
 
-//////////////////
+// ////////////////
 // CER
-//////////////////
-//lab_rpki_cer
+// ////////////////
+// lab_rpki_cer
 type LabRpkiCer struct {
 	CerModel
 
@@ -21,7 +20,7 @@ type LabRpkiCer struct {
 	UpdateTime    time.Time `json:"updateTime" xorm:"updateTime datetime"`
 }
 
-//lab_rpki_cer_ipaddress
+// lab_rpki_cer_ipaddress
 type LabRpkiCerIpaddress struct {
 	CerIpAddressModel
 
@@ -29,7 +28,7 @@ type LabRpkiCerIpaddress struct {
 	CerId uint64 `json:"cerId" xorm:"cerId int"`
 }
 
-//lab_rpki_cer_asn
+// lab_rpki_cer_asn
 type LabRpkiCerAsn struct {
 	AsnModel
 
@@ -37,7 +36,7 @@ type LabRpkiCerAsn struct {
 	CerId uint64 `json:"cerId" xorm:"cerId int"`
 }
 
-//lab_rpki_cer_sia
+// lab_rpki_cer_sia
 type LabRpkiCerSia struct {
 	SiaModel
 
@@ -45,7 +44,7 @@ type LabRpkiCerSia struct {
 	CerId uint64 `json:"cerId" xorm:"cerId int"`
 }
 
-//lab_rpki_cer_aia
+// lab_rpki_cer_aia
 type LabRpkiCerAia struct {
 	AiaModel
 
@@ -53,7 +52,7 @@ type LabRpkiCerAia struct {
 	CerId uint64 `json:"cerId" xorm:"cerId int"`
 }
 
-//lab_rpki_cer_crldp
+// lab_rpki_cer_crldp
 type LabRpkiCerCrldp struct {
 	CrldpModel
 
@@ -61,10 +60,10 @@ type LabRpkiCerCrldp struct {
 	CerId uint64 `json:"cerId" xorm:"cerId int"`
 }
 
-//////////////////
+// ////////////////
 // CRL
-//////////////////
-//lab_rpki_crl
+// ////////////////
+// lab_rpki_crl
 type LabRpkiCrl struct {
 	CrlModel
 
@@ -75,7 +74,7 @@ type LabRpkiCrl struct {
 	UpdateTime    time.Time `json:"updateTime" xorm:"updateTime datetime"`
 }
 
-//lab_rpki_crl_revoked_cert
+// lab_rpki_crl_revoked_cert
 type LabRpkiCrlRevokedCert struct {
 	RevokedCertModel
 
@@ -83,10 +82,10 @@ type LabRpkiCrlRevokedCert struct {
 	CrlId uint64 `json:"crlId" xorm:"crlId int"`
 }
 
-//////////////////
+// ////////////////
 // MFT
-//////////////////
-//lab_rpki_Mft
+// ////////////////
+// lab_rpki_Mft
 type LabRpkiMft struct {
 	MftModel
 
@@ -97,7 +96,7 @@ type LabRpkiMft struct {
 	UpdateTime    time.Time `json:"updateTime" xorm:"updateTime datetime"`
 }
 
-//lab_rpki_mft_sia
+// lab_rpki_mft_sia
 type LabRpkiMftSia struct {
 	SiaModel
 
@@ -105,7 +104,7 @@ type LabRpkiMftSia struct {
 	MftId uint64 `json:"mftId" xorm:"mftId  int"`
 }
 
-//lab_rpki_mft_aia
+// lab_rpki_mft_aia
 type LabRpkiMftAia struct {
 	AiaModel
 
@@ -113,7 +112,7 @@ type LabRpkiMftAia struct {
 	MftId uint64 `json:"mftId" xorm:"mftId  int"`
 }
 
-//lab_rpki_mft_file_hash struct
+// lab_rpki_mft_file_hash struct
 type LabRpkiMftFileHash struct {
 	FileHashModel
 
@@ -121,10 +120,10 @@ type LabRpkiMftFileHash struct {
 	MftId uint64 `json:"mftId" xorm:"mftId  int"`
 }
 
-//////////////////
+// ////////////////
 // ROA
-//////////////////
-//lab_rpki_roa
+// ////////////////
+// lab_rpki_roa
 type LabRpkiRoa struct {
 	RoaModel
 
@@ -134,7 +133,7 @@ type LabRpkiRoa struct {
 	UpdateTime time.Time `json:"updateTime" xorm:"updateTime datetime"`
 }
 
-//lab_rpki_roa_sia
+// lab_rpki_roa_sia
 type LabRpkiRoaSia struct {
 	SiaModel
 
@@ -142,7 +141,7 @@ type LabRpkiRoaSia struct {
 	RoaId uint64 `json:"roaId" xorm:"roaId int"`
 }
 
-//lab_rpki_roa_aiastruct
+// lab_rpki_roa_aiastruct
 type LabRpkiRoaAia struct {
 	AiaModel
 
@@ -150,7 +149,7 @@ type LabRpkiRoaAia struct {
 	RoaId uint64 `json:"roaId" xorm:"roaId int"`
 }
 
-//lab_rpki_roa_ipaddress
+// lab_rpki_roa_ipaddress
 type LabRpkiRoaIpaddress struct {
 	RoaIpAddressModel
 
@@ -190,7 +189,7 @@ type LabRpkiSyncLog struct {
 type SyncLogFile struct {
 	Id        uint64 `json:"id" xorm:"pk autoincr"`
 	SyncLogId uint64 `json:"syncLogId" xorm:"syncLogId int"`
-	//cer/roa/mft/crl, not dot
+	//cer/roa/mft/crl/asa, not dot
 	FileType string `json:"fileType" xorm:"fileType varchar(16)"`
 	//sync time for every file
 	SyncTime  time.Time `json:"syncTime" xorm:"syncTime datetime"`
@@ -216,17 +215,17 @@ type SyncLogFileState struct {
 	Rtr string `json:"rtr"`
 }
 
-//////////////////
+// ////////////////
 // RTR
-//////////////////
-//lab_rpki_rtr_session
+// ////////////////
+// lab_rpki_rtr_session
 type LabRpkiRtrSession struct {
 	//sessionId, after init will not change'
 	SessionId  uint64    `json:"sessionId" xorm:"sessionId  int"`
 	CreateTime time.Time `json:"createTime" xorm:"createTime datetime"`
 }
 
-//lab_rpki_rtr_full
+// lab_rpki_rtr_full
 type LabRpkiRtrFull struct {
 	Id           uint64 `json:"id" xorm:"id int"`
 	SerialNumber uint64 `json:"serialNumber" xorm:"serialNumber bigint"`
@@ -239,7 +238,7 @@ type LabRpkiRtrFull struct {
 	SourceFrom string `json:"sourceFrom" xorm:"sourceFrom json"`
 }
 
-//lab_rpki_rtr_full_log
+// lab_rpki_rtr_full_log
 type LabRpkiRtrFullLog struct {
 	Id           uint64 `json:"id" xorm:"id int"`
 	SerialNumber uint64 `json:"serialNumber" xorm:"serialNumber bigint"`
@@ -262,7 +261,7 @@ type RoaToRtrFullLog struct {
 	SyncLogFileId uint64 `json:"syncLogFileId" xorm:"syncLogFileId int"`
 }
 
-//lab_rpki_rtr_incremental
+// lab_rpki_rtr_incremental
 type LabRpkiRtrIncremental struct {
 	Id           uint64 `json:"id" xorm:"id int"`
 	SerialNumber uint64 `json:"serialNumber" xorm:"serialNumber bigint"`
@@ -277,35 +276,43 @@ type LabRpkiRtrIncremental struct {
 	SourceFrom string `json:"sourceFrom" xorm:"sourceFrom json"`
 }
 
-//lab_rpki_rtr_asa_full
+// lab_rpki_rtr_asa_full
 type LabRpkiRtrAsaFull struct {
 	Id            uint64   `json:"id" xorm:"id int"`
 	SerialNumber  uint64   `json:"serialNumber" xorm:"serialNumber int"`
-	AddressFamily null.Int `json:"addressFamily" xorm:"addressFamily int"`
 	CustomerAsn   uint64   `json:"customerAsn" xorm:"customerAsn int"`
-	ProviderAsns  string   `json:"providerAsns" xorm:"providerAsns varchar"`
+	ProviderAsn   uint64   `json:"providerAsn" xorm:"providerAsn int"`
+	AddressFamily null.Int `json:"addressFamily" xorm:"addressFamily int"`
+	SourceFrom    string   `json:"sourceFrom" xorm:"sourceFrom json"`
+}
+
+type LabRpkiRtrAsaFullLog struct {
+	Id            uint64   `json:"id" xorm:"id int"`
+	SerialNumber  uint64   `json:"serialNumber" xorm:"serialNumber int"`
+	CustomerAsn   uint64   `json:"customerAsn" xorm:"customerAsn int"`
+	ProviderAsn   uint64   `json:"providerAsn" xorm:"providerAsn int"`
+	AddressFamily null.Int `json:"addressFamily" xorm:"addressFamily int"`
 	SourceFrom    string   `json:"sourceFrom" xorm:"sourceFrom json"`
 }
 
 type AsaToRtrFullLog struct {
 	AsaId         uint64   `json:"roaId" xorm:"roaId int"`
-	AddressFamily null.Int `json:"addressFamily" xorm:"addressFamily int"`
 	CustomerAsn   uint64   `json:"customerAsn" xorm:"customerAsn int"`
-	//'[{"providerAsn":65000},{"providerAsn":65001},{"providerAsn":65002}]'
-	ProviderAsns  []ProviderAsn `json:"providerAsns" xorm:"providerAsns varchar"`
-	SyncLogId     uint64        `json:"syncLogId" xorm:"syncLogId int"`
-	SyncLogFileId uint64        `json:"syncLogFileId" xorm:"syncLogFileId int"`
+	ProviderAsn   uint64   `json:"providerAsn" xorm:"providerAsn int"`
+	AddressFamily null.Int `json:"addressFamily" xorm:"addressFamily int"`
+	SyncLogId     uint64   `json:"syncLogId" xorm:"syncLogId int"`
+	SyncLogFileId uint64   `json:"syncLogFileId" xorm:"syncLogFileId int"`
 }
 
-//lab_rpki_rtr_asa_incremental
+// lab_rpki_rtr_asa_incremental
 type LabRpkiRtrAsaIncremental struct {
 	Id           uint64 `json:"id" xorm:"id int"`
 	SerialNumber uint64 `json:"serialNumber" xorm:"serialNumber bigint"`
 	//announce/withdraw, is 1/0 in protocol
 	Style         string   `json:"style" xorm:"style varchar(16)"`
-	AddressFamily null.Int `json:"addressFamily" xorm:"addressFamily int"`
 	CustomerAsn   uint64   `json:"customerAsn" xorm:"customerAsn int"`
-	ProviderAsns  string   `json:"providerAsns" xorm:"providerAsns varchar"`
+	ProviderAsn   uint64   `json:"providerAsn" xorm:"providerAsn int"`
+	AddressFamily null.Int `json:"addressFamily" xorm:"addressFamily int"`
 	//'come from : {souce:sync/slurm/transfer,syncLogId/syncLogFileId/slurmId/slurmFileId/transferLogId}',
 	SourceFrom string `json:"sourceFrom" xorm:"sourceFrom json"`
 }
@@ -325,35 +332,28 @@ type LabRpkiRtrSourceFrom struct {
 //  SLURM
 //////////////////
 
-// because asn may be nil or be 0, so using  sql.NullInt64
 type SlurmToRtrFullLog struct {
-	Id             uint64        `json:"id" xorm:"id int"`
-	Style          string        `json:"style" xorm:"style varchar(128)"`
-	Asn            sql.NullInt64 `json:"asn" xorm:"asn int"`
-	Address        string        `json:"address" xorm:"address varchar(256)"`
-	PrefixLength   uint64        `json:"prefixLength" xorm:"prefixLength int"`
-	MaxLength      uint64        `json:"maxLength" xorm:"maxLength int"`
-	SlurmId        uint64        `json:"slurmId" xorm:"slurmId int"`
-	SlurmLogId     uint64        `json:"slurmLogId" xorm:"slurmLogId int"`
-	SlurmLogFileId uint64        `json:"slurmLogFileId" xorm:"slurmLogFileId int"`
+	Id    uint64 `json:"id" xorm:"id int"`
+	Style string `json:"style" xorm:"style varchar(128)"`
+
+	Asn          null.Int `json:"asn" xorm:"asn int"`
+	Address      string   `json:"address" xorm:"address varchar(256)"`
+	PrefixLength uint64   `json:"prefixLength" xorm:"prefixLength int"`
+	MaxLength    uint64   `json:"maxLength" xorm:"maxLength int"`
+
+	CustomerAsn   null.Int `json:"customerAsn" xorm:"customerAsn int"`
+	ProviderAsn   null.Int `json:"providerAsn" xorm:"providerAsn int"`
+	AddressFamily string   `json:"addressFamily" xorm:"addressFamily varchar(16)"`
+
+	SlurmId        uint64 `json:"slurmId" xorm:"slurmId int"`
+	SlurmLogId     uint64 `json:"slurmLogId" xorm:"slurmLogId int"`
+	SlurmLogFileId uint64 `json:"slurmLogFileId" xorm:"slurmLogFileId int"`
+	SourceFromJson string `json:"sourceFromJson" xorm:"sourceFromJson json"`
 }
 
-type EffectSlurmToRtrFullLog struct {
-	Id             uint64        `json:"id" xorm:"id int"`
-	Style          string        `json:"style" xorm:"style varchar(128)"`
-	Asn            sql.NullInt64 `json:"asn" xorm:"asn int"`
-	Address        string        `json:"address" xorm:"address varchar(256)"`
-	PrefixLength   uint64        `json:"prefixLength" xorm:"prefixLength int"`
-	MaxLength      uint64        `json:"maxLength" xorm:"maxLength int"`
-	SlurmId        uint64        `json:"slurmId" xorm:"slurmId int"`
-	SlurmLogId     uint64        `json:"slurmLogId" xorm:"slurmLogId int"`
-	SlurmLogFileId uint64        `json:"slurmLogFileId" xorm:"slurmLogFileId int"`
-	SourceFromJson string        `json:"sourceFromJson" xorm:"sourceFromJson json"`
-}
-
-////////////////////////////////////
+// //////////////////////////////////
 // rrdp
-///////////////////////////////////
+// /////////////////////////////////
 type LabRpkiSyncRrdpLog struct {
 	Id         uint64    `json:"id" xorm:"id int"`
 	SyncLogId  uint64    `json:"syncLogId" xorm:"syncLogId int"`

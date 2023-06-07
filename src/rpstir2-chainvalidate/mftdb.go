@@ -4,12 +4,11 @@ import (
 	"sync"
 	"time"
 
-	model "rpstir2-model"
-
 	"github.com/cpusoft/goutil/belogs"
 	"github.com/cpusoft/goutil/convert"
 	"github.com/cpusoft/goutil/jsonutil"
 	"github.com/cpusoft/goutil/xormdb"
+	model "rpstir2-model"
 	"xorm.io/xorm"
 )
 
@@ -72,7 +71,7 @@ func GetPreviousMftDb(mftId uint64) (previousMft PreviousMft, err error) {
 		return previousMft, err
 	}
 	previousMft.Found = found
-	belogs.Info("GetPreviousMftDb():mftId:", mftId, "   previousMft:", previousMft,
+	belogs.Debug("GetPreviousMftDb():mftId:", mftId, "   previousMft:", previousMft,
 		"  time(s):", time.Since(start)) //shaodebug
 	return previousMft, nil
 }
