@@ -14,9 +14,12 @@ type SyncLogFileModel struct {
 	CertModel  interface{}      `json:"-"`
 	StateModel model.StateModel `json:"-"`
 
-	//cerId / mftId / roaId / crlId
+	//cerId / mftId / roaId / crlId / asaId
 	CertId uint64 `json:"certId" xorm:"certId int"`
+	// db.rows index
+	Index uint64 `json:"index"`
 }
+
 type SyncLogFileModels struct {
 	SyncLogId                  uint64             `json:"syncLogId"`
 	UpdateCerSyncLogFileModels []SyncLogFileModel `json:"updateCerSyncLogFileModels"`

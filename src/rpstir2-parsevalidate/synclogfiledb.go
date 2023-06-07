@@ -31,7 +31,6 @@ func getSyncLogFileModelsBySyncLogIdDb(labRpkiSyncLogId uint64) (syncLogFileMode
 	syncLogFileModels = NewSyncLogFileModels(labRpkiSyncLogId, dbSyncLogFileModels)
 	belogs.Info("getSyncLogFileModelsBySyncLogIdDb(): end, len(dbSyncLogFileModels),  time(s):", len(dbSyncLogFileModels), time.Since(start))
 	return syncLogFileModels, nil
-
 }
 
 func updateSyncLogFilesJsonAllAndStateDb(session *xorm.Session, syncLogFileModels []SyncLogFileModel) error {

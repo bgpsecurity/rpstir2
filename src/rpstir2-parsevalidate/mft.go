@@ -7,10 +7,6 @@ import (
 	"strings"
 	"time"
 
-	model "rpstir2-model"
-	openssl "rpstir2-parsevalidate-openssl"
-	packet "rpstir2-parsevalidate-packet"
-
 	"github.com/cpusoft/goutil/asn1util"
 	"github.com/cpusoft/goutil/belogs"
 	"github.com/cpusoft/goutil/conf"
@@ -21,6 +17,9 @@ import (
 	"github.com/cpusoft/goutil/opensslutil"
 	"github.com/cpusoft/goutil/osutil"
 	"github.com/cpusoft/goutil/regexputil"
+	model "rpstir2-model"
+	openssl "rpstir2-parsevalidate-openssl"
+	packet "rpstir2-parsevalidate-packet"
 )
 
 //Try to store the error in statemode instead of returning err

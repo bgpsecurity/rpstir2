@@ -1,15 +1,15 @@
 package parsevalidate
 
 import (
+	"errors"
 	"sync"
 	"time"
-
-	model "rpstir2-model"
 
 	"github.com/cpusoft/goutil/belogs"
 	"github.com/cpusoft/goutil/convert"
 	"github.com/cpusoft/goutil/jsonutil"
 	"github.com/cpusoft/goutil/xormdb"
+	model "rpstir2-model"
 	"xorm.io/xorm"
 )
 
@@ -45,6 +45,35 @@ func addMftsDb(syncLogFileModels []SyncLogFileModel) error {
 		return err
 	}
 	belogs.Info("addMftsDb(): len(syncLogFileModels):", len(syncLogFileModels), "  time(s):", time.Since(start))
+	return nil
+}
+
+func addMftDb(syncLogFileModel *SyncLogFileModel) (err error) {
+	start := time.Now()
+	belogs.Debug("addMftDb(): will add mft file:", syncLogFileModel.FilePath, syncLogFileModel.FileName,
+		"  fileType:", syncLogFileModel.FileType)
+
+	session, err := xormdb.NewSession()
+	defer session.Close()
+
+	err = insertMftDb(session, syncLogFileModel, start)
+	if err != nil {
+		belogs.Error("addMftDb(): insertMftDb fail, syncLogFileModel:", jsonutil.MarshalJson(syncLogFileModel), err)
+		return xormdb.RollbackAndLogError(session, "addMftDb(): insertMftDb fail, syncLogFileModel:"+jsonutil.MarshalJson(syncLogFileModel), err)
+	}
+
+	err = updateSyncLogFileJsonAllAndStateDb(session, syncLogFileModel)
+	if err != nil {
+		belogs.Error("addMftDb(): updateSyncLogFileJsonAllAndStateDb fail, syncLogFileModel:", jsonutil.MarshalJson(syncLogFileModel), err)
+		return xormdb.RollbackAndLogError(session, "addMftDb(): updateSyncLogFileJsonAllAndStateDb fail, syncLogFileModel:"+jsonutil.MarshalJson(syncLogFileModel), err)
+	}
+
+	err = xormdb.CommitSession(session)
+	if err != nil {
+		belogs.Error("addMftDb(): CommitSession fail :", err)
+		return err
+	}
+	belogs.Info("addMftDb(): mft file:", syncLogFileModel.FilePath, syncLogFileModel.FileName, "  time(s):", time.Since(start))
 	return nil
 }
 
@@ -84,13 +113,44 @@ func delMftsDb(delSyncLogFileModels []SyncLogFileModel, updateSyncLogFileModels 
 	return nil
 }
 
+func delMftDb(syncLogFileModel *SyncLogFileModel) (err error) {
+	start := time.Now()
+	belogs.Debug("delMftDb(): will del mft file:", syncLogFileModel.FilePath, syncLogFileModel.FileName)
+
+	session, err := xormdb.NewSession()
+	defer session.Close()
+
+	err = delMftByIdDb(session, syncLogFileModel.CertId)
+	if err != nil {
+		belogs.Error("delMftDb(): delMftByIdDb fail, syncLogFileModel:", jsonutil.MarshalJson(syncLogFileModel), err)
+		return xormdb.RollbackAndLogError(session, "delMftDb(): delMftByIdDb fail, syncLogFileModel:"+jsonutil.MarshalJson(syncLogFileModel), err)
+	}
+	// only del,will update syncLogFile.
+	// when is add/update, will update syncLogFile in addAsaDb()
+	if syncLogFileModel.SyncType == "del" {
+		err = updateSyncLogFileJsonAllAndStateDb(session, syncLogFileModel)
+		if err != nil {
+			belogs.Error("delMftDb(): updateSyncLogFileJsonAllAndStateDb fail, syncLogFileModel:", jsonutil.MarshalJson(syncLogFileModel), err)
+			return xormdb.RollbackAndLogError(session, "delMftDb(): updateSyncLogFileJsonAllAndStateDb fail, syncLogFileModel:"+jsonutil.MarshalJson(syncLogFileModel), err)
+		}
+	}
+	err = xormdb.CommitSession(session)
+	if err != nil {
+		belogs.Error("delMftDb(): CommitSession fail :", err)
+		return err
+	}
+	belogs.Info("delMftDb(): mft file:", syncLogFileModel.FilePath, syncLogFileModel.FileName, "  time(s):", time.Since(start))
+	return nil
+}
+
 func delMftByIdDb(session *xorm.Session, mftId uint64) (err error) {
-	belogs.Info("delMftByIdDb():delete lab_rpki_mft by mftId:", mftId)
+	belogs.Debug("delMftByIdDb():delete lab_rpki_mft by mftId:", mftId)
 
 	// rrdp may have id==0, just return nil
 	if mftId <= 0 {
 		return nil
 	}
+	belogs.Info("delMftByIdDb():delete lab_rpki_mft by mftId, more than 0:", mftId)
 
 	//lab_rpki_mft_file_hash
 	res, err := session.Exec("delete from lab_rpki_mft_file_hash  where mftId = ?", mftId)
@@ -135,7 +195,12 @@ func delMftByIdDb(session *xorm.Session, mftId uint64) (err error) {
 func insertMftDb(session *xorm.Session,
 	syncLogFileModel *SyncLogFileModel, now time.Time) error {
 
-	mftModel := syncLogFileModel.CertModel.(model.MftModel)
+	mftModel, ok := syncLogFileModel.CertModel.(model.MftModel)
+	if !ok {
+		belogs.Error("insertMftDb(): is not mftModel, syncLogFileModel:", jsonutil.MarshalJson(syncLogFileModel))
+		return errors.New("CertModel is not mftModel type")
+	}
+
 	thisUpdate := mftModel.ThisUpdate
 	nextUpdate := mftModel.NextUpdate
 	belogs.Debug("insertMftDb():now ", now, "  thisUpdate:", thisUpdate, "  nextUpdate:", nextUpdate, "    mftModel:", jsonutil.MarshalJson(mftModel))

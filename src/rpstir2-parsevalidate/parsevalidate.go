@@ -6,13 +6,12 @@ import (
 	"sync"
 	"time"
 
-	model "rpstir2-model"
-
 	"github.com/cpusoft/goutil/belogs"
 	"github.com/cpusoft/goutil/conf"
 	"github.com/cpusoft/goutil/jsonutil"
 	"github.com/cpusoft/goutil/osutil"
 	"golang.org/x/sync/errgroup"
+	model "rpstir2-model"
 )
 
 // ParseValidateStart: start
@@ -222,7 +221,7 @@ func parseValidateCert(syncLogFileModel *SyncLogFileModel,
 	belogs.Debug("parseValidateCert(): file :", file)
 	_, certModel, stateModel, err := parseValidateFile(file)
 	if err != nil {
-		belogs.Error("parseValidateCer(): parseValidateFile fail: ", file, err)
+		belogs.Error("parseValidateCert(): parseValidateFile fail: ", file, err)
 		return file, err
 	}
 	syncLogFileModel.CertModel = certModel

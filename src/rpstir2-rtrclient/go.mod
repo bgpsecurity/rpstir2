@@ -1,3 +1,3 @@
 module rpstir2-rtrclient
 
-go 1.18
+go 1.19

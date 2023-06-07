@@ -1,14 +1,14 @@
 package parsevalidate
 
 import (
+	"errors"
 	"sync"
 	"time"
-
-	model "rpstir2-model"
 
 	"github.com/cpusoft/goutil/belogs"
 	"github.com/cpusoft/goutil/jsonutil"
 	"github.com/cpusoft/goutil/xormdb"
+	model "rpstir2-model"
 	"xorm.io/xorm"
 )
 
@@ -44,6 +44,35 @@ func addRoasDb(syncLogFileModels []SyncLogFileModel) error {
 		return err
 	}
 	belogs.Info("addRoasDb(): len(syncLogFileModels):", len(syncLogFileModels), "  time(s):", time.Since(start))
+	return nil
+}
+
+func addRoaDb(syncLogFileModel *SyncLogFileModel) (err error) {
+	start := time.Now()
+	belogs.Debug("addRoaDb(): will add roa file:", syncLogFileModel.FilePath, syncLogFileModel.FileName,
+		"  fileType:", syncLogFileModel.FileType)
+
+	session, err := xormdb.NewSession()
+	defer session.Close()
+
+	err = insertRoaDb(session, syncLogFileModel, start)
+	if err != nil {
+		belogs.Error("addRoaDb(): insertRoaDb fail, syncLogFileModel:", jsonutil.MarshalJson(syncLogFileModel), err)
+		return xormdb.RollbackAndLogError(session, "addRoaDb(): insertRoaDb fail, syncLogFileModel:"+jsonutil.MarshalJson(syncLogFileModel), err)
+	}
+
+	err = updateSyncLogFileJsonAllAndStateDb(session, syncLogFileModel)
+	if err != nil {
+		belogs.Error("addRoaDb(): updateSyncLogFileJsonAllAndStateDb fail, syncLogFileModel:", jsonutil.MarshalJson(syncLogFileModel), err)
+		return xormdb.RollbackAndLogError(session, "addRoaDb(): updateSyncLogFileJsonAllAndStateDb fail, syncLogFileModel:"+jsonutil.MarshalJson(syncLogFileModel), err)
+	}
+
+	err = xormdb.CommitSession(session)
+	if err != nil {
+		belogs.Error("addRoaDb(): CommitSession fail :", err)
+		return err
+	}
+	belogs.Info("addRoaDb(): roa file:", syncLogFileModel.FilePath, syncLogFileModel.FileName, "  time(s):", time.Since(start))
 	return nil
 }
 
@@ -85,6 +114,35 @@ func delRoasDb(delSyncLogFileModels []SyncLogFileModel, updateSyncLogFileModels 
 	return nil
 }
 
+func delRoaDb(syncLogFileModel *SyncLogFileModel) (err error) {
+	start := time.Now()
+	belogs.Debug("delRoaDb(): will del roa file:", syncLogFileModel.FilePath, syncLogFileModel.FileName)
+
+	session, err := xormdb.NewSession()
+	defer session.Close()
+
+	err = delRoaByIdDb(session, syncLogFileModel.CertId)
+	if err != nil {
+		belogs.Error("delRoaDb(): delRoaByIdDb fail, syncLogFileModel:", jsonutil.MarshalJson(syncLogFileModel), err)
+		return xormdb.RollbackAndLogError(session, "delRoaDb(): delRoaByIdDb fail, syncLogFileModel:"+jsonutil.MarshalJson(syncLogFileModel), err)
+	}
+	// only del,will update syncLogFile.
+	// when is add/update, will update syncLogFile in addAsaDb()
+	if syncLogFileModel.SyncType == "del" {
+		err = updateSyncLogFileJsonAllAndStateDb(session, syncLogFileModel)
+		if err != nil {
+			belogs.Error("delRoaDb(): updateSyncLogFileJsonAllAndStateDb fail, syncLogFileModel:", jsonutil.MarshalJson(syncLogFileModel), err)
+			return xormdb.RollbackAndLogError(session, "delRoaDb(): updateSyncLogFileJsonAllAndStateDb fail, syncLogFileModel:"+jsonutil.MarshalJson(syncLogFileModel), err)
+		}
+	}
+	err = xormdb.CommitSession(session)
+	if err != nil {
+		belogs.Error("delRoaDb(): CommitSession fail :", err)
+		return err
+	}
+	belogs.Info("delRoaDb(): roa file:", syncLogFileModel.FilePath, syncLogFileModel.FileName, "  time(s):", time.Since(start))
+	return nil
+}
 func delRoaByIdDb(session *xorm.Session, roaId uint64) (err error) {
 
 	belogs.Debug("delRoaByIdDb():delete lab_rpki_roa by roaId:", roaId)
@@ -145,7 +203,12 @@ func delRoaByIdDb(session *xorm.Session, roaId uint64) (err error) {
 func insertRoaDb(session *xorm.Session,
 	syncLogFileModel *SyncLogFileModel, now time.Time) error {
 
-	roaModel := syncLogFileModel.CertModel.(model.RoaModel)
+	roaModel, ok := syncLogFileModel.CertModel.(model.RoaModel)
+	if !ok {
+		belogs.Error("insertRoaDb(): is not roaModel, syncLogFileModel:", jsonutil.MarshalJson(syncLogFileModel))
+		return errors.New("CertModel is not roaModel type")
+	}
+
 	//lab_rpki_roa
 	sqlStr := `INSERT lab_rpki_roa(
 	                asn,  ski, aki, filePath,fileName, 
