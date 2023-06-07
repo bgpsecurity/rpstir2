@@ -3,27 +3,26 @@ package rrdp
 import (
 	"time"
 
-	model "rpstir2-model"
-	"rpstir2-sync-core/sync"
-
 	"github.com/cpusoft/goutil/belogs"
 	"github.com/cpusoft/goutil/jsonutil"
 	"github.com/cpusoft/goutil/rrdputil"
 	"github.com/cpusoft/goutil/xormdb"
+	model "rpstir2-model"
+	"rpstir2-sync-core/sync"
 )
 
 // repoHostPath, is nic dest path, eg: /root/rpki/data/reporrdp/rpki.apnic.cn/
-func UpdateRrdpSnapshot(syncLogId uint64, notificationModel *rrdputil.NotificationModel,
+func updateRrdpSnapshotDb(syncLogId uint64, notificationModel *rrdputil.NotificationModel,
 	snapshotModel *rrdputil.SnapshotModel, snapshotDeltaResult *SnapshotDeltaResult,
 	syncLogFilesCh chan []model.SyncLogFile) (err error) {
 
-	belogs.Debug("UpdateRrdpSnapshot():syncLogId:", syncLogId,
+	belogs.Debug("updateRrdpSnapshotDb():syncLogId:", syncLogId,
 		"    snapshotDeltaResult:", jsonutil.MarshalJson(snapshotDeltaResult))
 
 	// del cer/crl/mft/roa
 	err = sync.DelByFilePathDb(snapshotDeltaResult.RepoHostPath)
 	if err != nil {
-		belogs.Error("UpdateRrdpSnapshot():delLastRrdpSnapshot fail, repoHostPath:", snapshotDeltaResult.RepoHostPath, err)
+		belogs.Error("updateRrdpSnapshotDb():delLastRrdpSnapshot fail, repoHostPath:", snapshotDeltaResult.RepoHostPath, err)
 		return err
 	}
 
@@ -34,19 +33,19 @@ func UpdateRrdpSnapshot(syncLogId uint64, notificationModel *rrdputil.Notificati
 		syncLogFile, err := ConvertToSyncLogFile(
 			syncLogId, rrdpTime, &rrdpFile)
 		if err != nil {
-			belogs.Error("UpdateRrdpSnapshot():ConvertToSyncLogFile fail, rrdpFile:", jsonutil.MarshalJson(rrdpFile), err)
+			belogs.Error("updateRrdpSnapshotDb():ConvertToSyncLogFile fail, rrdpFile:", jsonutil.MarshalJson(rrdpFile), err)
 			return err
 		}
 		syncLogFiles = append(syncLogFiles, syncLogFile)
 	}
 
-	belogs.Debug("UpdateRrdpSnapshot():rrdp, len(syncLogFiles):", len(syncLogFiles),
+	belogs.Debug("updateRrdpSnapshotDb():rrdp, len(syncLogFiles):", len(syncLogFiles),
 		"  len(rrdpFile):", len(snapshotDeltaResult.RrdpFiles))
 	if syncLogFilesCh != nil {
-		belogs.Debug("UpdateRrdpSnapshot():rrdp len(syncLogFiles) -> syncLogFilesCh:", len(syncLogFiles))
+		belogs.Debug("updateRrdpSnapshotDb():rrdp len(syncLogFiles) -> syncLogFilesCh:", len(syncLogFiles))
 		syncLogFilesCh <- syncLogFiles
 	} else {
-		belogs.Debug("UpdateRrdpSnapshot():rrdp InsertSyncLogFilesDb():", len(syncLogFiles))
+		belogs.Debug("updateRrdpSnapshotDb():rrdp InsertSyncLogFilesDb():", len(syncLogFiles))
 		sync.InsertSyncLogFilesDb(syncLogFiles)
 	}
 	// delete in cer/crl/mft/roa table
@@ -58,24 +57,24 @@ func UpdateRrdpSnapshot(syncLogId uint64, notificationModel *rrdputil.Notificati
 	snapshotDeltaResult.RrdpType = "snapshot"
 	snapshotDeltaResult.RrdpTime = rrdpTime
 	snapshotDeltaResult.SnapshotOrDeltaUrl = snapshotModel.SnapshotUrl
-	err = InsertSyncRrdpLog(session, syncLogId, snapshotDeltaResult)
+	err = insertSyncRrdpLogDb(session, syncLogId, snapshotDeltaResult)
 	if err != nil {
-		belogs.Error("UpdateRrdpSnapshot():InsertSyncRrdpLog fail, syncLogId, notifyUrl:",
+		belogs.Error("updateRrdpSnapshotDb():insertSyncRrdpLogDb fail, syncLogId, notifyUrl:",
 			syncLogId, snapshotDeltaResult.NotifyUrl, err)
-		return xormdb.RollbackAndLogError(session, "UpdateRrdpSnapshot(): CommitSession fail:", err)
+		return xormdb.RollbackAndLogError(session, "updateRrdpSnapshotDb(): CommitSession fail:", err)
 	}
 
 	err = xormdb.CommitSession(session)
 	if err != nil {
-		return xormdb.RollbackAndLogError(session, "UpdateRrdpSnapshot(): CommitSession fail:", err)
+		return xormdb.RollbackAndLogError(session, "updateRrdpSnapshotDb(): CommitSession fail:", err)
 	}
 	return nil
 }
 
 //
-func UpdateRrdpDelta(syncLogId uint64, deltaModels []rrdputil.DeltaModel,
+func updateRrdpDeltaDb(syncLogId uint64, deltaModels []rrdputil.DeltaModel,
 	snapshotDeltaResult *SnapshotDeltaResult, syncLogFilesCh chan []model.SyncLogFile) (err error) {
-	belogs.Debug("UpdateRrdpDelta():syncLogId :", syncLogId, "    snapshotDeltaResult:", jsonutil.MarshalJson(snapshotDeltaResult))
+	belogs.Debug("updateRrdpDeltaDb():syncLogId :", syncLogId, "    snapshotDeltaResult:", jsonutil.MarshalJson(snapshotDeltaResult))
 
 	// insert synclog
 	rrdpTime := time.Now()
@@ -84,18 +83,18 @@ func UpdateRrdpDelta(syncLogId uint64, deltaModels []rrdputil.DeltaModel,
 		syncLogFile, err := ConvertToSyncLogFile(
 			syncLogId, rrdpTime, &rrdpFile)
 		if err != nil {
-			belogs.Error("UpdateRrdpDelta():ConvertToSyncLogFile fail, rrdpFile:", jsonutil.MarshalJson(rrdpFile), err)
+			belogs.Error("updateRrdpDeltaDb():ConvertToSyncLogFile fail, rrdpFile:", jsonutil.MarshalJson(rrdpFile), err)
 			return err
 		}
 		syncLogFiles = append(syncLogFiles, syncLogFile)
 	}
-	belogs.Debug("UpdateRrdpDelta():rrdp, len(syncLogFiles):", len(syncLogFiles),
+	belogs.Debug("updateRrdpDeltaDb():rrdp, len(syncLogFiles):", len(syncLogFiles),
 		"  len(rrdpFile):", len(snapshotDeltaResult.RrdpFiles))
 	if syncLogFilesCh != nil {
-		belogs.Debug("UpdateRrdpDelta():rrdp len(syncLogFiles) -> syncLogFilesCh:", len(syncLogFiles))
+		belogs.Debug("updateRrdpDeltaDb():rrdp len(syncLogFiles) -> syncLogFilesCh:", len(syncLogFiles))
 		syncLogFilesCh <- syncLogFiles
 	} else {
-		belogs.Debug("UpdateRrdpDelta():rrdp InsertSyncLogFilesDb():", len(syncLogFiles))
+		belogs.Debug("updateRrdpDeltaDb():rrdp InsertSyncLogFilesDb():", len(syncLogFiles))
 		sync.InsertSyncLogFilesDb(syncLogFiles)
 	}
 
@@ -109,16 +108,16 @@ func UpdateRrdpDelta(syncLogId uint64, deltaModels []rrdputil.DeltaModel,
 		snapshotDeltaResult.RrdpType = "delta"
 		snapshotDeltaResult.RrdpTime = rrdpTime
 		snapshotDeltaResult.SnapshotOrDeltaUrl = deltaModels[i].DeltaUrl
-		err = InsertSyncRrdpLog(session, syncLogId, snapshotDeltaResult)
+		err = insertSyncRrdpLogDb(session, syncLogId, snapshotDeltaResult)
 		if err != nil {
-			belogs.Error("UpdateRrdpDelta():InsertSyncRrdpLog fail, syncLogId, notifyUrl:",
+			belogs.Error("updateRrdpDeltaDb():insertSyncRrdpLogDb fail, syncLogId, notifyUrl:",
 				syncLogId, snapshotDeltaResult.NotifyUrl, err)
-			return xormdb.RollbackAndLogError(session, "UpdateRrdpSnapshot(): CommitSession fail:", err)
+			return xormdb.RollbackAndLogError(session, "updateRrdpSnapshotDb(): CommitSession fail:", err)
 		}
 	}
 	err = xormdb.CommitSession(session)
 	if err != nil {
-		return xormdb.RollbackAndLogError(session, "UpdateRrdpDelta(): CommitSession fail:", err)
+		return xormdb.RollbackAndLogError(session, "updateRrdpDeltaDb(): CommitSession fail:", err)
 	}
 	return nil
 }

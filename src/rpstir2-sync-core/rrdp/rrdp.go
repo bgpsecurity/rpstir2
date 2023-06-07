@@ -3,13 +3,12 @@ package rrdp
 import (
 	"time"
 
-	model "rpstir2-model"
-
 	"github.com/cpusoft/goutil/belogs"
 	"github.com/cpusoft/goutil/hashutil"
 	"github.com/cpusoft/goutil/jsonutil"
 	"github.com/cpusoft/goutil/osutil"
 	"github.com/cpusoft/goutil/rrdputil"
+	model "rpstir2-model"
 )
 
 // connectRrdpUrlCh: whether connect to notifyurl, will tell others to remove rsync path, or just ignore. will defer close(connectRrdpUrlCh)
