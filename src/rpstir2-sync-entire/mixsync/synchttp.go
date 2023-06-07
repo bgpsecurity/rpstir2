@@ -2,19 +2,20 @@ package mixsync
 
 import (
 	"errors"
-
-	model "rpstir2-model"
+	"time"
 
 	"github.com/cpusoft/goutil/belogs"
 	"github.com/cpusoft/goutil/conf"
 	"github.com/cpusoft/goutil/ginserver"
 	"github.com/cpusoft/goutil/httpclient"
 	"github.com/gin-gonic/gin"
+	model "rpstir2-model"
 )
 
 // start to sync
 func SyncStart(c *gin.Context) {
 	belogs.Info("SyncStart(): start")
+	start := time.Now()
 
 	// get syncStyle
 	syncStyle := model.SyncStyle{}
@@ -43,7 +44,7 @@ func SyncStart(c *gin.Context) {
 
 	go func() {
 		nextStep, err := syncStart(syncStyle)
-		belogs.Debug("SyncStart(): syncStart end,  nextStep is :", nextStep, err)
+		belogs.Debug("SyncStart(): syncStart end,  nextStep is :", nextStep, "  time(s)", time.Since(start), " err:", err)
 
 		if err != nil {
 			// will end this whole sync

@@ -26,6 +26,8 @@ func rsyncByUrl(spQueue *SyncParseQueue, syncChan SyncChan) {
 	// SyncingCount should +1 and then -1
 	atomic.AddInt64(&spQueue.SyncingCount, 1)
 	belogs.Debug("rsyncByUrl(): before rsync, syncChan:", syncChan, "    SyncingCount:", atomic.LoadInt64(&spQueue.SyncingCount))
+	rsyncutil.SetTimeout(24)
+	defer rsyncutil.ResetAllTimeout()
 	rsyncDestPath, _, err := rsyncutil.RsyncQuiet(syncChan.Url, syncChan.Dest)
 	atomic.AddInt64(&spQueue.SyncingCount, -1)
 	belogs.Debug("rsyncByUrl(): rsync syncChan:", syncChan, "     SyncingCount:", atomic.LoadInt64(&spQueue.SyncingCount),

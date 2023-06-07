@@ -8,14 +8,13 @@ import (
 	"sync/atomic"
 	"time"
 
-	model "rpstir2-model"
-	"rpstir2-sync-core/rrdp"
-	coresync "rpstir2-sync-core/sync"
-
 	"github.com/cpusoft/goutil/belogs"
 	"github.com/cpusoft/goutil/conf"
 	"github.com/cpusoft/goutil/httpclient"
 	"github.com/cpusoft/goutil/jsonutil"
+	model "rpstir2-model"
+	"rpstir2-sync-core/rrdp"
+	coresync "rpstir2-sync-core/sync"
 )
 
 func syncStart(syncStyle model.SyncStyle) (nextStep string, err error) {
@@ -199,8 +198,9 @@ func parseCerAndGetSubRepoUrl(spQueue *SyncParseQueue, cerFile string) (subRepoU
 		belogs.Error("parseCerAndGetSubRepoUrl(): all rsyncUrl or rrdpUrl is empty:", cerFile, jsonutil.MarshalJson(parseCerSimple))
 		return "", errors.New("parseCerAndGetSubRepoUrl(): all rsyncUrl or rrdpUrl is empty:" + cerFile + ",  " + jsonutil.MarshalJson(parseCerSimple))
 	}
-	belogs.Info("parseCerAndGetSubRepoUrl(): cerFile:", cerFile, "  caRepository:", jsonutil.MarshalJson(parseCerSimple),
+	belogs.Info("parseCerAndGetSubRepoUrl(): cerFile:", cerFile, "  RpkiNotify:", parseCerSimple.RpkiNotify, "  CaRepository:", parseCerSimple.CaRepository,
 		"  subRepoUrl:", subRepoUrl, "  time(s):", time.Since(start))
+	belogs.Debug("parseCerAndGetSubRepoUrl(): cerFile:", cerFile, " parseCerSimple:", jsonutil.MarshalJson(parseCerSimple))
 	return subRepoUrl, nil
 
 }
