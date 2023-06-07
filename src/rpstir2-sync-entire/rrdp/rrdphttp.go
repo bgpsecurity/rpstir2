@@ -1,27 +1,26 @@
 package rrdp
 
 import (
-	model "rpstir2-model"
-
 	"github.com/cpusoft/goutil/belogs"
 	"github.com/cpusoft/goutil/ginserver"
 	"github.com/gin-gonic/gin"
+	model "rpstir2-model"
 )
 
 // start to rrdp from sync
-func RrdpStart(c *gin.Context) {
-	belogs.Debug("RrdpStart(): start")
+func RrdpRequest(c *gin.Context) {
+	belogs.Debug("RrdpRequest(): start")
 
 	syncUrls := model.SyncUrls{}
 	err := c.ShouldBindJSON(&syncUrls)
-	belogs.Info("RrdpStart(): syncUrls:", syncUrls, err)
+	belogs.Info("RrdpRequest(): syncUrls:", syncUrls, err)
 	if err != nil {
-		belogs.Error("RrdpStart(): ShouldBindJSON:", err)
+		belogs.Error("RrdpRequest(): ShouldBindJSON:", err)
 		ginserver.ResponseFail(c, err, nil)
 		return
 	}
 
-	go rrdpStart(&syncUrls)
+	go rrdpRequest(&syncUrls)
 
 	ginserver.ResponseOk(c, nil)
 }

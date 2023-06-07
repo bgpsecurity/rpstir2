@@ -8,26 +8,25 @@ import (
 	"sync/atomic"
 	"time"
 
-	model "rpstir2-model"
-	"rpstir2-sync-core/rrdp"
-
 	"github.com/cpusoft/goutil/belogs"
 	"github.com/cpusoft/goutil/conf"
 	"github.com/cpusoft/goutil/httpclient"
 	"github.com/cpusoft/goutil/jsonutil"
 	"github.com/cpusoft/goutil/osutil"
 	"github.com/cpusoft/goutil/randutil"
+	model "rpstir2-model"
+	"rpstir2-sync-core/rrdp"
 )
 
 var rrQueue *RrdpParseQueue
 
 // start to rrdp
-func rrdpStart(syncUrls *model.SyncUrls) {
-	belogs.Info("rrdpStart(): rrdp: syncUrls:", jsonutil.MarshalJson(syncUrls))
+func rrdpRequest(syncUrls *model.SyncUrls) {
+	belogs.Info("rrdpRequest(): rrdp: syncUrls:", jsonutil.MarshalJson(syncUrls))
 
 	syncRrdpLogs, err := rrdp.GetLastSyncRrdpLogsDb()
 	if err != nil {
-		belogs.Error("rrdpStart(): rrdp: GetLastSyncRrdpLogsDb fail:", err)
+		belogs.Error("rrdpRequest(): rrdp: GetLastSyncRrdpLogsDb fail:", err)
 		return
 	}
 
@@ -35,10 +34,10 @@ func rrdpStart(syncUrls *model.SyncUrls) {
 	rrQueue = NewQueue()
 	rrQueue.LastSyncRrdpLogs = syncRrdpLogs
 	rrQueue.LabRpkiSyncLogId = syncUrls.SyncLogId
-	belogs.Debug("rrdpStart(): before startRrdpServer rrQueue:", jsonutil.MarshalJson(rrQueue))
+	belogs.Debug("rrdpRequest(): before startRrdpServer rrQueue:", jsonutil.MarshalJson(rrQueue))
 
 	go startRrdpServer()
-	belogs.Debug("rrdpStart(): after startRrdpServer rrQueue:", jsonutil.MarshalJson(rrQueue))
+	belogs.Debug("rrdpRequest(): after startRrdpServer rrQueue:", jsonutil.MarshalJson(rrQueue))
 
 	// start to rrdp by sync url in tal, to get root cer
 	// first: remove all root cer, so can will rrdp download and will trigger parse all cer files.
@@ -46,7 +45,7 @@ func rrdpStart(syncUrls *model.SyncUrls) {
 	os.RemoveAll(conf.VariableString("rrdp::destPath") + "/root/")
 	os.MkdirAll(conf.VariableString("rrdp::destPath")+"/root/", os.ModePerm)
 	atomic.AddInt64(&rrQueue.RrdpingParsingCount, int64(len(syncUrls.RrdpUrls)))
-	belogs.Debug("rrdpStart():after RrdpingParsingCount:", atomic.LoadInt64(&rrQueue.RrdpingParsingCount))
+	belogs.Debug("rrdpRequest():after RrdpingParsingCount:", atomic.LoadInt64(&rrQueue.RrdpingParsingCount))
 	for _, url := range syncUrls.RrdpUrls {
 		go rrQueue.AddRrdpUrl(url, conf.VariableString("rrdp::destPath")+"/")
 	}

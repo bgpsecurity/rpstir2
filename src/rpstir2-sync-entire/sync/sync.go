@@ -4,16 +4,15 @@ import (
 	"errors"
 	"time"
 
-	model "rpstir2-model"
-	"rpstir2-sync-core/sync"
-	rpsync "rpstir2-sync-core/sync"
-
 	"github.com/cpusoft/goutil/belogs"
 	"github.com/cpusoft/goutil/conf"
 	"github.com/cpusoft/goutil/httpclient"
 	"github.com/cpusoft/goutil/jsonutil"
 	"github.com/cpusoft/goutil/osutil"
 	"github.com/cpusoft/goutil/urlutil"
+	model "rpstir2-model"
+	"rpstir2-sync-core/sync"
+	rpsync "rpstir2-sync-core/sync"
 )
 
 var rrdpResultCh chan model.SyncResult
@@ -199,7 +198,7 @@ func callRrdpAndRsync(syncLogId uint64, syncLogSyncState *model.SyncLogSyncState
 		RrdpUrls:  syncLogSyncState.RrdpUrls,
 		RsyncUrls: syncLogSyncState.RsyncUrls}
 	syncUrlsJson := jsonutil.MarshalJson(syncUrls)
-	belogs.Info("callRrdpAndRsync(): syncUrlsJson:", jsonutil.MarshalJson(syncUrlsJson))
+	belogs.Info("callRrdpAndRsync(): syncUrlsJson:", syncUrlsJson)
 
 	// if there is no rrdp ,then rrdpEnd=true. same to rsyncEnd
 	rrdpEnd := false
@@ -208,7 +207,7 @@ func callRrdpAndRsync(syncLogId uint64, syncLogSyncState *model.SyncLogSyncState
 	if len(syncUrls.RrdpUrls) > 0 {
 		go func() {
 			httpclient.Post("https://"+conf.String("rpstir2-rp::serverHost")+":"+conf.String("rpstir2-rp::serverHttpsPort")+
-				"/entiresync/rrdpstart", syncUrlsJson, false)
+				"/entiresync/rrdprequest", syncUrlsJson, false)
 		}()
 	} else {
 		rrdpEnd = true
@@ -217,7 +216,7 @@ func callRrdpAndRsync(syncLogId uint64, syncLogSyncState *model.SyncLogSyncState
 	if len(syncUrls.RsyncUrls) > 0 {
 		go func() {
 			httpclient.Post("https://"+conf.String("rpstir2-rp::serverHost")+":"+conf.String("rpstir2-rp::serverHttpsPort")+
-				"/entiresync/rsyncstart", syncUrlsJson, false)
+				"/entiresync/rsyncrequest", syncUrlsJson, false)
 		}()
 	} else {
 		rsyncEnd = true
@@ -255,34 +254,34 @@ func rsyncResult(r *model.SyncResult) {
 
 }
 
-func LocalStart() {
+func localSyncStart() {
 	start := time.Now()
 
 	// local sync will set as rsync
-	belogs.Info("LocalStart():syncStyle:  rsync")
+	belogs.Info("localSyncStart():syncStyle:  rsync")
 	syncLogSyncState := model.SyncLogSyncState{StartTime: time.Now(), SyncStyle: "rsync"}
 
 	// start , insert lab_rpki_sync_log
 
 	syncLogId, err := sync.InsertSyncLogStartDb("rsync", "syncing")
 	if err != nil {
-		belogs.Error("LocalStart():InsertSyncLogSyncStateStart fail:", err)
+		belogs.Error("localSyncStart():InsertSyncLogSyncStateStart fail:", err)
 		return
 	}
-	belogs.Info("LocalStart():syncLogId:", syncLogId, "  syncLogSyncState:", jsonutil.MarshalJson(syncLogSyncState))
+	belogs.Info("localSyncStart():syncLogId:", syncLogId, "  syncLogSyncState:", jsonutil.MarshalJson(syncLogSyncState))
 
 	// call local such as rsync and wait for result
 	err = callLocalRsync(syncLogId, &syncLogSyncState)
 	if err != nil {
-		belogs.Error("LocalStart():callLocalRsync fail:", err)
+		belogs.Error("localSyncStart():callLocalRsync fail:", err)
 		return
 	}
-	belogs.Debug("LocalStart(): end callLocalRsync:", jsonutil.MarshalJson(syncLogSyncState))
+	belogs.Debug("localSyncStart(): end callLocalRsync:", jsonutil.MarshalJson(syncLogSyncState))
 
 	// update lab_rpki_sync_log
 	err = sync.UpdateSyncLogEndDb(syncLogId, "synced", jsonutil.MarshalJson(syncLogSyncState))
 	if err != nil {
-		belogs.Error("LocalStart():UpdateSyncLogEndDb fail:", err)
+		belogs.Error("localSyncStart():UpdateSyncLogEndDb fail:", err)
 		return
 	}
 
@@ -290,7 +289,7 @@ func LocalStart() {
 	httpclient.Post("https://"+conf.String("rpstir2-rp::serverHost")+":"+conf.String("rpstir2-rp::serverHttpsPort")+
 		"/sys/servicestate", `{"operate":"leave","state":"sync"}`, false)
 
-	belogs.Info("LocalStart(): sync end , will call parsevalidate,  time(s):", time.Since(start))
+	belogs.Info("localSyncStart(): sync end , will call parsevalidate,  time(s):", time.Since(start))
 	// will call parseValidate
 	go func() {
 		httpclient.Post("https://"+conf.String("rpstir2-rp::serverHost")+":"+conf.String("rpstir2-rp::serverHttpsPort")+
@@ -309,12 +308,12 @@ func callLocalRsync(syncLogId uint64, syncLogSyncState *model.SyncLogSyncState) 
 	httpclient.SetTimeout(30)
 	defer httpclient.ResetTimeout()
 	err = httpclient.PostAndUnmarshalResponseModel("https://"+conf.String("rpstir2-rp::serverHost")+":"+conf.String("rpstir2-rp::serverHttpsPort")+
-		"/entiresync/rsynclocalstart", syncUrlsJson, false, &rsyncResult)
+		"/entiresync/localrsyncrequest", syncUrlsJson, false, &rsyncResult)
 	if err != nil {
 		belogs.Error("callLocalRsync(): rsync localstart failed:", syncUrlsJson, "  err:", err)
 		return err
 	}
-	belogs.Debug("callLocalRsync():after /entiresync/rsynclocalstart, syncUrlsJson:", syncUrlsJson, "   rsyncResult:", jsonutil.MarshalJson(rsyncResult))
+	belogs.Debug("callLocalRsync():after /entiresync/localrsyncrequest, syncUrlsJson:", syncUrlsJson, "   rsyncResult:", jsonutil.MarshalJson(rsyncResult))
 
 	syncLogSyncState.RsyncResult = rsyncResult
 	syncLogSyncState.EndTime = time.Now()
