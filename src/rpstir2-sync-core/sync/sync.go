@@ -4,9 +4,8 @@ import (
 	"os"
 	"time"
 
-	model "rpstir2-model"
-
 	"github.com/cpusoft/goutil/belogs"
+	model "rpstir2-model"
 )
 
 func CallRemoveAndDelDbByFilePaths(filePaths []string, connectCh chan bool) {
