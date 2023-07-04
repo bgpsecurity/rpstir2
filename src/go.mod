@@ -80,5 +80,5 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	moul.io/http2curl v1.0.0 // indirect
 	xorm.io/builder v0.3.12 // indirect
-	xorm.io/xorm v1.3.2
+	xorm.io/xorm v1.3.2 // indirect
 )
