@@ -881,12 +881,10 @@ func initResetImplDb(session *xorm.Session, sysStyle SysStyle) error {
 	belogs.Debug("initResetImplDb():will Exec sqls:", jsonutil.MarshalJson(sqls))
 	belogs.Info("initResetImplDb():will Exec len(sqls):", len(sqls))
 	for _, sq := range sqls {
-		now := time.Now()
 		if _, err := session.Exec(sq); err != nil {
 			belogs.Error("initResetImplDb():  "+sq+" fail", err)
 			return xormdb.RollbackAndLogError(session, "initResetImplDb():sql fail: "+sq, err)
 		}
-		belogs.Info("initResetImplDb(): sq:", sq, ", sql time(s):", time.Since(now))
 	}
 	belogs.Info("initResetImplDb(): len(sqls):", len(sqls), ",  time(s):", time.Since(start))
 
