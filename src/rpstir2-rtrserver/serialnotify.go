@@ -17,7 +17,7 @@ func ParseToSerialNotify(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel 
 	// get sessionId
 	err = binary.Read(buf, binary.BigEndian, &sessionId)
 	if err != nil {
-		belogs.Error("ParseToSerialNotify(): PDU_TYPE_SERIAL_NOTIFY get sessionId fail: ", buf, err)
+		belogs.Error("ParseToSerialNotify(): PDU_TYPE_SERIAL_NOTIFY get sessionId fail, buf:", buf, err)
 		rtrError := NewRtrError(
 			err,
 			true, protocolVersion, PDU_TYPE_ERROR_CODE_CORRUPT_DATA,
@@ -28,7 +28,7 @@ func ParseToSerialNotify(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel 
 	// get length
 	err = binary.Read(buf, binary.BigEndian, &length)
 	if err != nil {
-		belogs.Error("ParseToSerialNotify(): PDU_TYPE_SERIAL_NOTIFY get length fail: ", buf, err)
+		belogs.Error("ParseToSerialNotify(): PDU_TYPE_SERIAL_NOTIFY get length fail, buf:", buf, err)
 		rtrError := NewRtrError(
 			err,
 			true, protocolVersion, PDU_TYPE_ERROR_CODE_CORRUPT_DATA,
@@ -36,7 +36,7 @@ func ParseToSerialNotify(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel 
 		return rtrPduModel, rtrError
 	}
 	if length != 12 {
-		belogs.Error("ParseToSerialNotify():PDU_TYPE_SERIAL_NOTIFY,  length must be 12 ", buf, length)
+		belogs.Error("ParseToSerialNotify():PDU_TYPE_SERIAL_NOTIFY,  length must be 12, buf:", buf, "  length:", length)
 		rtrError := NewRtrError(
 			errors.New("pduType is SERIAL NOTIFY,  length must be 12"),
 			true, protocolVersion, PDU_TYPE_ERROR_CODE_CORRUPT_DATA,
@@ -47,7 +47,7 @@ func ParseToSerialNotify(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel 
 	// get serialNumber
 	err = binary.Read(buf, binary.BigEndian, &serialNumber)
 	if err != nil {
-		belogs.Error("ParseToSerialNotify(): PDU_TYPE_SERIAL_NOTIFY get serialNumber fail: ", buf, err)
+		belogs.Error("ParseToSerialNotify(): PDU_TYPE_SERIAL_NOTIFY get serialNumber fail, buf:", buf, err)
 		rtrError := NewRtrError(
 			err,
 			true, protocolVersion, PDU_TYPE_ERROR_CODE_CORRUPT_DATA,
@@ -55,9 +55,9 @@ func ParseToSerialNotify(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel 
 		return rtrPduModel, rtrError
 	}
 
-	rtrPduModel = NewRtrSerialNotifyModel(protocolVersion, sessionId, serialNumber)
-	belogs.Debug("ParseToSerialNotify():get PDU_TYPE_SERIAL_NOTIFY ", buf, jsonutil.MarshalJson(rtrPduModel))
-	return rtrPduModel, nil
+	sq := NewRtrSerialNotifyModel(protocolVersion, sessionId, serialNumber)
+	belogs.Debug("ParseToSerialNotify():get PDU_TYPE_SERIAL_NOTIFY,  buf:", buf, " sq:", jsonutil.MarshalJson(sq))
+	return sq, nil
 }
 
 func ProcessSerialNotify(protocolVersion uint8) (rtrPduModel RtrPduModel, err error) {

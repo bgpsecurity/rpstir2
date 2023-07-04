@@ -25,7 +25,7 @@ func ParseToAsa(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel RtrPduMod
 	var zero0 uint16
 	var length uint32
 	var flags uint8
-	var zero1 uint8
+	var afiFlags uint8
 	var providerAsCount uint16
 	var customerAsn uint32
 	var providerAsns []uint32
@@ -34,7 +34,7 @@ func ParseToAsa(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel RtrPduMod
 	// get zero0
 	err = binary.Read(buf, binary.BigEndian, &zero0)
 	if err != nil {
-		belogs.Error("ParseToAsa(): PDU_TYPE_ASA get zero0 fail: ", buf, err)
+		belogs.Error("ParseToAsa(): PDU_TYPE_ASA get zero0 fail, buf:", buf, err)
 		rtrError := NewRtrError(
 			err,
 			true, protocolVersion, PDU_TYPE_ERROR_CODE_CORRUPT_DATA,
@@ -45,7 +45,7 @@ func ParseToAsa(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel RtrPduMod
 	// get length
 	err = binary.Read(buf, binary.BigEndian, &length)
 	if err != nil {
-		belogs.Error("ParseToAsa(): PDU_TYPE_ASA get length fail: ", buf, err)
+		belogs.Error("ParseToAsa(): PDU_TYPE_ASA get length fail, buf:", buf, err)
 		rtrError := NewRtrError(
 			err,
 			true, protocolVersion, PDU_TYPE_ERROR_CODE_CORRUPT_DATA,
@@ -53,7 +53,7 @@ func ParseToAsa(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel RtrPduMod
 		return rtrPduModel, rtrError
 	}
 	if length < 16 {
-		belogs.Error("ParseToAsa():PDU_TYPE_ASA, length must be more than 16,  ", buf, length)
+		belogs.Error("ParseToAsa():PDU_TYPE_ASA, length must be more than 16, buf:", buf, length)
 		rtrError := NewRtrError(
 			errors.New("pduType is ASA, length must be more than 16"),
 			true, protocolVersion, PDU_TYPE_ERROR_CODE_CORRUPT_DATA,
@@ -65,7 +65,7 @@ func ParseToAsa(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel RtrPduMod
 	// get flags
 	err = binary.Read(buf, binary.BigEndian, &flags)
 	if err != nil {
-		belogs.Error("ParseToAsa(): PDU_TYPE_ASA get flags fail: ", buf, err)
+		belogs.Error("ParseToAsa(): PDU_TYPE_ASA get flags fail, buf:", buf, err)
 		rtrError := NewRtrError(
 			err,
 			true, protocolVersion, PDU_TYPE_ERROR_CODE_CORRUPT_DATA,
@@ -80,7 +80,7 @@ func ParseToAsa(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel RtrPduMod
 		2-7    Reserved, must be zero
 	*/
 	if flags != 0 && flags != 1 && flags != 2 && flags != 3 {
-		belogs.Error("ParseToAsa():PDU_TYPE_ASA, flags is only use bits, ", buf, flags)
+		belogs.Error("ParseToAsa():PDU_TYPE_ASA, flags is only use bits, buf:", buf, "  flags:", flags)
 		rtrError := NewRtrError(
 			errors.New("pduType is IPV4 PREFIX, flags is only use bits"),
 			true, protocolVersion, PDU_TYPE_ERROR_CODE_CORRUPT_DATA,
@@ -88,10 +88,10 @@ func ParseToAsa(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel RtrPduMod
 		return rtrPduModel, rtrError
 	}
 
-	// get zero1
-	err = binary.Read(buf, binary.BigEndian, &zero1)
+	// get afiFlags
+	err = binary.Read(buf, binary.BigEndian, &afiFlags)
 	if err != nil {
-		belogs.Error("ParseToAsa(): PDU_TYPE_ASA get zero1 fail: ", buf, err)
+		belogs.Error("ParseToAsa(): PDU_TYPE_ASA get afiFlags fail:  buf:", buf, err)
 		rtrError := NewRtrError(
 			err,
 			true, protocolVersion, PDU_TYPE_ERROR_CODE_CORRUPT_DATA,
@@ -102,7 +102,7 @@ func ParseToAsa(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel RtrPduMod
 	// get providerAsCount
 	err = binary.Read(buf, binary.BigEndian, &providerAsCount)
 	if err != nil {
-		belogs.Error("ParseToAsa(): PDU_TYPE_ASA get providerAsCount fail: ", buf, err)
+		belogs.Error("ParseToAsa(): PDU_TYPE_ASA get providerAsCount fail, buf:", buf, err)
 		rtrError := NewRtrError(
 			err,
 			true, protocolVersion, PDU_TYPE_ERROR_CODE_CORRUPT_DATA,
@@ -113,17 +113,30 @@ func ParseToAsa(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel RtrPduMod
 	// get customerAsn
 	err = binary.Read(buf, binary.BigEndian, &customerAsn)
 	if err != nil {
-		belogs.Error("ParseToAsa(): PDU_TYPE_ASA get customerAsn fail: ", buf, err)
+		belogs.Error("ParseToAsa(): PDU_TYPE_ASA get customerAsn fail, buf:", buf, err)
 		rtrError := NewRtrError(
 			err,
 			true, protocolVersion, PDU_TYPE_ERROR_CODE_CORRUPT_DATA,
 			buf, "Fail to get customerAsn")
 		return rtrPduModel, rtrError
 	}
-
-	sq := NewRtrAsaModel(protocolVersion, flags,
+	providerAsns = make([]uint32, 0)
+	for i := uint16(0); i < providerAsCount; i++ {
+		var providerAsn uint32
+		err = binary.Read(buf, binary.BigEndian, &providerAsn)
+		if err != nil {
+			belogs.Error("ParseToAsa(): PDU_TYPE_ASA get providerAsn fail, buf:", buf, err)
+			rtrError := NewRtrError(
+				err,
+				true, protocolVersion, PDU_TYPE_ERROR_CODE_CORRUPT_DATA,
+				buf, "Fail to get providerAsn")
+			return rtrPduModel, rtrError
+		}
+		providerAsns = append(providerAsns, providerAsn)
+	}
+	sq := NewRtrAsaModelFromParse(protocolVersion, flags, afiFlags,
 		customerAsn, providerAsns)
 
-	belogs.Debug("ParseToAsa():get PDU_TYPE_ASA ", buf, jsonutil.MarshalJson(sq))
+	belogs.Debug("ParseToAsa():get PDU_TYPE_ASA, buf:", buf, jsonutil.MarshalJson(sq))
 	return sq, nil
 }

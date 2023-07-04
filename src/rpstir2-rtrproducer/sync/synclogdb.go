@@ -1,4 +1,4 @@
-package rtrproducer
+package sync
 
 import (
 	"time"
@@ -41,7 +41,7 @@ func updateRsyncLogRtrStateStartDb(state string) (labRpkiSyncLogId uint64, err e
 		return 0, xormdb.RollbackAndLogError(session, "updateRsyncLogRtrStateStartDb(): CommitSession fail:"+
 			rtrState+","+state+",  labRpkiSyncLogId:"+convert.ToString(labRpkiSyncLogId), err)
 	}
-	belogs.Info("updateRsyncLogRtrStateStartDb(): CommitSession ok:   state:", state, "   time(s):", time.Now().Sub(start))
+	belogs.Info("updateRsyncLogRtrStateStartDb(): CommitSession ok:   state:", state, "   time(s):", time.Since(start))
 	return uint64(id), nil
 }
 
@@ -80,6 +80,6 @@ func updateRsyncLogRtrStateEndDb(labRpkiSyncLogId uint64, state string) (err err
 		return xormdb.RollbackAndLogError(session, "updateRsyncLogRtrStateEndDb(): CommitSession fail: ", err)
 	}
 	belogs.Info("updateRsyncLogRtrStateEndDb(): CommitSession ok: labRpkiSyncLogId:", labRpkiSyncLogId, "   state:", state,
-		"   time(s):", time.Now().Sub(start))
+		"   time(s):", time.Since(start))
 	return nil
 }

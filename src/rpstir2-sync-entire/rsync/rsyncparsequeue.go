@@ -7,9 +7,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	model "rpstir2-model"
-
 	"github.com/cpusoft/goutil/belogs"
+	model "rpstir2-model"
 )
 
 // queue for rsync url

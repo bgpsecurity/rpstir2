@@ -33,7 +33,7 @@ func chainValidateStart() (nextStep string, err error) {
 		return "", err
 	}
 
-	belogs.Info("chainValidateStart(): end, will call rtr,  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Info("chainValidateStart(): end, will call rtr,  time(s):", time.Since(start))
 	return "rtr", nil
 }
 
@@ -61,7 +61,7 @@ func chainValidate() (err error) {
 	go getChainAsas(chains, &wgGetChain)
 
 	wgGetChain.Wait()
-	belogs.Info("chainValidate(): GetChains  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Info("chainValidate(): GetChains  time(s):", time.Since(start))
 
 	// validate
 	start = time.Now()
@@ -82,7 +82,7 @@ func chainValidate() (err error) {
 	go validateAsas(chains, &wgValidate)
 
 	wgValidate.Wait()
-	belogs.Info("chainValidate(): after Validates  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Info("chainValidate(): after Validates  time(s):", time.Since(start))
 
 	// will check all certs in chain: mft invalid --> crl/roa/cer invalid
 	err = updateChainByCheckAll(chains)
@@ -110,19 +110,20 @@ func chainValidate() (err error) {
 	go updateAsasDb(chains, &wgUpdate)
 
 	wgUpdate.Wait()
-	belogs.Info("chainValidate(): after updates  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Info("chainValidate(): after updates  time(s):", time.Since(start))
 
 	return nil
 }
 
 func updateChainByCheckAll(chains *Chains) (err error) {
 	// after all, will check again:
-	// if mft is invalid,may effect roa/crl/cer --> warning, not found mft
-	if conf.String("policy::invalidMftEffect") == "warning" {
-		err = updateChainByMft(chains)
+	// if mft is invalid,may effect roa/crl/cer --> ignore/warning/invalid, not found mft
+	invalidMftEffect := conf.String("policy::invalidMftEffect")
+	if invalidMftEffect == "warning" || invalidMftEffect == "invalid" {
+		err = updateChainByMft(chains, invalidMftEffect)
 		if err != nil {
 			belogs.Error("updateChainByCheckAll():updateChainByMft fail:", err)
-			return err
+			//return err
 		}
 	}
 	return nil

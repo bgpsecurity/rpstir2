@@ -447,10 +447,10 @@ type AsaModel struct {
 
 //  1.2.840.113549.1.9.16.1.49
 type CustomerAsn struct {
-	AddressFamily null.Int      `json:"addressFamily"`
-	CustomerAsn   uint64        `json:"customerAsn"`
-	ProviderAsns  []ProviderAsn `json:"ProviderAsns"`
+	CustomerAsn  uint64        `json:"customerAsn"`
+	ProviderAsns []ProviderAsn `json:"ProviderAsns"`
 }
+
 type ProviderAsn struct {
 	AddressFamily null.Int `json:"addressFamily"`
 	ProviderAsn   uint64   `json:"providerAsn"`

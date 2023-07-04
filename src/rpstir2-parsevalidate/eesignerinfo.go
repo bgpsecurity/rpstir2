@@ -62,7 +62,7 @@ func ValidateEeCertModel(stateModel *model.StateModel, eeCertModel *model.EeCert
 	if eeCertModel.DigestAlgorithm != "SHA256-RSA" {
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
 			Fail:   "Digest Algorithm of EE is not sha256WithRSAEncryption",
-			Detail: "Digest algorithm is" + eeCertModel.DigestAlgorithm}
+			Detail: "Digest algorithm is " + eeCertModel.DigestAlgorithm}
 		stateModel.AddError(&stateMsg)
 	}
 	now := time.Now()

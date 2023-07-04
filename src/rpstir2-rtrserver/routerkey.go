@@ -30,7 +30,7 @@ func ParseToRouterKey(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel Rtr
 	// get flags
 	err = binary.Read(buf, binary.BigEndian, &flags)
 	if err != nil {
-		belogs.Error("ParseToRouterKey(): PDU_TYPE_ROUTER_KEY get flags fail: ", buf, err)
+		belogs.Error("ParseToRouterKey(): PDU_TYPE_ROUTER_KEY get flags fail, buf:", buf, err)
 		rtrError := NewRtrError(
 			err,
 			true, protocolVersion, PDU_TYPE_ERROR_CODE_CORRUPT_DATA,
@@ -38,7 +38,7 @@ func ParseToRouterKey(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel Rtr
 		return rtrPduModel, rtrError
 	}
 	if flags != 0 && flags != 1 {
-		belogs.Error("ParseToRouterKey():PDU_TYPE_ROUTER_KEY, flags must be 0 or 1, ", buf, flags)
+		belogs.Error("ParseToRouterKey():PDU_TYPE_ROUTER_KEY, flags must be 0 or 1, buf:", buf, "  flags:", flags)
 		rtrError := NewRtrError(
 			errors.New("pduType is ROUTER KEY, flags must be 0 or 1"),
 			true, protocolVersion, PDU_TYPE_ERROR_CODE_CORRUPT_DATA,
@@ -49,7 +49,7 @@ func ParseToRouterKey(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel Rtr
 	// get zero
 	err = binary.Read(buf, binary.BigEndian, &zero)
 	if err != nil {
-		belogs.Error("ParseToRouterKey(): PDU_TYPE_ROUTER_KEY get zero fail: ", buf, err)
+		belogs.Error("ParseToRouterKey(): PDU_TYPE_ROUTER_KEY get zero fail, buf:", buf, err)
 		rtrError := NewRtrError(
 			err,
 			true, protocolVersion, PDU_TYPE_ERROR_CODE_CORRUPT_DATA,
@@ -60,7 +60,7 @@ func ParseToRouterKey(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel Rtr
 	// length
 	err = binary.Read(buf, binary.BigEndian, &length)
 	if err != nil {
-		belogs.Error("ParseToRouterKey(): PDU_TYPE_ROUTER_KEY get length fail: ", buf, err)
+		belogs.Error("ParseToRouterKey(): PDU_TYPE_ROUTER_KEY get length fail, buf:", buf, err)
 		rtrError := NewRtrError(
 			err,
 			true, protocolVersion, PDU_TYPE_ERROR_CODE_CORRUPT_DATA,
@@ -71,7 +71,7 @@ func ParseToRouterKey(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel Rtr
 	// get subjectKeyIdentifier
 	err = binary.Read(buf, binary.BigEndian, &subjectKeyIdentifier)
 	if err != nil {
-		belogs.Error("ParseToRouterKey(): PDU_TYPE_ROUTER_KEY get subjectKeyIdentifier fail: ", buf, err)
+		belogs.Error("ParseToRouterKey(): PDU_TYPE_ROUTER_KEY get subjectKeyIdentifier fail, buf:", buf, err)
 		rtrError := NewRtrError(
 			err,
 			true, protocolVersion, PDU_TYPE_ERROR_CODE_CORRUPT_DATA,
@@ -82,7 +82,7 @@ func ParseToRouterKey(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel Rtr
 	// get asn
 	err = binary.Read(buf, binary.BigEndian, &asn)
 	if err != nil {
-		belogs.Error("ParseToRouterKey(): PDU_TYPE_ROUTER_KEY get asn fail: ", buf, err)
+		belogs.Error("ParseToRouterKey(): PDU_TYPE_ROUTER_KEY get asn fail, buf:", buf, err)
 		rtrError := NewRtrError(
 			err,
 			true, protocolVersion, PDU_TYPE_ERROR_CODE_CORRUPT_DATA,
@@ -93,7 +93,7 @@ func ParseToRouterKey(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel Rtr
 	// get subjectPublicKeyInfo
 	err = binary.Read(buf, binary.BigEndian, &subjectPublicKeyInfo)
 	if err != nil {
-		belogs.Error("ParseToRouterKey(): PDU_TYPE_ROUTER_KEY get subjectPublicKeyInfo fail: ", buf, err)
+		belogs.Error("ParseToRouterKey(): PDU_TYPE_ROUTER_KEY get subjectPublicKeyInfo fail, buf:", buf, err)
 		rtrError := NewRtrError(
 			err,
 			true, protocolVersion, PDU_TYPE_ERROR_CODE_CORRUPT_DATA,
@@ -104,6 +104,6 @@ func ParseToRouterKey(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel Rtr
 	sq := NewRtrRouterKeyModel(protocolVersion, flags, subjectKeyIdentifier,
 		asn, subjectPublicKeyInfo)
 
-	belogs.Debug("ParseToRouterKey():get PDU_TYPE_ROUTER_KEY ", buf, jsonutil.MarshalJson(sq))
+	belogs.Debug("ParseToRouterKey():get PDU_TYPE_ROUTER_KEY, buf:", buf, "  sq:", jsonutil.MarshalJson(sq))
 	return sq, nil
 }

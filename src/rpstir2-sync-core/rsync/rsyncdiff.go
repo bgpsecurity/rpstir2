@@ -3,10 +3,9 @@ package rsync
 import (
 	"time"
 
-	model "rpstir2-model"
-
 	"github.com/cpusoft/goutil/belogs"
 	"github.com/cpusoft/goutil/rsyncutil"
+	model "rpstir2-model"
 )
 
 // destPath: when it is "", will diff all. if not, just diff destPath
@@ -42,6 +41,6 @@ func FoundDiffFiles(syncLogId uint64, destPath string, syncLogFilesCh chan []mod
 	noChangeFilesLen = uint64(len(noChangeFiles))
 
 	belogs.Info("FoundDiffFiles():end, addFilesLen, delFilesLen, updateFilesLen, noChangeFilesLen: ",
-		addFilesLen, delFilesLen, updateFilesLen, noChangeFilesLen, "  time(s):", time.Now().Sub(start).Seconds())
+		addFilesLen, delFilesLen, updateFilesLen, noChangeFilesLen, "  time(s):", time.Since(start))
 	return addFilesLen, delFilesLen, updateFilesLen, noChangeFilesLen, nil
 }

@@ -21,12 +21,12 @@ import (
 var rrQueue *RrdpParseQueue
 
 // start to rrdp
-func rrdpStart(syncUrls *model.SyncUrls) {
-	belogs.Info("rrdpStart(): rrdp: syncUrls:", jsonutil.MarshalJson(syncUrls))
+func rrdpRequest(syncUrls *model.SyncUrls) {
+	belogs.Info("rrdpRequest(): rrdp: syncUrls:", jsonutil.MarshalJson(syncUrls))
 
 	syncRrdpLogs, err := rrdp.GetLastSyncRrdpLogsDb()
 	if err != nil {
-		belogs.Error("rrdpStart(): rrdp: GetLastSyncRrdpLogsDb fail:", err)
+		belogs.Error("rrdpRequest(): rrdp: GetLastSyncRrdpLogsDb fail:", err)
 		return
 	}
 
@@ -34,10 +34,10 @@ func rrdpStart(syncUrls *model.SyncUrls) {
 	rrQueue = NewQueue()
 	rrQueue.LastSyncRrdpLogs = syncRrdpLogs
 	rrQueue.LabRpkiSyncLogId = syncUrls.SyncLogId
-	belogs.Debug("rrdpStart(): before startRrdpServer rrQueue:", jsonutil.MarshalJson(rrQueue))
+	belogs.Debug("rrdpRequest(): before startRrdpServer rrQueue:", jsonutil.MarshalJson(rrQueue))
 
 	go startRrdpServer()
-	belogs.Debug("rrdpStart(): after startRrdpServer rrQueue:", jsonutil.MarshalJson(rrQueue))
+	belogs.Debug("rrdpRequest(): after startRrdpServer rrQueue:", jsonutil.MarshalJson(rrQueue))
 
 	// start to rrdp by sync url in tal, to get root cer
 	// first: remove all root cer, so can will rrdp download and will trigger parse all cer files.
@@ -45,7 +45,7 @@ func rrdpStart(syncUrls *model.SyncUrls) {
 	os.RemoveAll(conf.VariableString("rrdp::destPath") + "/root/")
 	os.MkdirAll(conf.VariableString("rrdp::destPath")+"/root/", os.ModePerm)
 	atomic.AddInt64(&rrQueue.RrdpingParsingCount, int64(len(syncUrls.RrdpUrls)))
-	belogs.Debug("rrdpStart():after RrdpingParsingCount:", atomic.LoadInt64(&rrQueue.RrdpingParsingCount))
+	belogs.Debug("rrdpRequest():after RrdpingParsingCount:", atomic.LoadInt64(&rrQueue.RrdpingParsingCount))
 	for _, url := range syncUrls.RrdpUrls {
 		go rrQueue.AddRrdpUrl(url, conf.VariableString("rrdp::destPath")+"/")
 	}
@@ -94,7 +94,7 @@ func startRrdpServer() {
 			}
 
 			// return out of the for
-			belogs.Info("startRrdpServer():end this rrdp success: rrdpResultJson:", rrdpResultJson, "  time(s):", time.Now().Sub(start).Seconds())
+			belogs.Info("startRrdpServer():end this rrdp success: rrdpResultJson:", rrdpResultJson, "  time(s):", time.Since(start))
 			return
 		}
 	}
@@ -138,7 +138,7 @@ func rrdpByUrl(rrdpModelChan RrdpModelChan) {
 
 	if err != nil {
 		rrQueue.RrdpResult.FailUrls.Store(rrdpModelChan.Url, err.Error())
-		belogs.Error("RrdpByUrl():RrdpByUrlImpl fail, rrdpModelChan.Url:", rrdpModelChan.Url, "   err:", err, "  time(s):", time.Now().Sub(start).Seconds())
+		belogs.Error("RrdpByUrl():RrdpByUrlImpl fail, rrdpModelChan.Url:", rrdpModelChan.Url, "   err:", err, "  time(s):", time.Since(start))
 		belogs.Debug("RrdpByUrl():RrdpByUrlImpl fail, before RrdpingParsingCount-1:", atomic.LoadInt64(&rrQueue.RrdpingParsingCount))
 		atomic.AddInt64(&rrQueue.RrdpingParsingCount, -1)
 		belogs.Debug("RrdpByUrl():RrdpByUrlImpl fail, after RrdpingParsingCount-1:", atomic.LoadInt64(&rrQueue.RrdpingParsingCount))
@@ -175,7 +175,7 @@ func rrdpByUrl(rrdpModelChan RrdpModelChan) {
 		"    len(filePathNames):", len(filePathNames),
 		"    len(rrdpFiles):", len(rrdpFiles),
 		//	"    rrQueue.RrdpResult:", jsonutil.MarshalJson(rrQueue.RrdpResult),
-		"    time(s):", time.Now().Sub(start).Seconds())
+		"    time(s):", time.Since(start))
 
 	rrQueue.ParseModelChan <- parseModelChan
 
@@ -252,7 +252,7 @@ func parseCerAndGetRpkiNotify(cerFile string) (rpkiNotify string) {
 
 	// get the sub repo url in cer, and send it to rpqueue
 	belogs.Info("parseCerAndGetRpkiNotify(): cerFile:", cerFile, "    parseCerSimple:", jsonutil.MarshalJson(parseCerSimple),
-		"  time(s):", time.Now().Sub(start).Seconds())
+		"  time(s):", time.Since(start))
 	return parseCerSimple.RpkiNotify
 
 }

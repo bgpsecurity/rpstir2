@@ -6,11 +6,10 @@ import (
 	"errors"
 	"time"
 
-	model "rpstir2-model"
-
 	"github.com/cpusoft/goutil/belogs"
 	"github.com/cpusoft/goutil/iputil"
 	"github.com/cpusoft/goutil/jsonutil"
+	model "rpstir2-model"
 )
 
 func ParseToSerialQuery(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel RtrPduModel, err error) {
@@ -21,7 +20,7 @@ func ParseToSerialQuery(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel R
 	// get sessionId
 	err = binary.Read(buf, binary.BigEndian, &sessionId)
 	if err != nil {
-		belogs.Error("ParseToSerialQuery(): PDU_TYPE_SERIAL_QUERY get sessionId fail: ", buf, err)
+		belogs.Error("ParseToSerialQuery(): PDU_TYPE_SERIAL_QUERY get sessionId fail, buf:", buf, err)
 		rtrError := NewRtrError(
 			err,
 			true, protocolVersion, PDU_TYPE_ERROR_CODE_CORRUPT_DATA,
@@ -32,7 +31,7 @@ func ParseToSerialQuery(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel R
 	// get length
 	err = binary.Read(buf, binary.BigEndian, &length)
 	if err != nil {
-		belogs.Error("ParseToSerialQuery(): PDU_TYPE_SERIAL_QUERY get length fail: ", buf, err)
+		belogs.Error("ParseToSerialQuery(): PDU_TYPE_SERIAL_QUERY get length fail, buf:", buf, err)
 		rtrError := NewRtrError(
 			err,
 			true, protocolVersion, PDU_TYPE_ERROR_CODE_CORRUPT_DATA,
@@ -40,7 +39,7 @@ func ParseToSerialQuery(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel R
 		return rtrPduModel, rtrError
 	}
 	if length != 12 {
-		belogs.Error("ParseToSerialQuery():PDU_TYPE_SERIAL_QUERY,  length must be 12 ", buf, length)
+		belogs.Error("ParseToSerialQuery():PDU_TYPE_SERIAL_QUERY,  length must be 12, buf:", buf, "  length:", length)
 		rtrError := NewRtrError(
 			errors.New("pduType is SERIAL QUERY, length must be 12"),
 			true, protocolVersion, PDU_TYPE_ERROR_CODE_CORRUPT_DATA,
@@ -51,7 +50,7 @@ func ParseToSerialQuery(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel R
 	// get serialNumber
 	err = binary.Read(buf, binary.BigEndian, &serialNumber)
 	if err != nil {
-		belogs.Error("ParseToSerialQuery(): PDU_TYPE_SERIAL_QUERY get serialNumber fail: ", buf, err)
+		belogs.Error("ParseToSerialQuery(): PDU_TYPE_SERIAL_QUERY get serialNumber fail, buf:", buf, err)
 		rtrError := NewRtrError(
 			err,
 			true, protocolVersion, PDU_TYPE_ERROR_CODE_CORRUPT_DATA,
@@ -59,7 +58,7 @@ func ParseToSerialQuery(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel R
 		return rtrPduModel, rtrError
 	}
 	sq := NewRtrSerialQueryModel(protocolVersion, sessionId, serialNumber)
-	belogs.Debug("ParseToSerialQuery():get PDU_TYPE_SERIAL_QUERY ", buf, jsonutil.MarshalJson(sq))
+	belogs.Debug("ParseToSerialQuery():get PDU_TYPE_SERIAL_QUERY, buf:", buf, "  sq:", jsonutil.MarshalJson(sq))
 	return sq, nil
 }
 
@@ -68,7 +67,7 @@ func ProcessSerialQuery(rtrPduModel RtrPduModel) (serialResponses []RtrPduModel,
 	rtrSerialQueryModel, p := rtrPduModel.(*RtrSerialQueryModel)
 	if !p {
 		belogs.Error("ProcessSerialQuery(): rtrPduModel convert to rtrResetQueryModel fail ")
-		return nil, errors.New("processRtrPduModel(): rtrPduModel convert to rtrResetQueryModel fail  ")
+		return nil, errors.New("ProcessSerialQuery(): rtrPduModel convert to rtrResetQueryModel fail  ")
 	}
 	clientSessionId := rtrSerialQueryModel.SessionId
 	clientSerialNumber := rtrSerialQueryModel.SerialNumber
@@ -79,11 +78,11 @@ func ProcessSerialQuery(rtrPduModel RtrPduModel) (serialResponses []RtrPduModel,
 	belogs.Debug("ProcessSerialQuery(): needReset,   clientSessionId, clientSerialNumber,serialNumbers : ", clientSessionId, clientSerialNumber, serialNumbers)
 	if err != nil {
 		belogs.Error("ProcessSerialQuery(): needResetQuery fail ,  clientSessionId, clientSerialNumber, err:", clientSessionId, clientSerialNumber, err)
-		return nil, errors.New("processRtrPduModel(): needResetQuery fail  ")
+		return nil, errors.New("ProcessSerialQuery(): needResetQuery fail  ")
 	}
 	belogs.Info("ProcessSerialQuery():  clientSessionId:", clientSessionId, ",  clientSerialNumber:", clientSerialNumber,
 		"  server get serialNumbers between client and server: ", jsonutil.MarshalJson(serialNumbers),
-		"  time(s):", time.Now().Sub(start))
+		"  time(s):", time.Since(start))
 
 	//
 	if len(serialNumbers) == 0 {
@@ -91,7 +90,7 @@ func ProcessSerialQuery(rtrPduModel RtrPduModel) (serialResponses []RtrPduModel,
 		rtrPduModels := assembleEndOfDataResponses(rtrSerialQueryModel.GetProtocolVersion(), clientSessionId, clientSerialNumber)
 		belogs.Info("ProcessSerialQuery(): server get len(serialNumbers) == 0, will just send End Of Data PDU Response,",
 			"  clientSessionId: ", clientSessionId, ",  clientSerialNumber:", clientSerialNumber,
-			",  rtrPduModels:", jsonutil.MarshalJson(rtrPduModels), "  time(s):", time.Now().Sub(start))
+			",  rtrPduModels:", jsonutil.MarshalJson(rtrPduModels), "  time(s):", time.Since(start))
 		return rtrPduModels, nil
 
 	} else if len(serialNumbers) > 2 {
@@ -105,7 +104,7 @@ func ProcessSerialQuery(rtrPduModel RtrPduModel) (serialResponses []RtrPduModel,
 		}
 		belogs.Info("ProcessSerialQuery(): server get len(serialNumbers) >2, will send Cache Reset PDU Response,",
 			" clientSessionId: ", clientSessionId, ", clientSerialNumber:", clientSerialNumber,
-			", len(serialNumbers):", len(serialNumbers), ",  rtrPduModels:", jsonutil.MarshalJson(rtrPduModels), "  time(s):", time.Now().Sub(start))
+			", len(serialNumbers):", len(serialNumbers), ",  rtrPduModels:", jsonutil.MarshalJson(rtrPduModels), "  time(s):", time.Since(start))
 		return rtrPduModels, nil
 	} else if len(serialNumbers) > 0 && len(serialNumbers) <= 2 {
 		// send Cache Response
@@ -128,18 +127,18 @@ func ProcessSerialQuery(rtrPduModel RtrPduModel) (serialResponses []RtrPduModel,
 		}
 		belogs.Info("ProcessSerialQuery():server get  len(serialNumbers) >0 && <=2 , will send Cache Response of rtr incremental,",
 			" clientSessionId: ", clientSessionId, ", clientSerialNumber:", clientSerialNumber,
-			", len(serialNumbers): ", len(serialNumbers), ",  len(rtrPduModels):", len(rtrPduModels), "  time(s):", time.Now().Sub(start))
+			", len(serialNumbers): ", len(serialNumbers), ",  len(rtrPduModels):", len(rtrPduModels), "  time(s):", time.Since(start))
 
 		return rtrPduModels, nil
 	}
-	return nil, errors.New("processRtrPduModel(): server get serial number from client is err")
+	return nil, errors.New("ProcessSerialQuery(): server get serial number from client is err")
 }
 
 // 1: check error;  ;
 func needResetQuery(clientSessionId uint16, clientSerialNumber uint32) (serialNumbers []uint32, err error) {
 
 	sessionId, err := getSessionIdDb()
-	belogs.Debug("needResetQuery(): sessionId, clientSessionId: ", sessionId, clientSessionId)
+	belogs.Debug("needResetQuery(): sessionId:", sessionId, "  clientSessionId:", clientSessionId)
 	if err != nil {
 		belogs.Error("needResetQuery(): getSessionIdDb fail: ", err)
 		return nil, err
@@ -240,7 +239,7 @@ func assembleSerialResponses(rtrIncrementals []model.LabRpkiRtrIncremental, rtrA
 			rtrPduModels = append(rtrPduModels, endOfDataModel)
 			belogs.Debug("assembleSerialResponses(): endOfDataModel : ", jsonutil.MarshalJson(endOfDataModel))
 
-			belogs.Info("assembleResetResponses(): protocolVersion=2, will send will send Cache Response of all rtr,",
+			belogs.Info("assembleSerialResponses(): protocolVersion=2, will send will send Cache Response of all rtr,",
 				",  receive protocolVersion:", protocolVersion, ",   sessionId:", sessionId, ",  serialNumber:", serialNumber,
 				",  len(rtrIncrementals): ", len(rtrIncrementals), ", len(rtrAsaIncrementals): ", len(rtrAsaIncrementals),
 				",  len(rtrPduModels):", len(rtrPduModels))
@@ -299,30 +298,30 @@ func convertRtrIncrementalToRtrPduModel(rtrIncremental *model.LabRpkiRtrIncremen
 
 func convertRtrAsaIncrementalsToRtrPduModels(rtrAsaIncrementals []model.LabRpkiRtrAsaIncremental,
 	protocolVersion uint8) (rtrAsaPduModels []RtrPduModel, err error) {
-	rtrAsaPduModels = make([]RtrPduModel, 0)
-	for i, _ := range rtrAsaIncrementals {
-		rtrPduModel, err := convertRtrAsaIncrementalToRtrPduModel(&rtrAsaIncrementals[i], protocolVersion)
-		if err != nil {
-			belogs.Error("convertRtrIncrementalsToRtrPduModels(): convertRtrIncrementalToRtrPduModel fail: ", err)
-			return nil, err
-		}
-		rtrAsaPduModels = append(rtrAsaPduModels, rtrPduModel)
-	}
-	belogs.Debug("convertRtrIncrementalsToRtrPduModels(): len(rtrAsaIncrementals): ", len(rtrAsaIncrementals),
-		" len(rtrAsaPduModels):", len(rtrAsaPduModels))
-	return rtrAsaPduModels, nil
-}
+	belogs.Debug("convertRtrAsaIncrementalsToRtrPduModels(): len(rtrAsaIncrementals): ", len(rtrAsaIncrementals), "  protocolVersion:", protocolVersion)
 
-func convertRtrAsaIncrementalToRtrPduModel(rtrAsaIncremental *model.LabRpkiRtrAsaIncremental,
-	protocolVersion uint8) (rtrPduModel RtrPduModel, err error) {
-	providerAsnUint32s := make([]uint32, 0)
-	providerAsns := make([]model.ProviderAsn, 0)
-	jsonutil.UnmarshalJson(rtrAsaIncremental.ProviderAsns, &providerAsns)
-	for i := range providerAsns {
-		p := uint32(providerAsns[i].ProviderAsn)
-		providerAsnUint32s = append(providerAsnUint32s, p)
+	start := time.Now()
+	sameCustomerAsnAfi := make(map[string]*RtrAsaModel, 0)
+	rtrAsaPduModels = make([]RtrPduModel, 0)
+	for i := range rtrAsaIncrementals {
+		rtrPduModel := NewRtrAsaModelFromDb(protocolVersion, getModelFlagsFromStyle(rtrAsaIncrementals[i].Style),
+			rtrAsaIncrementals[i].AddressFamily, uint32(rtrAsaIncrementals[i].CustomerAsn))
+		key := rtrPduModel.GetKey()
+		belogs.Debug("convertRtrAsaIncrementalsToRtrPduModels(): will add key:", key)
+		if v, ok := sameCustomerAsnAfi[key]; ok {
+			v.AddProviderAsn(uint32(rtrAsaIncrementals[i].ProviderAsn))
+			sameCustomerAsnAfi[key] = v
+		} else {
+			rtrPduModel.AddProviderAsn(uint32(rtrAsaIncrementals[i].ProviderAsn))
+			sameCustomerAsnAfi[key] = rtrPduModel
+		}
 	}
-	rtrAsaModel := NewRtrAsaModel(protocolVersion, getModelFlagsFromStyle(rtrAsaIncremental.Style),
-		uint32(rtrAsaIncremental.CustomerAsn), providerAsnUint32s)
-	return rtrAsaModel, nil
+	for _, v := range sameCustomerAsnAfi {
+		rtrAsaPduModels = append(rtrAsaPduModels, v)
+		belogs.Debug("convertRtrAsaIncrementalsToRtrPduModels(): v: ", jsonutil.MarshalJson(v))
+	}
+	belogs.Info("convertRtrAsaIncrementalsToRtrPduModels(): len(rtrAsaIncrementals): ", len(rtrAsaIncrementals),
+		" len(rtrAsaPduModels):", len(rtrAsaPduModels), "  time(s):", time.Since(start))
+
+	return rtrAsaPduModels, nil
 }

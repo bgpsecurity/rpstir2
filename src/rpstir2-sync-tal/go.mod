@@ -1,3 +1,3 @@
 module rpstir2-sync-tal
 
-go 1.16
+go 1.19

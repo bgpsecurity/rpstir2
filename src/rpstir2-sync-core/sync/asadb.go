@@ -121,6 +121,6 @@ func delAsaDb(session *xorm.Session, filePathPrefix string) (err error) {
 	}
 
 	belogs.Info("delAsaDb():delete lab_rpki_asa_*** ok, by filePathPrefix :", filePathPrefix,
-		"  len(asaIds)", len(asaIds), "     time(s):", time.Now().Sub(start))
+		"  len(asaIds)", len(asaIds), "     time(s):", time.Since(start))
 	return nil
 }

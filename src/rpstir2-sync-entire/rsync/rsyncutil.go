@@ -7,8 +7,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	model "rpstir2-model"
-
 	"github.com/cpusoft/goutil/belogs"
 	"github.com/cpusoft/goutil/conf"
 	"github.com/cpusoft/goutil/httpclient"
@@ -16,6 +14,7 @@ import (
 	"github.com/cpusoft/goutil/osutil"
 	"github.com/cpusoft/goutil/randutil"
 	"github.com/cpusoft/goutil/rsyncutil"
+	model "rpstir2-model"
 )
 
 func rsyncByUrl(rsyncModelChan RsyncModelChan) {
@@ -34,13 +33,15 @@ func rsyncByUrl(rsyncModelChan RsyncModelChan) {
 	// CurRsyncingCount should +1 and then -1
 	atomic.AddInt64(&rpQueue.CurRsyncingCount, 1)
 	belogs.Debug("RsyncByUrl(): before rsync, rsyncModelChan:", rsyncModelChan, "    CurRsyncingCount:", atomic.LoadInt64(&rpQueue.CurRsyncingCount))
+	rsyncutil.SetTimeout(24)
+	defer rsyncutil.ResetAllTimeout()
 	rsyncDestPath, _, err := rsyncutil.RsyncQuiet(rsyncModelChan.Url, rsyncModelChan.Dest)
 	atomic.AddInt64(&rpQueue.CurRsyncingCount, -1)
 	belogs.Debug("RsyncByUrl(): rsync rsyncModelChan:", rsyncModelChan, "     CurRsyncingCount:", atomic.LoadInt64(&rpQueue.CurRsyncingCount),
 		"     rsyncDestPath:", rsyncDestPath)
 	if err != nil {
 		rpQueue.RsyncResult.FailUrls.Store(rsyncModelChan.Url, err.Error())
-		belogs.Error("RsyncByUrl():RsyncQuiet fail, rsyncModelChan.Url:", rsyncModelChan.Url, "   err:", err, "  time(s):", time.Now().Sub(start).Seconds())
+		belogs.Error("RsyncByUrl():RsyncQuiet fail, rsyncModelChan.Url:", rsyncModelChan.Url, "   err:", err, "  time(s):", time.Since(start))
 		belogs.Debug("RsyncByUrl():RsyncQuiet fail, before RsyncingParsingCount-1:", atomic.LoadInt64(&rpQueue.RsyncingParsingCount))
 		atomic.AddInt64(&rpQueue.RsyncingParsingCount, -1)
 		belogs.Debug("RsyncByUrl():RsyncQuiet fail, after RsyncingParsingCount-1:", atomic.LoadInt64(&rpQueue.RsyncingParsingCount))
@@ -51,7 +52,7 @@ func rsyncByUrl(rsyncModelChan RsyncModelChan) {
 	parseModelChan := ParseModelChan{FilePathName: rsyncDestPath}
 	belogs.Debug("RsyncByUrl():before parseModelChan:", parseModelChan, "   len(rpQueue.ParseModelChan):", len(rpQueue.ParseModelChan))
 	belogs.Info("RsyncByUrl(): rsync rsyncModelChan:", rsyncModelChan, "     CurRsyncingCount:", atomic.LoadInt64(&rpQueue.CurRsyncingCount),
-		"     rsyncDestPath:", rsyncDestPath, "  time(s):", time.Now().Sub(start).Seconds())
+		"     rsyncDestPath:", rsyncDestPath, "  time(s):", time.Since(start))
 
 	rpQueue.ParseModelChan <- parseModelChan
 
@@ -138,7 +139,7 @@ func parseCerAndGetSubCaRepositoryUrl(cerFile string) (subCaRepositoryUrl string
 
 	// get the sub repo url in cer, and send it to rpqueue
 	belogs.Info("ParseCerAndGetSubCaRepositoryUrl(): cerFile:", cerFile, "  caRepository:", jsonutil.MarshalJson(parseCerSimple),
-		"  time(s):", time.Now().Sub(start).Seconds())
+		"  time(s):", time.Since(start))
 	return parseCerSimple.CaRepository
 
 }

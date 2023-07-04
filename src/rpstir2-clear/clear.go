@@ -27,11 +27,11 @@ func clearRtr() {
 	deleteSerialNumber := serialNumber - 24
 	belogs.Info("clearRtr():serialNumber:", serialNumber, "   deleteSerialNumber:", deleteSerialNumber)
 	if serialNumber <= 24 {
-		belogs.Info("clearRtr():  serialNumber <= 24:", serialNumber, " time(s):", time.Now().Sub(start).Seconds())
+		belogs.Info("clearRtr():  serialNumber <= 24:", serialNumber, " time(s):", time.Since(start))
 		return
 	}
 	if deleteSerialNumber <= 0 {
-		belogs.Info("clearRtr(): deleteSerialNumber <= 0:", deleteSerialNumber, " time(s):", time.Now().Sub(start).Seconds())
+		belogs.Info("clearRtr(): deleteSerialNumber <= 0:", deleteSerialNumber, " time(s):", time.Since(start))
 		return
 	}
 
@@ -48,5 +48,5 @@ func clearRtr() {
 		belogs.Error("clearRtr():clearRtrFullLogRtrIncremet lab_rpki_rtr_full_log fail:deleteSerialNumber:", deleteSerialNumber, err)
 		// no return
 	}
-	belogs.Info("clearRtr(): end, time(s):", time.Now().Sub(start).Seconds())
+	belogs.Info("clearRtr(): end, time(s):", time.Since(start))
 }

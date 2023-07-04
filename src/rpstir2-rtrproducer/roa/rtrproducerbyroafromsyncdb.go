@@ -1,4 +1,4 @@
-package rtrproducer
+package roa
 
 import (
 	"time"
@@ -8,6 +8,7 @@ import (
 	"github.com/cpusoft/goutil/jsonutil"
 	"github.com/cpusoft/goutil/xormdb"
 	model "rpstir2-model"
+	rtrcommon "rpstir2-rtrproducer/common"
 )
 
 func getAllRoasDb() (roaToRtrFullLogs []model.RoaToRtrFullLog, err error) {
@@ -38,37 +39,10 @@ func getAllRoasDb() (roaToRtrFullLogs []model.RoaToRtrFullLog, err error) {
 	return roaToRtrFullLogs, nil
 }
 
-func updateRtrFullLogFromRoaAndSlurmDb(newSerialNumberModel SerialNumberModel, roaToRtrFullLogs []model.RoaToRtrFullLog,
-	effectSlurmToRtrFullLogs []model.EffectSlurmToRtrFullLog) (err error) {
-	//when both  len are 0, return nil
-	if len(roaToRtrFullLogs) == 0 && len(effectSlurmToRtrFullLogs) == 0 {
-		belogs.Info("updateRtrFullLogFromRoaAndSlurmDb():roa and slurm all are empty")
-		return nil
-	}
-	start := time.Now()
-
-	err = insertRtrFullLogFromRoaDb(newSerialNumberModel.SerialNumber, roaToRtrFullLogs)
-	if err != nil {
-		belogs.Error("updateRtrFullLogFromRoaAndSlurmDb():insertRtrFullLogFromRoaDb fail:", err)
-		return err
-	}
-	belogs.Info("updateRtrFullLogFromRoaAndSlurmDb():insertRtrFullLogFromRoaDb new serialNumber:", newSerialNumberModel.SerialNumber,
-		"   len(roaToRtrFullLogs):", len(roaToRtrFullLogs), "  time(s):", time.Now().Sub(start))
-
-	err = updateRtrFullOrFullLogFromSlurmDb("lab_rpki_rtr_full_log", newSerialNumberModel.SerialNumber, effectSlurmToRtrFullLogs)
-	if err != nil {
-		belogs.Error("updateRtrFullLogFromRoaAndSlurmDb(): updateRtrFullOrFullLogFromSlurmDb fail:", err)
-		return err
-	}
-	belogs.Info("updateRtrFullLogFromRoaAndSlurmDb():updateRtrFullOrFullLogFromSlurmDb new serialNumber:", newSerialNumberModel.SerialNumber,
-		"   len(effectSlurmToRtrFullLogs):", len(effectSlurmToRtrFullLogs), "  time(s):", time.Now().Sub(start))
-	return nil
-}
-
-func updateSerailNumberAndRtrFullAndRtrIncrementalDb(newSerialNumberModel SerialNumberModel,
+func updateSerialNumberAndRtrFullAndRtrIncrementalDb(newSerialNumberModel *rtrcommon.SerialNumberModel,
 	rtrIncrementals []model.LabRpkiRtrIncremental) (err error) {
 	start := time.Now()
-	belogs.Debug("updateSerailNumberAndRtrFullAndRtrIncrementalDb(): newSerialNumberModel:", jsonutil.MarshalJson(newSerialNumberModel),
+	belogs.Debug("updateSerialNumberAndRtrFullAndRtrIncrementalDb(): newSerialNumberModel:", jsonutil.MarshalJson(newSerialNumberModel),
 		"   len(rtrIncrementals):", len(rtrIncrementals))
 
 	session, err := xormdb.NewSession()
@@ -76,24 +50,21 @@ func updateSerailNumberAndRtrFullAndRtrIncrementalDb(newSerialNumberModel Serial
 
 	// serialnumber/rtrfull/rtrincr should in one session
 	// insert new serial number
-	sql := ` insert into lab_rpki_rtr_serial_number(
-		serialNumber,globalSerialNumber,subpartSerialNumber, createTime)
-		 values(?,?,?,?)`
-	_, err = session.Exec(sql,
-		newSerialNumberModel.SerialNumber, newSerialNumberModel.GlobalSerialNumber,
-		newSerialNumberModel.SubpartSerialNumber, start)
+	err = rtrcommon.InsertSerialNumberDb(session, newSerialNumberModel, start)
 	if err != nil {
-		belogs.Error("updateSerailNumberAndRtrFullAndRtrIncrementalDb():insert into lab_rpki_rtr_serial_number fail:", jsonutil.MarshalJson(newSerialNumberModel), err)
-		return err
+		belogs.Error("updateRtrFullAndIncrementalAndRsyncLogRtrStateEndDb():InsertSerialNumberDb fail,newSerialNumberModel:", jsonutil.MarshalJson(newSerialNumberModel), err)
+		return xormdb.RollbackAndLogError(session, "updateRtrFullAndIncrementalAndRsyncLogRtrStateEndDb():InsertSerialNumberDb fail:", err)
 	}
+	belogs.Debug("updateRtrFullAndIncrementalAndRsyncLogRtrStateEndDb():InsertSerialNumberDb, newSerialNumberModel:", jsonutil.MarshalJson(newSerialNumberModel), "  time(s):", time.Since(start))
 
 	// delete and insert into lab_rpki_rtr_full
-	sql = `delete from lab_rpki_rtr_full`
+	sql := `delete from lab_rpki_rtr_full`
 	_, err = session.Exec(sql)
 	if err != nil {
 		belogs.Error("updateRtrFullAndIncrementalAndRsyncLogRtrStateEndDb():delete lab_rpki_rtr_full fail:", err)
-		return xormdb.RollbackAndLogError(session, "updateSerailNumberAndRtrFullAndRtrIncrementalDb():delete lab_rpki_rtr_full fail: ", err)
+		return xormdb.RollbackAndLogError(session, "updateSerialNumberAndRtrFullAndRtrIncrementalDb():delete lab_rpki_rtr_full fail:", err)
 	}
+	belogs.Debug("updateSerialNumberAndRtrFullAndRtrIncrementalDb(): delete lab_rpki_rtr_full: time(s):", time.Since(start))
 
 	// insert rtr_full from rtr_full_log
 	sql = `
@@ -105,10 +76,11 @@ func updateSerailNumberAndRtrFullAndRtrIncrementalDb(newSerialNumberModel Serial
 	from lab_rpki_rtr_full_log where serialNumber=? order by id`
 	_, err = session.Exec(sql, newSerialNumberModel.SerialNumber)
 	if err != nil {
-		belogs.Error("updateSerailNumberAndRtrFullAndRtrIncrementalDb():insert into lab_rpki_rtr_full from lab_rpki_rtr_full_log fail: newSerialNumber:",
+		belogs.Error("updateSerialNumberAndRtrFullAndRtrIncrementalDb():insert into lab_rpki_rtr_full from lab_rpki_rtr_full_log fail: newSerialNumber:",
 			jsonutil.MarshalJson(newSerialNumberModel), err)
-		return xormdb.RollbackAndLogError(session, "updateSerailNumberAndRtrFullAndRtrIncrementalDb():insert into lab_rpki_rtr_full from lab_rpki_rtr_full_log fail: ", err)
+		return xormdb.RollbackAndLogError(session, "updateSerialNumberAndRtrFullAndRtrIncrementalDb():insert into lab_rpki_rtr_full from lab_rpki_rtr_full_log fail: ", err)
 	}
+	belogs.Debug("updateSerialNumberAndRtrFullAndRtrIncrementalDb():insert into lab_rpki_rtr_full from lab_rpki_rtr_full_log: time(s):", time.Since(start))
 
 	// insert into lab_rpki_rtr_incremental
 	sql = `insert ignore into lab_rpki_rtr_incremental
@@ -119,21 +91,22 @@ func updateSerailNumberAndRtrFullAndRtrIncrementalDb(newSerialNumberModel Serial
 			newSerialNumberModel.SerialNumber, rtrIncrementals[i].Style, rtrIncrementals[i].Asn, rtrIncrementals[i].Address,
 			rtrIncrementals[i].PrefixLength, rtrIncrementals[i].MaxLength, rtrIncrementals[i].SourceFrom)
 		if err != nil {
-			belogs.Error("updateSerailNumberAndRtrFullAndRtrIncrementalDb():insert into lab_rpki_rtr_incremental fail: newSerialNumber:",
+			belogs.Error("updateSerialNumberAndRtrFullAndRtrIncrementalDb():insert into lab_rpki_rtr_incremental fail: newSerialNumber:",
 				jsonutil.MarshalJson(newSerialNumberModel), jsonutil.MarshalJson(rtrIncrementals[i]), err)
-			return xormdb.RollbackAndLogError(session, "updateSerailNumberAndRtrFullAndRtrIncrementalDb():insert into lab_rpki_rtr_full from lab_rpki_rtr_full_log fail: ", err)
+			return xormdb.RollbackAndLogError(session, "updateSerialNumberAndRtrFullAndRtrIncrementalDb():insert into lab_rpki_rtr_incremental fail: ", err)
 		}
 	}
+	belogs.Debug("updateSerialNumberAndRtrFullAndRtrIncrementalDb():insert into lab_rpki_rtr_incremental: time(s):", time.Since(start))
 
 	// commit
 	err = xormdb.CommitSession(session)
 	if err != nil {
-		belogs.Error("updateSerailNumberAndRtrFullAndRtrIncrementalDb(): CommitSession fail :", err)
-		return xormdb.RollbackAndLogError(session, "updateSerailNumberAndRtrFullAndRtrIncrementalDb(): CommitSession fail: ", err)
+		belogs.Error("updateSerialNumberAndRtrFullAndRtrIncrementalDb(): CommitSession fail :", err)
+		return xormdb.RollbackAndLogError(session, "updateSerialNumberAndRtrFullAndRtrIncrementalDb(): CommitSession fail: ", err)
 	}
 
-	belogs.Info("updateSerailNumberAndRtrFullAndRtrIncrementalDb(): CommitSession ok: newSerialNumberModel:", jsonutil.MarshalJson(newSerialNumberModel),
-		"   len(rtrIncrementals):", len(rtrIncrementals), "   time(s):", time.Now().Sub(start))
+	belogs.Info("updateSerialNumberAndRtrFullAndRtrIncrementalDb(): CommitSession ok: newSerialNumberModel:", jsonutil.MarshalJson(newSerialNumberModel),
+		"   len(rtrIncrementals):", len(rtrIncrementals), "   time(s):", time.Since(start))
 	return nil
 }
 
@@ -166,7 +139,7 @@ func getRtrFullFromRtrFullLogDb(serialNumber uint64) (rtrFulls map[string]model.
 			convert.ToString(rtrFs[i].PrefixLength) + "_" + convert.ToString(rtrFs[i].MaxLength)
 		rtrFulls[key] = rtrFs[i]
 	}
-	belogs.Info("getRtrFullFromRtrFullLogDb():map LabRpkiRtrFull, serialNumber, len(rtrFulls):", serialNumber, len(rtrFulls), "   time(s):", time.Now().Sub(start))
+	belogs.Info("getRtrFullFromRtrFullLogDb():map LabRpkiRtrFull, serialNumber, len(rtrFulls):", serialNumber, len(rtrFulls), "   time(s):", time.Since(start))
 	return rtrFulls, nil
 
 }
@@ -205,6 +178,6 @@ func insertRtrFullLogFromRoaDb(newSerialNumber uint64, roaToRtrFullLogs []model.
 		belogs.Error("insertRtrFullLogFromRoaDb(): CommitSession fail :", err)
 		return xormdb.RollbackAndLogError(session, "insertRtrFullLogFromRoaDb(): CommitSession fail: ", err)
 	}
-	belogs.Info("insertRtrFullLogFromRoaDb(): CommitSession ok, len(roaToRtrFullLogs): ", len(roaToRtrFullLogs), "   time(s):", time.Now().Sub(start))
+	belogs.Info("insertRtrFullLogFromRoaDb(): CommitSession ok, len(roaToRtrFullLogs): ", len(roaToRtrFullLogs), "   time(s):", time.Since(start))
 	return nil
 }

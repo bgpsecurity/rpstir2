@@ -44,9 +44,38 @@ func addCersDb(syncLogFileModels []SyncLogFileModel) error {
 		belogs.Error("addCersDb(): CommitSession fail :", err)
 		return err
 	}
-	belogs.Info("addCersDb(): len(syncLogFileModels):", len(syncLogFileModels), "  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Info("addCersDb(): len(syncLogFileModels):", len(syncLogFileModels), "  time(s):", time.Since(start))
 	return nil
 
+}
+
+func addCerDb(syncLogFileModel *SyncLogFileModel) (err error) {
+	start := time.Now()
+	belogs.Debug("addCerDb(): will add cer file:", syncLogFileModel.FilePath, syncLogFileModel.FileName,
+		"  fileType:", syncLogFileModel.FileType)
+
+	session, err := xormdb.NewSession()
+	defer session.Close()
+
+	err = insertCerDb(session, syncLogFileModel, start)
+	if err != nil {
+		belogs.Error("addCerDb(): insertCerDb fail, syncLogFileModel:", jsonutil.MarshalJson(syncLogFileModel), err)
+		return xormdb.RollbackAndLogError(session, "addCerDb(): insertCerDb fail, syncLogFileModel:"+jsonutil.MarshalJson(syncLogFileModel), err)
+	}
+
+	err = updateSyncLogFileJsonAllAndStateDb(session, syncLogFileModel)
+	if err != nil {
+		belogs.Error("addCerDb(): updateSyncLogFileJsonAllAndStateDb fail, syncLogFileModel:", jsonutil.MarshalJson(syncLogFileModel), err)
+		return xormdb.RollbackAndLogError(session, "addCerDb(): updateSyncLogFileJsonAllAndStateDb fail, syncLogFileModel:"+jsonutil.MarshalJson(syncLogFileModel), err)
+	}
+
+	err = xormdb.CommitSession(session)
+	if err != nil {
+		belogs.Error("addCerDb(): CommitSession fail :", err)
+		return err
+	}
+	belogs.Info("addCerDb(): cer file:", syncLogFileModel.FilePath, syncLogFileModel.FileName, "  time(s):", time.Since(start))
+	return nil
 }
 
 // del
@@ -81,7 +110,38 @@ func delCersDb(delSyncLogFileModels []SyncLogFileModel, updateSyncLogFileModels 
 		belogs.Error("delCersDb(): CommitSession fail :", err)
 		return err
 	}
-	belogs.Info("delCersDb(): len(cers):", len(syncLogFileModels), "  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Info("delCersDb(): len(cers):", len(syncLogFileModels), "  time(s):", time.Since(start))
+	return nil
+}
+
+func delCerDb(syncLogFileModel *SyncLogFileModel) (err error) {
+	start := time.Now()
+	belogs.Debug("delCerDb(): will del cer file:", syncLogFileModel.FilePath, syncLogFileModel.FileName)
+
+	session, err := xormdb.NewSession()
+	defer session.Close()
+
+	err = delCerByIdDb(session, syncLogFileModel.CertId)
+	if err != nil {
+		belogs.Error("delCerDb(): delCerByIdDb fail, syncLogFileModel:", jsonutil.MarshalJson(syncLogFileModel), err)
+		return xormdb.RollbackAndLogError(session, "delCerDb(): delCerByIdDb fail, syncLogFileModel:"+jsonutil.MarshalJson(syncLogFileModel), err)
+	}
+	// only del,will update syncLogFile.
+	// when is add/update, will update syncLogFile in addAsaDb()
+	if syncLogFileModel.SyncType == "del" {
+		err = updateSyncLogFileJsonAllAndStateDb(session, syncLogFileModel)
+		if err != nil {
+			belogs.Error("delCerDb(): updateSyncLogFileJsonAllAndStateDb fail, syncLogFileModel:", jsonutil.MarshalJson(syncLogFileModel), err)
+			return xormdb.RollbackAndLogError(session, "delCerDb(): updateSyncLogFileJsonAllAndStateDb fail, syncLogFileModel:"+jsonutil.MarshalJson(syncLogFileModel), err)
+		}
+	}
+
+	err = xormdb.CommitSession(session)
+	if err != nil {
+		belogs.Error("delCerDb(): CommitSession fail :", err)
+		return err
+	}
+	belogs.Info("delCerDb(): cer file:", syncLogFileModel.FilePath, syncLogFileModel.FileName, "  time(s):", time.Since(start))
 	return nil
 }
 
@@ -154,7 +214,12 @@ func delCerByIdDb(session *xorm.Session, cerId uint64) (err error) {
 func insertCerDb(session *xorm.Session,
 	syncLogFileModel *SyncLogFileModel, now time.Time) error {
 
-	cerModel := syncLogFileModel.CertModel.(model.CerModel)
+	cerModel, ok := syncLogFileModel.CertModel.(model.CerModel)
+	if !ok {
+		belogs.Error("insertCerDb(): is not cerModel, syncLogFileModel:", jsonutil.MarshalJson(syncLogFileModel))
+		return errors.New("CertModel is not cerModel type")
+	}
+
 	notBefore := cerModel.NotBefore
 	notAfter := cerModel.NotAfter
 	belogs.Debug("insertCerDb():now ", now, "  notBefore:", notBefore, "  notAfter:", notAfter,
@@ -176,7 +241,8 @@ func insertCerDb(session *xorm.Session,
 		cerModel.FileHash, xormdb.SqlNullString(jsonutil.MarshalJson(cerModel)), syncLogFileModel.SyncLogId, syncLogFileModel.Id, now,
 		xormdb.SqlNullString(jsonutil.MarshalJson(syncLogFileModel.StateModel)))
 	if err != nil {
-		belogs.Error("insertCerDb(): INSERT lab_rpki_cer Exec:", jsonutil.MarshalJson(syncLogFileModel), err)
+		belogs.Error("insertCerDb(): INSERT lab_rpki_cer fail, cerModel:", jsonutil.MarshalJson(cerModel),
+			"     syncLogFileModel:", jsonutil.MarshalJson(syncLogFileModel), err)
 		return err
 	}
 
@@ -308,7 +374,7 @@ func updateCerStateDb(certIdStateModels []CertIdStateModel) error {
 		belogs.Error("updateCerStateDb(): CommitSession fail :", err)
 		return err
 	}
-	belogs.Info("updateCerStateDb(): len(certIdStateModels):", len(certIdStateModels), "  time(s):", time.Now().Sub(start))
+	belogs.Info("updateCerStateDb(): len(certIdStateModels):", len(certIdStateModels), "  time(s):", time.Since(start))
 
 	return nil
 }

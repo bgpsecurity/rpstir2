@@ -57,7 +57,7 @@ func delCrlDb(session *xorm.Session, filePathPrefix string) (err error) {
 		return err
 	}
 	belogs.Info("delCrlDb():delete lab_rpki_crl_*** ok, by filePathPrefix :", filePathPrefix,
-		"  len(crlIds)", len(crlIds), "     time(s):", time.Now().Sub(start).Seconds())
+		"  len(crlIds)", len(crlIds), "     time(s):", time.Since(start))
 	return nil
 
 }

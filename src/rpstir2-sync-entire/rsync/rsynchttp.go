@@ -8,43 +8,43 @@ import (
 )
 
 // start to rsync from sync
-func RsyncStart(c *gin.Context) {
-	belogs.Debug("RsyncStart(): start")
+func RsyncRequest(c *gin.Context) {
+	belogs.Debug("RsyncRequest(): start")
 
 	syncUrls := model.SyncUrls{}
 	err := c.ShouldBindJSON(&syncUrls)
-	belogs.Info("RsyncStart(): syncUrls:", syncUrls, err)
+	belogs.Info("RsyncRequest(): syncUrls:", syncUrls, err)
 	if err != nil {
-		belogs.Error("RsyncStart(): ShouldBindJSON:", err)
+		belogs.Error("RsyncRequest(): ShouldBindJSON:", err)
 		ginserver.ResponseFail(c, err, nil)
 		return
 	}
 
-	go rsyncStart(&syncUrls)
+	go rsyncRequest(&syncUrls)
 
 	ginserver.ResponseOk(c, nil)
 }
 
 // start local rsync
-func RsyncLocalStart(c *gin.Context) {
-	belogs.Debug("RsyncLocalStart(): start")
+func LocalRsyncRequest(c *gin.Context) {
+	belogs.Debug("LocalRsyncRequest(): start")
 
 	syncUrls := model.SyncUrls{}
 	err := c.ShouldBindJSON(&syncUrls)
-	belogs.Info("RsyncStart(): syncUrls:", syncUrls, err)
+	belogs.Info("LocalRsyncRequest(): syncUrls:", syncUrls, err)
 	if err != nil {
-		belogs.Error("RsyncStart(): ShouldBindJSON:", err)
+		belogs.Error("LocalRsyncRequest(): ShouldBindJSON:", err)
 		ginserver.ResponseFail(c, err, nil)
 		return
 	}
 
-	rsyncResult, err := LocalStart(&syncUrls)
+	rsyncResult, err := localRsyncRequest(&syncUrls)
 	if err != nil {
-		belogs.Error("RsyncLocalStart(): LocalStart:", err)
+		belogs.Error("LocalRsyncRequest(): localRsyncRequest:", err)
 		ginserver.ResponseFail(c, err, nil)
 		return
 	}
-	belogs.Debug("RsyncLocalStart(): rsyncResult:", rsyncResult)
+	belogs.Debug("LocalRsyncRequest(): rsyncResult:", rsyncResult)
 
 	ginserver.ResponseOk(c, rsyncResult)
 

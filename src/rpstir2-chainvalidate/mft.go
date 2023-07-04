@@ -2,6 +2,7 @@ package chainvalidate
 
 import (
 	"errors"
+	"math/big"
 	"strings"
 	"sync"
 	"time"
@@ -30,17 +31,26 @@ func getChainMfts(chains *Chains, wg *sync.WaitGroup) {
 
 	for i := range chainMftSqls {
 		chainMft := chainMftSqls[i].ToChainMft()
-		chainMft.ChainFileHashs, err = GetChainFileHashs(chainMft.Id)
-		belogs.Debug("getChainMfts():i, chainMft:", i, jsonutil.MarshalJson(chainMft))
+		chainMft.ChainFileHashs, err = GetChainFileHashsDb(chainMft.Id)
 		if err != nil {
-			belogs.Error("getChainMfts(): GetChainFileHashs fail:", chainMft.Id, err)
+			belogs.Error("getChainMfts(): GetChainFileHashsDb fail:", chainMft.Id, err)
 			return
 		}
+		belogs.Debug("getChainMfts():i:", i, " chainMft.ChainFileHashs:", chainMft.ChainFileHashs)
+
+		chainMft.PreviousMft, err = GetPreviousMftDb(chainMft.Id)
+		belogs.Debug("getChainMfts():i:", i, " previousMft:", i, chainMft.PreviousMft)
+		if err != nil {
+			belogs.Error("getChainMfts(): GetPreviousMftDb fail:", chainMft.Id, err)
+			return
+		}
+		belogs.Debug("getChainMfts():i:", i, " chainMft.PreviousMft:", chainMft.PreviousMft) //shaodebug
+
 		chains.MftIds = append(chains.MftIds, chainMftSqls[i].Id)
 		chains.AddMft(&chainMft)
 	}
 
-	belogs.Debug("getChainMfts(): end len(chainMftSqls):", len(chainMftSqls), ",   len(chains.MftIds):", len(chains.MftIds), "  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Debug("getChainMfts(): end len(chainMftSqls):", len(chainMftSqls), ",   len(chains.MftIds):", len(chains.MftIds), "  time(s):", time.Since(start))
 	return
 }
 
@@ -62,7 +72,7 @@ func validateMfts(chains *Chains, wg *sync.WaitGroup) {
 	mftWg.Wait()
 	close(chainMftCh)
 
-	belogs.Info("validateMfts(): end, len(mftIds):", len(mftIds), "  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Info("validateMfts(): end, len(mftIds):", len(mftIds), "  time(s):", time.Since(start))
 
 }
 
@@ -153,12 +163,7 @@ func validateMft(chains *Chains, mftId uint64, wg *sync.WaitGroup, chainMftCh ch
 			Fail: "File on filelist no longer exists",
 			Detail: "object(s) is(are) not in publication point but listed on mft, the(these) object(s) is(are) " +
 				strings.Join(noExistFiles, ", ")}
-		if conf.Bool("policy::allowInMftNoExist") {
-			chainMft.StateModel.AddWarning(&stateMsg)
-		} else {
-			chainMft.StateModel.AddError(&stateMsg)
-		}
-
+		chainMft.StateModel.AddError(&stateMsg)
 	}
 	if len(sha256ErrorFiles) > 0 {
 		belogs.Debug("validateMft():verify mft file hash fail, mftId:", chainMft.Id,
@@ -167,35 +172,33 @@ func validateMft(chains *Chains, mftId uint64, wg *sync.WaitGroup, chainMftCh ch
 			Fail: "The sha256 value of the file is not equal to the value on the filelist",
 			Detail: "object(s) in publication point and mft has(have) different hashvalues, the(these) object(s) is(are) " +
 				strings.Join(sha256ErrorFiles, ", ")}
-		if conf.Bool("policy::allowIncorrectMftHashValue") {
-			chainMft.StateModel.AddWarning(&stateMsg)
-		} else {
-			chainMft.StateModel.AddError(&stateMsg)
-		}
-	}
+		chainMft.StateModel.AddError(&stateMsg)
 
+	}
 	belogs.Debug("validateMft():after check ChainFileHashs, stateModel:", chainMft.Id, jsonutil.MarshalJson(chainMft.StateModel))
 
 	noExistFiles = make([]string, 0)
 	// check all the file(cer/crl/roa) which have same aki ,should all in filehash
-	sameAkiCerRoaCrlFiles, sameAkiChainMfts, err := getSameAkiCerRoaCrlFilesChainMfts(chains, mftId)
+	sameAkiCerRoaAsaCrlFiles, sameAkiCrls, sameAkiChainMfts, err := getSameAkiCerRoaCrlFilesChainMfts(chains, mftId)
+	belogs.Debug("validateMft():getSameAkiCerRoaCrlFilesChainMfts, mftId:", chainMft.Id, "   sameAkiCerRoaAsaCrlFiles:", sameAkiCerRoaAsaCrlFiles,
+		"   sameAkiCrls:", sameAkiCrls, "   sameAkiChainMfts:", sameAkiChainMfts, err)
 	if err != nil {
-		belogs.Debug("validateMft():GetSameAkiCerRoaCrlFiles fail, aki:", chainMft.Aki)
+		belogs.Debug("validateMft():getSameAkiCerRoaCrlFilesChainMfts fail, aki:", chainMft.Aki)
 		stateMsg := model.StateMsg{Stage: "chainvalidate",
 			Fail:   "Fail to get CER/ROA/CRL/MFT under specific AKI",
 			Detail: err.Error()}
 		chainMft.StateModel.AddError(&stateMsg)
 	} else {
 
-		if len(sameAkiCerRoaCrlFiles) == 0 {
-			belogs.Debug("validateMft():GetSameAkiCerRoaCrlFiles len(akiFiles)==0, aki:", chainMft.Aki)
+		if len(sameAkiCerRoaAsaCrlFiles) == 0 {
+			belogs.Debug("validateMft():getSameAkiCerRoaCrlFilesChainMfts len(akiFiles)==0, aki:", chainMft.Aki)
 			stateMsg := model.StateMsg{Stage: "chainvalidate",
 				Fail:   "Fail to get CER/ROA/CRL/MFT under specific AKI",
 				Detail: "the aki is " + chainMft.Aki}
 			chainMft.StateModel.AddError(&stateMsg)
 		}
 
-		for _, sameAkiCerRoaCrlFile := range sameAkiCerRoaCrlFiles {
+		for _, sameAkiCerRoaCrlFile := range sameAkiCerRoaAsaCrlFiles {
 			found := false
 			for _, fileHash := range chainMft.ChainFileHashs {
 				if strings.ToLower(sameAkiCerRoaCrlFile) == strings.ToLower(fileHash.File) {
@@ -215,12 +218,36 @@ func validateMft(chains *Chains, mftId uint64, wg *sync.WaitGroup, chainMftCh ch
 				Fail: "The CER, ROA and CRL of these same AKI are not on the filelist of MFT of same AKI",
 				Detail: "object(s) is(are) in publication point but not listed on mft, the(these) object(s) is(are) " +
 					jsonutil.MarshalJson(noExistFiles)}
-			if conf.Bool("policy::allowCerRoaCrlNotInMft") {
+			chainMft.StateModel.AddError(&stateMsg)
+		}
+
+		// mft's thisUpdate/nextUpdate are equal to clr's thisUpdate/nextUpdate
+		if len(sameAkiCrls) == 0 {
+			belogs.Debug("validateMft():getSameAkiCerRoaCrlFilesChainMfts len(sameAkiCrls)==0, aki:", chainMft.Aki)
+			stateMsg := model.StateMsg{Stage: "chainvalidate",
+				Fail:   "Fail to get CRL under specific AKI",
+				Detail: "The aki of MFT is " + chainMft.Aki}
+			chainMft.StateModel.AddError(&stateMsg)
+		}
+		for i := range sameAkiCrls {
+			if !chainMft.ThisUpdate.Equal(sameAkiCrls[i].ThisUpdate) {
+				stateMsg := model.StateMsg{Stage: "chainvalidate",
+					Fail: "The thisUpdate of CRL is different from thisUpdate of MFT which has the same AKI",
+					Detail: "The thisUpdate of CRL is " + convert.ToString(sameAkiCrls[i].ThisUpdate) +
+						", and the thisUpdate of MFT is " + convert.ToString(chainMft.ThisUpdate) +
+						", and the CLR file is " + sameAkiCrls[i].FilePath + " " + sameAkiCrls[i].FileName}
 				chainMft.StateModel.AddWarning(&stateMsg)
-			} else {
-				chainMft.StateModel.AddError(&stateMsg)
+			}
+			if !chainMft.NextUpdate.Equal(sameAkiCrls[i].NextUpdate) {
+				stateMsg := model.StateMsg{Stage: "chainvalidate",
+					Fail: "The nextUpdate of CRL is different from nextUpdate of MFT which has same AKI",
+					Detail: "The NextUpdate of CRL is " + convert.ToString(sameAkiCrls[i].NextUpdate) +
+						", and the NextUpdate of MFT is " + convert.ToString(chainMft.ThisUpdate) +
+						", and the CLR file is " + sameAkiCrls[i].FilePath + " " + sameAkiCrls[i].FileName}
+				chainMft.StateModel.AddWarning(&stateMsg)
 			}
 		}
+
 	}
 	belogs.Debug("validateMft():after check akiFiles, stateModel:", chainMft.Id, jsonutil.MarshalJson(chainMft.StateModel))
 
@@ -235,7 +262,7 @@ func validateMft(chains *Chains, mftId uint64, wg *sync.WaitGroup, chainMftCh ch
 			belogs.Debug("validateMft():same mft files is not self, aki:", sameAkiChainMfts[0].FileName, chainMft.FileName, chainMft.Aki)
 			stateMsg := model.StateMsg{Stage: "chainvalidate",
 				Fail:   "Fail to get Manifest under specific AKI",
-				Detail: "aki is" + chainMft.Aki + "  fileName is " + chainMft.FileName + "  same aki file is " + sameAkiChainMfts[0].FileName}
+				Detail: "aki is " + chainMft.Aki + "  fileName is " + chainMft.FileName + "  same aki file is " + sameAkiChainMfts[0].FileName}
 			chainMft.StateModel.AddError(&stateMsg)
 		}
 	} else if len(sameAkiChainMfts) == 0 {
@@ -301,13 +328,78 @@ func validateMft(chains *Chains, mftId uint64, wg *sync.WaitGroup, chainMftCh ch
 		chainMft.StateModel.AddError(&stateMsg)
 	}
 
+	belogs.Debug("validateMft(): check previous mft,  mftId:", chainMft.Id, "   chainMft.PreviousMft:", chainMft.PreviousMft) //shaodebug
+	if chainMft.PreviousMft.Found {
+		// compare prev Number and cur NUmber
+		prevMftNumber, okPrev := new(big.Int).SetString(chainMft.PreviousMft.MftNumber, 16)
+		curMftNumber, ok := new(big.Int).SetString(chainMft.MftNumber, 16)
+		// shaodebug
+		belogs.Debug("validateMft(): found previous mft,  mftId:", chainMft.Id,
+			"   prevMftNumber:", prevMftNumber, "   okPrev:", okPrev, "   curMftNumber:", curMftNumber, "  ok:", ok)
+		// should be hex
+		if !ok || !okPrev {
+			belogs.Info("validateMft(): !ok || !okPrev   mftId:", chainMft.Id) //shaodebug
+			stateMsg := model.StateMsg{Stage: "chainvalidate",
+				Fail:   "The Number of this Manifest or the previous Number is not a Hexadecimal number",
+				Detail: "The Number of this Manifest is " + chainMft.MftNumber + ", and the previouse Number is " + chainMft.PreviousMft.MftNumber}
+			chainMft.StateModel.AddError(&stateMsg)
+		} else {
+
+			comp := curMftNumber.Cmp(prevMftNumber)
+			belogs.Debug("validateMft(): comp, prevMftNumber:", prevMftNumber, "   curMftNumber:", curMftNumber, "  comp:", comp) //shaodebug
+			if comp < 0 {
+				// if cur < prev, then error
+				stateMsg := model.StateMsg{Stage: "chainvalidate",
+					Fail:   "The Number of this Manifest is less than the previous Number",
+					Detail: "The Number of this Manifest is " + curMftNumber.String() + ", and the previouse Number is " + prevMftNumber.String()}
+				chainMft.StateModel.AddError(&stateMsg)
+			} else if comp == 0 {
+				// if cur == prev, then warning
+				stateMsg := model.StateMsg{Stage: "chainvalidate",
+					Fail:   "The Number of this Manifest is equal to the previous Number",
+					Detail: "The Number of this Manifest is " + curMftNumber.String() + ", and the previouse Number is " + prevMftNumber.String()}
+				chainMft.StateModel.AddWarning(&stateMsg)
+			} else {
+				// cur > prev
+				// if cur - prev == 1 ,then ok, else warning
+				one := big.NewInt(1)
+				sub := big.NewInt(0).Sub(curMftNumber, prevMftNumber)
+				belogs.Debug("validateMft(): comp, one:", one, "   sub:", sub) //shaodebug
+				// just bigger 1, ok
+				if sub.Cmp(one) != 0 {
+					stateMsg := model.StateMsg{Stage: "chainvalidate",
+						Fail:   "The Number of this Manifest is not exactly 1 larger than the previous Number",
+						Detail: "The Number of this Manifest is " + curMftNumber.String() + ", and the previouse Number is " + prevMftNumber.String()}
+					chainMft.StateModel.AddWarning(&stateMsg)
+				}
+			}
+		}
+		belogs.Debug("validateMft(): prevMftNumber and curMftNumber,   mftId:", chainMft.Id, "  chainMft.StateModel:", jsonutil.MarshalJson(chainMft.StateModel)) //shaodebug
+
+		// compare prev thisUpdate/nextUpdate and cur thisUpdate/nextUpdate
+		if !chainMft.ThisUpdate.After(chainMft.PreviousMft.ThisUpdate) {
+			stateMsg := model.StateMsg{Stage: "chainvalidate",
+				Fail:   "The ThisUpdate of this Manifest is is later than the previous ThisUpdate",
+				Detail: "The ThisUpdate of this Manifest is " + chainMft.ThisUpdate.String() + ", and the previouse ThisUpdate is " + chainMft.PreviousMft.ThisUpdate.String()}
+			chainMft.StateModel.AddError(&stateMsg)
+		}
+		if !chainMft.NextUpdate.After(chainMft.PreviousMft.NextUpdate) {
+			stateMsg := model.StateMsg{Stage: "chainvalidate",
+				Fail:   "The NextUpdate of this Manifest is is later than the previous NextUpdate",
+				Detail: "The NextUpdate of this Manifest is " + chainMft.NextUpdate.String() + ", and the previouse NextUpdate is " + chainMft.PreviousMft.NextUpdate.String()}
+			chainMft.StateModel.AddError(&stateMsg)
+		}
+		belogs.Debug("validateMft(): ThisUpdate and NextUpdate,   mftId:", chainMft.Id, "  chainMft.StateModel:", jsonutil.MarshalJson(chainMft.StateModel)) //shaodebug
+
+	}
+
 	chainMft.StateModel.JudgeState()
 	belogs.Debug("validateMft(): stateModel:", chainMft.StateModel)
 	if chainMft.StateModel.State != "valid" {
 		belogs.Debug("validateMft(): stateModel have errors or warnings, mftId :", mftId, "  stateModel:", jsonutil.MarshalJson(chainMft.StateModel))
 	}
 	chains.UpdateFileTypeIdToMft(&chainMft)
-	belogs.Debug("validateMft():end UpdateFileTypeIdToMft  mftId:", mftId, "  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Debug("validateMft():end UpdateFileTypeIdToMft  mftId:", mftId, "  time(s):", time.Since(start))
 
 }
 
@@ -369,15 +461,16 @@ func getMftParentChainCer(chains *Chains, mftId uint64) (chainCerAlone ChainCerA
 	return chainCerAlone, nil
 }
 
-func getSameAkiCerRoaCrlFilesChainMfts(chains *Chains, mftId uint64) (sameAkiCerRoaCrlFiles []string,
+func getSameAkiCerRoaCrlFilesChainMfts(chains *Chains, mftId uint64) (sameAkiCerRoaAsaCrlFiles []string, sameAkiCrls []SameAkiCrl,
 	sameAkiChainMfts []ChainMft, err error) {
 	chainMft, err := chains.GetMftById(mftId)
 	if err != nil {
 		belogs.Error("getSameAkiCerRoaCrlFilesChainMfts():GetMftById, mftId:", mftId, err)
-		return
+		return nil, nil, nil, err
 	}
 
-	sameAkiCerRoaCrlFiles = make([]string, 0)
+	sameAkiCerRoaAsaCrlFiles = make([]string, 0)
+	sameAkiCrls = make([]SameAkiCrl, 0)
 	sameAkiChainMfts = make([]ChainMft, 0)
 	//get mft's aki --> cer/roa/crl/
 	aki := chainMft.Aki
@@ -393,31 +486,45 @@ func getSameAkiCerRoaCrlFilesChainMfts(chains *Chains, mftId uint64) (sameAkiCer
 					chainCer, err := chains.GetCerByFileTypeId(fileTypeId)
 					if err != nil {
 						belogs.Error("getSameAkiCerRoaCrlFilesChainMfts(): GetCerByFileTypeId, mftId,fileTypeId,err:", mftId, fileTypeId, err)
-						return nil, nil, err
+						return nil, nil, nil, err
 					}
-					sameAkiCerRoaCrlFiles = append(sameAkiCerRoaCrlFiles, chainCer.FileName)
+					sameAkiCerRoaAsaCrlFiles = append(sameAkiCerRoaAsaCrlFiles, chainCer.FileName)
 					belogs.Debug("getSameAkiCerRoaCrlFilesChainMfts(): mftId, chainCer.FileName, ok:", mftId, chainCer.FileName, ok)
 				case "crl":
 					chainCrl, err := chains.GetCrlByFileTypeId(fileTypeId)
 					if err != nil {
 						belogs.Error("getSameAkiCerRoaCrlFilesChainMfts(): GetCrlByFileTypeId, mftId,fileTypeId,err:", mftId, fileTypeId, err)
-						return nil, nil, err
+						return nil, nil, nil, err
 					}
-					sameAkiCerRoaCrlFiles = append(sameAkiCerRoaCrlFiles, chainCrl.FileName)
-					belogs.Debug("getSameAkiCerRoaCrlFilesChainMfts(): mftId, chainCrl.FileName, ok:", mftId, chainCrl.FileName, ok)
+					sameAkiCerRoaAsaCrlFiles = append(sameAkiCerRoaAsaCrlFiles, chainCrl.FileName)
+					sameAkiCrl := SameAkiCrl{Found: true,
+						FilePath:   chainCrl.FilePath,
+						FileName:   chainCrl.FileName,
+						ThisUpdate: chainCrl.ThisUpdate,
+						NextUpdate: chainCrl.NextUpdate}
+					sameAkiCrls = append(sameAkiCrls, sameAkiCrl)
+					belogs.Debug("getSameAkiCerRoaCrlFilesChainMfts(): mftId, chainCrl.FileName, ok:", mftId, chainCrl.FileName, ok, "  sameAkiCrl:", sameAkiCrl)
 				case "roa":
 					chainRoa, err := chains.GetRoaByFileTypeId(fileTypeId)
 					if err != nil {
 						belogs.Error("getSameAkiCerRoaCrlFilesChainMfts(): GetRoaByFileTypeId, mftId,fileTypeId,err:", mftId, fileTypeId, err)
-						return nil, nil, err
+						return nil, nil, nil, err
 					}
-					sameAkiCerRoaCrlFiles = append(sameAkiCerRoaCrlFiles, chainRoa.FileName)
+					sameAkiCerRoaAsaCrlFiles = append(sameAkiCerRoaAsaCrlFiles, chainRoa.FileName)
 					belogs.Debug("getSameAkiCerRoaCrlFilesChainMfts(): mftId,  chainRoa.FileName, ok:", mftId, chainRoa.FileName, ok)
+				case "asa":
+					chainAsa, err := chains.GetAsaByFileTypeId(fileTypeId)
+					if err != nil {
+						belogs.Error("getSameAkiCerRoaCrlFilesChainMfts(): GetAsaByFileTypeId, mftId,fileTypeId,err:", mftId, fileTypeId, err)
+						return nil, nil, nil, err
+					}
+					sameAkiCerRoaAsaCrlFiles = append(sameAkiCerRoaAsaCrlFiles, chainAsa.FileName)
+					belogs.Debug("getSameAkiCerRoaCrlFilesChainMfts(): mftId,  chainRoa.FileName, ok:", mftId, chainAsa.FileName, ok)
 				case "mft":
 					chainMft, err := chains.GetMftByFileTypeId(fileTypeId)
 					if err != nil {
 						belogs.Error("getSameAkiCerRoaCrlFilesChainMfts(): GetMftByFileTypeId, mftId,fileTypeId,err:", mftId, fileTypeId, err)
-						return nil, nil, err
+						return nil, nil, nil, err
 					}
 					sameAkiChainMfts = append(sameAkiChainMfts, chainMft)
 					belogs.Debug("getSameAkiCerRoaCrlFilesChainMfts(): mftId, chainMft.Id, ok:", mftId, chainMft.Id, ok)
@@ -428,7 +535,8 @@ func getSameAkiCerRoaCrlFilesChainMfts(chains *Chains, mftId uint64) (sameAkiCer
 	return
 }
 
-func updateChainByMft(chains *Chains) (err error) {
+// invalidMftEffect:warning/invalid
+func updateChainByMft(chains *Chains, invalidMftEffect string) (err error) {
 	start := time.Now()
 	mftIds := chains.MftIds
 	belogs.Info("updateChainByMft(): start: len(mftIds):", len(mftIds))
@@ -472,9 +580,13 @@ func updateChainByMft(chains *Chains) (err error) {
 					belogs.Error("updateChainByMft(): GetCerByFileTypeId, mftId,fileTypeId,err:", mftId, fileTypeId, err)
 					return err
 				}
-				chainCer.StateModel.AddWarning(&stateMsg)
+				if invalidMftEffect == "warning" {
+					chainCer.StateModel.AddWarning(&stateMsg)
+				} else if invalidMftEffect == "invalid" {
+					chainCer.StateModel.AddError(&stateMsg)
+				}
 				chains.UpdateFileTypeIdToCer(&chainCer)
-				belogs.Info("updateChainByMft(): mftId:", mftId, "   chainMft:", chainMft.FilePath, chainMft.FileName,
+				belogs.Debug("updateChainByMft(): mftId:", mftId, "   chainMft:", chainMft.FilePath, chainMft.FileName,
 					" chainCer:", chainCer.FilePath, chainCer.FileName, jsonutil.MarshalJson(chainCer.StateModel))
 			case "crl":
 				chainCrl, err := chains.GetCrlByFileTypeId(fileTypeId)
@@ -482,9 +594,13 @@ func updateChainByMft(chains *Chains) (err error) {
 					belogs.Error("updateChainByMft(): GetCrlByFileTypeId, mftId,fileTypeId,err:", mftId, fileTypeId, err)
 					return err
 				}
-				chainCrl.StateModel.AddWarning(&stateMsg)
+				if invalidMftEffect == "warning" {
+					chainCrl.StateModel.AddWarning(&stateMsg)
+				} else if invalidMftEffect == "invalid" {
+					chainCrl.StateModel.AddError(&stateMsg)
+				}
 				chains.UpdateFileTypeIdToCrl(&chainCrl)
-				belogs.Info("updateChainByMft(): mftId:", mftId, "   chainMft:", chainMft.FilePath, chainMft.FileName,
+				belogs.Debug("updateChainByMft(): mftId:", mftId, "   chainMft:", chainMft.FilePath, chainMft.FileName,
 					" chainCrl:", chainCrl.FilePath, chainCrl.FileName, jsonutil.MarshalJson(chainCrl.StateModel))
 			case "roa":
 				chainRoa, err := chains.GetRoaByFileTypeId(fileTypeId)
@@ -492,10 +608,28 @@ func updateChainByMft(chains *Chains) (err error) {
 					belogs.Error("updateChainByMft(): GetRoaByFileTypeId, mftId,fileTypeId,err:", mftId, fileTypeId, err)
 					return err
 				}
-				chainRoa.StateModel.AddWarning(&stateMsg)
+				if invalidMftEffect == "warning" {
+					chainRoa.StateModel.AddWarning(&stateMsg)
+				} else if invalidMftEffect == "invalid" {
+					chainRoa.StateModel.AddError(&stateMsg)
+				}
 				chains.UpdateFileTypeIdToRoa(&chainRoa)
-				belogs.Info("updateChainByMft(): mftId:", mftId, "   chainMft:", chainMft.FilePath, chainMft.FileName,
+				belogs.Debug("updateChainByMft(): mftId:", mftId, "   chainMft:", chainMft.FilePath, chainMft.FileName,
 					" chainRoa:", chainRoa.FilePath, chainRoa.FileName, jsonutil.MarshalJson(chainRoa.StateModel))
+			case "asa":
+				chainAsa, err := chains.GetAsaByFileTypeId(fileTypeId)
+				if err != nil {
+					belogs.Error("updateChainByMft(): GetAsaByFileTypeId, mftId,fileTypeId,err:", mftId, fileTypeId, err)
+					return err
+				}
+				if invalidMftEffect == "warning" {
+					chainAsa.StateModel.AddWarning(&stateMsg)
+				} else if invalidMftEffect == "invalid" {
+					chainAsa.StateModel.AddError(&stateMsg)
+				}
+				chains.UpdateFileTypeIdToAsa(&chainAsa)
+				belogs.Debug("updateChainByMft(): mftId:", mftId, "   chainMft:", chainMft.FilePath, chainMft.FileName,
+					" chainAsa:", chainAsa.FilePath, chainAsa.FileName, jsonutil.MarshalJson(chainAsa.StateModel))
 			default:
 				// do nothing
 			}
@@ -503,6 +637,6 @@ func updateChainByMft(chains *Chains) (err error) {
 		}
 
 	}
-	belogs.Info("updateChainByMft(): end: len(mftIds):", len(mftIds), "  time(s):", time.Now().Sub(start))
+	belogs.Info("updateChainByMft(): end: len(mftIds):", len(mftIds), "  time(s):", time.Since(start))
 	return nil
 }

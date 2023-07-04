@@ -48,7 +48,7 @@ func rrdpByUrl(spQueue *SyncParseQueue, syncChan SyncChan) {
 
 	if err != nil {
 		spQueue.SyncResult.FailUrls.Store(syncChan.Url, err.Error())
-		belogs.Error("rrdpByUrl():RrdpByUrlImpl fail, syncChan.Url:", syncChan.Url, "   err:", err, "  time(s):", time.Now().Sub(start).Seconds())
+		belogs.Error("rrdpByUrl():RrdpByUrlImpl fail, syncChan.Url:", syncChan.Url, "   err:", err, "  time(s):", time.Since(start))
 		belogs.Debug("rrdpByUrl():RrdpByUrlImpl fail, before SyncingAndParsingCount-1:", atomic.LoadInt64(&spQueue.SyncingAndParsingCount))
 		atomic.AddInt64(&spQueue.SyncingAndParsingCount, -1)
 		belogs.Debug("rrdpByUrl():RrdpByUrlImpl fail, after SyncingAndParsingCount-1:", atomic.LoadInt64(&spQueue.SyncingAndParsingCount))
@@ -82,11 +82,12 @@ func rrdpByUrl(spQueue *SyncParseQueue, syncChan SyncChan) {
 	parseChan := ParseChan{Url: syncChan.Url, FilePathNames: filePathNames}
 	belogs.Debug("rrdpByUrl(): before parseChan:", jsonutil.MarshalJson(parseChan), "   len(spQueue.ParseChan):", len(spQueue.ParseChan))
 	spQueue.ParseChan <- parseChan
-	belogs.Info("rrdpByUrl(): after parseChan:", jsonutil.MarshalJson(parseChan),
+	belogs.Debug("rrdpByUrl(): after parseChan:", jsonutil.MarshalJson(parseChan))
+	belogs.Info("rrdpByUrl(): after parseChan, url:", parseChan.Url,
 		"    SyncingCount:", atomic.LoadInt64(&spQueue.SyncingCount),
 		"    len(filePathNames):", len(filePathNames),
 		"    len(rrdpFiles):", len(rrdpFiles),
-		"    time(s):", time.Now().Sub(start).Seconds())
+		"    time(s):", time.Since(start))
 
 }
 

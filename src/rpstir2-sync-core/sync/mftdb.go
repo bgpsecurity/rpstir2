@@ -99,7 +99,7 @@ func delMftDb(session *xorm.Session, filePathPrefix string) (err error) {
 		return err
 	}
 	belogs.Info("delMftDb():delete lab_rpki_mft_*** ok, by filePathPrefix :", filePathPrefix,
-		"  len(mftIds)", len(mftIds), "     time(s):", time.Now().Sub(start).Seconds())
+		"  len(mftIds)", len(mftIds), "     time(s):", time.Since(start))
 	return nil
 
 }

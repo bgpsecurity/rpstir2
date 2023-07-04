@@ -4,12 +4,12 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
-
-	model "rpstir2-model"
+	"time"
 
 	"github.com/cpusoft/goutil/belogs"
 	"github.com/cpusoft/goutil/iputil"
 	"github.com/cpusoft/goutil/jsonutil"
+	model "rpstir2-model"
 )
 
 func ParseToResetQuery(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel RtrPduModel, err error) {
@@ -19,7 +19,7 @@ func ParseToResetQuery(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel Rt
 	// get zero16
 	err = binary.Read(buf, binary.BigEndian, &zero16)
 	if err != nil {
-		belogs.Error("ParseToResetQuery(): PDU_TYPE_RESET_QUERY get zero fail: ", buf, err)
+		belogs.Error("ParseToResetQuery(): PDU_TYPE_RESET_QUERY get zero fail, buf:", buf, err)
 		rtrError := NewRtrError(
 			err,
 			true, protocolVersion, PDU_TYPE_ERROR_CODE_CORRUPT_DATA,
@@ -30,7 +30,7 @@ func ParseToResetQuery(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel Rt
 	// get length
 	err = binary.Read(buf, binary.BigEndian, &length)
 	if err != nil {
-		belogs.Error("ParseToResetQuery(): PDU_TYPE_RESET_QUERY get length fail: ", buf, err)
+		belogs.Error("ParseToResetQuery(): PDU_TYPE_RESET_QUERY get length fail, buf:", buf, err)
 		rtrError := NewRtrError(
 			err,
 			true, protocolVersion, PDU_TYPE_ERROR_CODE_CORRUPT_DATA,
@@ -38,7 +38,7 @@ func ParseToResetQuery(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel Rt
 		return rtrPduModel, rtrError
 	}
 	if length != 8 {
-		belogs.Error("ParseToResetQuery():PDU_TYPE_RESET_QUERY,  length must be 8 ", buf, length)
+		belogs.Error("ParseToResetQuery():PDU_TYPE_RESET_QUERY, length must be 8, buf:", buf, "  length:", length)
 		rtrError := NewRtrError(
 			errors.New("pduType is RESET QUERY, length must be 8"),
 			true, protocolVersion, PDU_TYPE_ERROR_CODE_CORRUPT_DATA,
@@ -47,7 +47,7 @@ func ParseToResetQuery(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel Rt
 	}
 
 	rq := NewRtrResetQueryModel(protocolVersion)
-	belogs.Debug("ParseToResetQuery():get PDU_TYPE_RESET_QUERY ", buf, jsonutil.MarshalJson(rq))
+	belogs.Debug("ParseToResetQuery():get PDU_TYPE_RESET_QUERY, buf:", buf, "   rq:", jsonutil.MarshalJson(rq))
 	return rq, nil
 }
 
@@ -113,8 +113,8 @@ func assembleResetResponses(rtrFulls []model.LabRpkiRtrFull, rtrAsaFulls []model
 		}
 	} else if protocolVersion == PDU_PROTOCOL_VERSION_2 {
 		//rtr full from asa rtr
-		if len(rtrAsaFulls) > 0 || len(rtrAsaFulls) > 0 {
-			belogs.Debug("assembleResetResponses(): protocolVersion=2, len(rtrAsaFulls)>0, len(rtrAsaFulls): ", len(rtrAsaFulls),
+		if len(rtrFulls) > 0 || len(rtrAsaFulls) > 0 {
+			belogs.Debug("assembleResetResponses(): protocolVersion=2, len(rtrFulls):", len(rtrFulls), " len(rtrAsaFulls): ", len(rtrAsaFulls),
 				"  protocolVersion:", protocolVersion, "   sessionId:", sessionId, "   serialNumber:", serialNumber)
 
 			// start response
@@ -204,32 +204,29 @@ func convertRtrFullsToRtrPduModels(rtrFulls []model.LabRpkiRtrFull,
 
 func convertRtrAsaFullsToRtrPduModels(rtrAsaFulls []model.LabRpkiRtrAsaFull,
 	protocolVersion uint8) (rtrAsaPduModels []RtrPduModel, err error) {
+	belogs.Debug("convertRtrAsaFullsToRtrPduModels(): len(rtrAsaFulls): ", len(rtrAsaFulls), "  protocolVersion:", protocolVersion)
+
+	start := time.Now()
+	sameCustomerAsnAfi := make(map[string]*RtrAsaModel, 0)
 	rtrAsaPduModels = make([]RtrPduModel, 0)
 	for i := range rtrAsaFulls {
-		rtrPduModel, err := convertRtrAsaFullToRtrPduModel(&rtrAsaFulls[i], protocolVersion)
-		if err != nil {
-			belogs.Error("convertRtrFullsToRtrPduModels(): convertRtrFullToRtrPduModel fail: ",
-				jsonutil.MarshalJson(rtrAsaFulls[i]), err)
-			return nil, err
+		rtrPduModel := NewRtrAsaModelFromDb(protocolVersion, PDU_FLAG_ANNOUNCE,
+			rtrAsaFulls[i].AddressFamily, uint32(rtrAsaFulls[i].CustomerAsn))
+		key := rtrPduModel.GetKey()
+		belogs.Debug("convertRtrAsaFullsToRtrPduModels(): will add key:", key)
+		if v, ok := sameCustomerAsnAfi[key]; ok {
+			v.AddProviderAsn(uint32(rtrAsaFulls[i].ProviderAsn))
+			sameCustomerAsnAfi[key] = v
+		} else {
+			rtrPduModel.AddProviderAsn(uint32(rtrAsaFulls[i].ProviderAsn))
+			sameCustomerAsnAfi[key] = rtrPduModel
 		}
-		rtrAsaPduModels = append(rtrAsaPduModels, rtrPduModel)
-		belogs.Debug("convertRtrFullsToRtrPduModels():rtrPduModel: ", jsonutil.MarshalJson(rtrPduModel))
 	}
-	belogs.Debug("convertRtrFullsToRtrPduModels(): len(rtrAsaFulls): ", len(rtrAsaFulls),
-		" len(rtrAsaPduModels):", len(rtrAsaPduModels))
+	for _, v := range sameCustomerAsnAfi {
+		rtrAsaPduModels = append(rtrAsaPduModels, v)
+		belogs.Debug("convertRtrAsaFullsToRtrPduModels(): v: ", jsonutil.MarshalJson(v))
+	}
+	belogs.Info("convertRtrAsaFullsToRtrPduModels(): len(rtrAsaFulls): ", len(rtrAsaFulls),
+		" len(rtrAsaPduModels):", len(rtrAsaPduModels), "  time(s):", time.Since(start))
 	return rtrAsaPduModels, nil
-}
-
-func convertRtrAsaFullToRtrPduModel(rtrAsaFull *model.LabRpkiRtrAsaFull,
-	protocolVersion uint8) (rtrPduModel RtrPduModel, err error) {
-	providerAsnUint32s := make([]uint32, 0)
-	providerAsns := make([]model.ProviderAsn, 0)
-	jsonutil.UnmarshalJson(rtrAsaFull.ProviderAsns, &providerAsns)
-	for i := range providerAsns {
-		p := uint32(providerAsns[i].ProviderAsn)
-		providerAsnUint32s = append(providerAsnUint32s, p)
-	}
-	rtrAsaModel := NewRtrAsaModel(protocolVersion, PDU_FLAG_ANNOUNCE,
-		uint32(rtrAsaFull.CustomerAsn), providerAsnUint32s)
-	return rtrAsaModel, nil
 }

@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"encoding/binary"
 
+	"github.com/cpusoft/goutil/belogs"
 	"github.com/cpusoft/goutil/convert"
+	"github.com/guregu/null"
 )
 
 const (
@@ -588,13 +590,34 @@ type RtrAsaModel struct {
 	Zero0           uint16   `json:"zero0"`
 	Length          uint32   `json:"length"`
 	Flags           uint8    `json:"flags"`
-	Zero1           uint8    `json:"zero1"`
+	AfiFlags        uint8    `json:"afiFlags"`
 	ProviderAsCount uint16   `json:"providerAsCount"`
 	CustomerAsn     uint32   `json:"customerAsn"`
 	ProviderAsns    []uint32 `json:"providerAsns"`
 }
 
-func NewRtrAsaModel(protocolVersion uint8, flags uint8,
+func NewRtrAsaModelFromDb(protocolVersion uint8, flags uint8, addressFamily null.Int, // afiFlags uint8,
+	customerAsn uint32) *RtrAsaModel {
+	length := 16 // header+flags+afi+providerAsCount+CustomerAsn, will increase when providerAsn is added
+	var afiFlags uint8
+	if addressFamily.Valid && addressFamily.ValueOrZero() > 0 {
+		afiFlags = uint8(addressFamily.ValueOrZero()) - 1 // addressFamily:ipv4 is 1, ipv6 is 2; afiFlags: ipv4 is 0, ipv6 is 1
+	} else {
+		afiFlags = 0
+	}
+	return &RtrAsaModel{
+		ProtocolVersion: protocolVersion,
+		PduType:         PDU_TYPE_ASA,
+		Zero0:           0,
+		Length:          uint32(length),
+		Flags:           flags,
+		AfiFlags:        afiFlags,
+		ProviderAsCount: 0,
+		CustomerAsn:     customerAsn,
+		ProviderAsns:    make([]uint32, 0),
+	}
+}
+func NewRtrAsaModelFromParse(protocolVersion uint8, flags uint8, afiFlags uint8,
 	customerAsn uint32, providerAsns []uint32) *RtrAsaModel {
 	length := 16 + len(providerAsns)*4
 
@@ -604,7 +627,7 @@ func NewRtrAsaModel(protocolVersion uint8, flags uint8,
 		Zero0:           0,
 		Length:          uint32(length),
 		Flags:           flags,
-		Zero1:           0,
+		AfiFlags:        afiFlags,
 		ProviderAsCount: uint16(len(providerAsns)),
 		CustomerAsn:     customerAsn,
 		ProviderAsns:    providerAsns,
@@ -618,7 +641,7 @@ func (p *RtrAsaModel) Bytes() []byte {
 	binary.Write(wr, binary.BigEndian, p.Zero0)
 	binary.Write(wr, binary.BigEndian, p.Length)
 	binary.Write(wr, binary.BigEndian, p.Flags)
-	binary.Write(wr, binary.BigEndian, p.Zero1)
+	binary.Write(wr, binary.BigEndian, p.AfiFlags)
 	binary.Write(wr, binary.BigEndian, p.ProviderAsCount)
 	binary.Write(wr, binary.BigEndian, p.CustomerAsn)
 	if len(p.ProviderAsns) > 0 {
@@ -637,4 +660,19 @@ func (p *RtrAsaModel) GetProtocolVersion() uint8 {
 
 func (p *RtrAsaModel) GetPduType() uint8 {
 	return p.PduType
+}
+func (p *RtrAsaModel) AddProviderAsn(providerAsn uint32) {
+	if p.ProviderAsns == nil {
+		p.ProviderAsns = make([]uint32, 0)
+	}
+	p.ProviderAsns = append(p.ProviderAsns, providerAsn)
+	p.Length += 4
+	p.ProviderAsCount++
+	belogs.Debug("AddProviderAsn(): providerAsn:", providerAsn, "  length:", p.Length,
+		"  len(providerAsns):", len(p.ProviderAsns), "   ProviderAsCount:", p.ProviderAsCount)
+}
+
+func (p *RtrAsaModel) GetKey() string {
+	return convert.ToString(p.Flags) + "_" + convert.ToString(p.AfiFlags) +
+		"_" + convert.ToString(p.CustomerAsn)
 }

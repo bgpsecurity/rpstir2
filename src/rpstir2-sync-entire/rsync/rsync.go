@@ -16,16 +16,16 @@ import (
 var rpQueue *RsyncParseQueue
 
 // start to rsync
-func rsyncStart(syncUrls *model.SyncUrls) {
+func rsyncRequest(syncUrls *model.SyncUrls) {
 
-	belogs.Info("rsyncStart(): rsync: syncUrls:", jsonutil.MarshalJson(syncUrls))
+	belogs.Info("rsyncRequest(): rsync: syncUrls:", jsonutil.MarshalJson(syncUrls))
 
 	//start rpQueue and rsyncForSelect
 	rpQueue = NewQueue()
 	go startRsyncServer()
 
 	rpQueue.LabRpkiSyncLogId = syncUrls.SyncLogId
-	belogs.Debug("rsyncStart(): rpQueue:", jsonutil.MarshalJson(rpQueue))
+	belogs.Debug("rsyncRequest(): rpQueue:", jsonutil.MarshalJson(rpQueue))
 
 	// start to rsync by sync url in tal, to get root cer
 	// first: remove all root cer, so can will rsync download and will trigger parse all cer files.
@@ -33,7 +33,7 @@ func rsyncStart(syncUrls *model.SyncUrls) {
 	os.RemoveAll(conf.VariableString("rsync::destPath") + "/root/")
 	os.MkdirAll(conf.VariableString("rsync::destPath")+"/root/", os.ModePerm)
 	atomic.AddInt64(&rpQueue.RsyncingParsingCount, int64(len(syncUrls.RsyncUrls)))
-	belogs.Debug("rsyncStart():after RsyncingParsingCount:", atomic.LoadInt64(&rpQueue.RsyncingParsingCount))
+	belogs.Debug("rsyncRequest():after RsyncingParsingCount:", atomic.LoadInt64(&rpQueue.RsyncingParsingCount))
 	for _, url := range syncUrls.RsyncUrls {
 		go rpQueue.AddRsyncUrl(url, conf.VariableString("rsync::destPath")+"/root/")
 	}
@@ -92,26 +92,26 @@ func startRsyncServer() {
 			rpQueue.Close()
 
 			// return out of the for
-			belogs.Info("startRsyncServer():end this rsync success: rsyncResultJson:", rsyncResultJson, "  time(s):", time.Now().Sub(start).Seconds())
+			belogs.Info("startRsyncServer():end this rsync success: rsyncResultJson:", rsyncResultJson, "  time(s):", time.Since(start))
 			return
 		}
 	}
 }
 
-func LocalStart(syncUrls *model.SyncUrls) (rsyncResult model.SyncResult, err error) {
+func localRsyncRequest(syncUrls *model.SyncUrls) (rsyncResult model.SyncResult, err error) {
 	start := time.Now()
-	belogs.Info("LocalStart(): rsync: syncUrls:", jsonutil.MarshalJson(syncUrls))
+	belogs.Info("localRsyncRequest(): rsync: syncUrls:", jsonutil.MarshalJson(syncUrls))
 
 	rsyncResult.AddFilesLen, rsyncResult.DelFilesLen,
 		rsyncResult.UpdateFilesLen, rsyncResult.NoChangeFilesLen, err = rsync.FoundDiffFiles(syncUrls.SyncLogId, conf.VariableString("rsync::destPath")+"/", nil)
 	if err != nil {
-		belogs.Error("LocalStart(): FoundDiffFiles fail:", err)
+		belogs.Error("localRsyncRequest(): FoundDiffFiles fail:", err)
 		// no return
 	}
 	rsyncResult.EndTime = time.Now()
 
-	belogs.Info("LocalStart():end this rsync success: rsyncResultJson:", jsonutil.MarshalJson(rsyncResult),
-		"  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Info("localRsyncRequest():end this rsync success: rsyncResultJson:", jsonutil.MarshalJson(rsyncResult),
+		"  time(s):", time.Since(start))
 	return rsyncResult, nil
 
 }

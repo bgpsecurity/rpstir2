@@ -46,7 +46,7 @@ func parseValidateStart() (nextStep string, err error) {
 	// process "add" and "update" rsyncLogFile
 	err = insertCertByAddAndUpdate(syncLogFileModels)
 	if err != nil {
-		belogs.Error("parseValidateStart():InsertCertByInsertAndUpdate fail:", err)
+		belogs.Error("parseValidateStart():insertCertByAddAndUpdate fail:", err)
 		return "", err
 	}
 
@@ -64,7 +64,7 @@ func parseValidateStart() (nextStep string, err error) {
 		return "", err
 	}
 
-	belogs.Info("parseValidateStart(): end, will call chainvalidate,  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Info("parseValidateStart(): end, will call chainvalidate,  time(s):", time.Since(start))
 	return "chainvalidate", nil
 }
 
@@ -118,7 +118,7 @@ func delCertByDelAndUpdate(syncLogFileModels *SyncLogFileModels) (err error) {
 	}
 
 	wg.Wait()
-	belogs.Info("delCertByDelAndUpdate(): end,  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Info("delCertByDelAndUpdate(): end,  time(s):", time.Since(start))
 	return nil
 
 }
@@ -127,47 +127,47 @@ func delCertByDelAndUpdate(syncLogFileModels *SyncLogFileModels) (err error) {
 func insertCertByAddAndUpdate(syncLogFileModels *SyncLogFileModels) (err error) {
 
 	start := time.Now()
-	belogs.Debug("InsertCertByInsertAndUpdate(): syncLogFileModels.SyncLogId:", syncLogFileModels.SyncLogId)
+	belogs.Debug("insertCertByAddAndUpdate(): syncLogFileModels.SyncLogId:", syncLogFileModels.SyncLogId)
 
 	var wg sync.WaitGroup
 
 	// add/update crl
-	belogs.Info("InsertCertByInsertAndUpdate():len(syncLogFileModels.UpdateCerSyncLogFileModels):", len(syncLogFileModels.UpdateCerSyncLogFileModels))
+	belogs.Info("insertCertByAddAndUpdate():len(syncLogFileModels.UpdateCerSyncLogFileModels):", len(syncLogFileModels.UpdateCerSyncLogFileModels))
 	if len(syncLogFileModels.UpdateCerSyncLogFileModels) > 0 {
 		wg.Add(1)
 		go parseValidateAndAddCerts(syncLogFileModels.UpdateCerSyncLogFileModels, "cer", &wg)
 	}
 
 	// add/update crl
-	belogs.Info("InsertCertByInsertAndUpdate():len(syncLogFileModels.UpdateCrlSyncLogFileModels):", len(syncLogFileModels.UpdateCrlSyncLogFileModels))
+	belogs.Info("insertCertByAddAndUpdate():len(syncLogFileModels.UpdateCrlSyncLogFileModels):", len(syncLogFileModels.UpdateCrlSyncLogFileModels))
 	if len(syncLogFileModels.UpdateCrlSyncLogFileModels) > 0 {
 		wg.Add(1)
 		go parseValidateAndAddCerts(syncLogFileModels.UpdateCrlSyncLogFileModels, "crl", &wg)
 	}
 
 	// add/update mft
-	belogs.Info("InsertCertByInsertAndUpdate():len(syncLogFileModels.UpdateMftSyncLogFileModels):", len(syncLogFileModels.UpdateMftSyncLogFileModels))
+	belogs.Info("insertCertByAddAndUpdate():len(syncLogFileModels.UpdateMftSyncLogFileModels):", len(syncLogFileModels.UpdateMftSyncLogFileModels))
 	if len(syncLogFileModels.UpdateMftSyncLogFileModels) > 0 {
 		wg.Add(1)
 		go parseValidateAndAddCerts(syncLogFileModels.UpdateMftSyncLogFileModels, "mft", &wg)
 	}
 
 	// add/update roa
-	belogs.Info("InsertCertByInsertAndUpdate():len(syncLogFileModels.UpdateRoaSyncLogFileModels):", len(syncLogFileModels.UpdateRoaSyncLogFileModels))
+	belogs.Info("insertCertByAddAndUpdate():len(syncLogFileModels.UpdateRoaSyncLogFileModels):", len(syncLogFileModels.UpdateRoaSyncLogFileModels))
 	if len(syncLogFileModels.UpdateRoaSyncLogFileModels) > 0 {
 		wg.Add(1)
 		go parseValidateAndAddCerts(syncLogFileModels.UpdateRoaSyncLogFileModels, "roa", &wg)
 	}
 
 	// add/update asa
-	belogs.Info("InsertCertByInsertAndUpdate():len(syncLogFileModels.UpdateAsaSyncLogFileModels):", len(syncLogFileModels.UpdateAsaSyncLogFileModels))
+	belogs.Info("insertCertByAddAndUpdate():len(syncLogFileModels.UpdateAsaSyncLogFileModels):", len(syncLogFileModels.UpdateAsaSyncLogFileModels))
 	if len(syncLogFileModels.UpdateAsaSyncLogFileModels) > 0 {
 		wg.Add(1)
 		go parseValidateAndAddCerts(syncLogFileModels.UpdateAsaSyncLogFileModels, "asa", &wg)
 	}
 
 	wg.Wait()
-	belogs.Info("InsertCertByInsertAndUpdate(): end,  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Info("insertCertByAddAndUpdate(): end,  time(s):", time.Since(start))
 	return nil
 }
 
@@ -190,7 +190,7 @@ func parseValidateAndAddCerts(syncLogFileModels []SyncLogFileModel, fileType str
 	close(parseValidateCh)
 
 	belogs.Info("parseValidateAndAddCerts():end parseValidate, len(syncLogFileModels):", len(syncLogFileModels), "  fileType:", fileType, "  fileType:", fileType,
-		"  time(s):", time.Now().Sub(start).Seconds(), ", and will save to db")
+		"  time(s):", time.Since(start), ", and will save to db")
 
 	// add to db
 	switch fileType {
@@ -205,7 +205,7 @@ func parseValidateAndAddCerts(syncLogFileModels []SyncLogFileModel, fileType str
 	case "asa":
 		addAsasDb(syncLogFileModels)
 	}
-	belogs.Info("parseValidateAndAddCerts():end add***Db(), len(syncLogFileModels):", len(syncLogFileModels), "  fileType:", fileType, "  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Info("parseValidateAndAddCerts():end add***Db(), len(syncLogFileModels):", len(syncLogFileModels), "  fileType:", fileType, "  time(s):", time.Since(start))
 }
 
 func parseValidateCert(syncLogFileModel *SyncLogFileModel,
@@ -221,13 +221,13 @@ func parseValidateCert(syncLogFileModel *SyncLogFileModel,
 	belogs.Debug("parseValidateCert(): file :", file)
 	_, certModel, stateModel, err := parseValidateFile(file)
 	if err != nil {
-		belogs.Error("parseValidateCer(): parseValidateFile fail: ", file, err)
+		belogs.Error("parseValidateCert(): parseValidateFile fail: ", file, err)
 		return file, err
 	}
 	syncLogFileModel.CertModel = certModel
 	syncLogFileModel.StateModel = stateModel
 	belogs.Debug("parseValidateCert(): parseValidateFile file :", file,
-		"   syncType:", syncLogFileModel.SyncType, "  time(s):", time.Now().Sub(start).Seconds())
+		"   syncType:", syncLogFileModel.SyncType, "  time(s):", time.Since(start))
 
 	return "", nil
 
@@ -383,12 +383,11 @@ func parseFileSimple(certFile string) (parseCerSimple model.ParseCerSimple, err 
 func updateCertByCheckAll() (err error) {
 
 	start := time.Now()
-	now := start
 	belogs.Info("updateCertByCheckAll():start:")
 
 	var g errgroup.Group
 	g.Go(func() error {
-		er := updateCerByCheckAll(now)
+		er := updateCerByCheckAll(start)
 		if er != nil {
 			belogs.Error("updateCertByCheckAll(): updateCerByCheckAll:  err:", er)
 		}
@@ -427,9 +426,9 @@ func updateCertByCheckAll() (err error) {
 	})
 
 	if err := g.Wait(); err != nil {
-		belogs.Error("updateCertByCheckAll(): fail, err:", err, "   time(s):", time.Now().Sub(start))
+		belogs.Error("updateCertByCheckAll(): fail, err:", err, "   time(s):", time.Since(start))
 		return err
 	}
-	belogs.Info("updateCertByCheckAll(): ok,   time(s):", time.Now().Sub(start))
+	belogs.Info("updateCertByCheckAll(): ok,   time(s):", time.Since(start))
 	return nil
 }

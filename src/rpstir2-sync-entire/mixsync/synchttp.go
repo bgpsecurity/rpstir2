@@ -2,11 +2,13 @@ package mixsync
 
 import (
 	"errors"
+	"time"
 
 	"github.com/cpusoft/goutil/belogs"
 	"github.com/cpusoft/goutil/conf"
 	"github.com/cpusoft/goutil/ginserver"
 	"github.com/cpusoft/goutil/httpclient"
+	"github.com/cpusoft/goutil/jsonutil"
 	"github.com/gin-gonic/gin"
 	model "rpstir2-model"
 )
@@ -14,6 +16,7 @@ import (
 // start to sync
 func SyncStart(c *gin.Context) {
 	belogs.Info("SyncStart(): start")
+	start := time.Now()
 
 	// get syncStyle
 	syncStyle := model.SyncStyle{}
@@ -28,7 +31,7 @@ func SyncStart(c *gin.Context) {
 		ginserver.ResponseFail(c, errors.New("SyncStyle should be sync or rrdp or rsync"), "")
 		return
 	}
-	belogs.Debug("SyncStart(): syncStyle:", syncStyle)
+	belogs.Info("SyncStart(): syncStyle:", jsonutil.MarshalJson(syncStyle))
 
 	//check serviceState
 	ssr := model.ServiceState{}
@@ -42,7 +45,7 @@ func SyncStart(c *gin.Context) {
 
 	go func() {
 		nextStep, err := syncStart(syncStyle)
-		belogs.Debug("SyncStart(): syncStart end,  nextStep is :", nextStep, err)
+		belogs.Debug("SyncStart(): syncStart end,  nextStep is :", nextStep, "  time(s)", time.Since(start), " err:", err)
 
 		if err != nil {
 			// will end this whole sync

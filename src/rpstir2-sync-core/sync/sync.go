@@ -4,9 +4,8 @@ import (
 	"os"
 	"time"
 
-	model "rpstir2-model"
-
 	"github.com/cpusoft/goutil/belogs"
+	model "rpstir2-model"
 )
 
 func CallRemoveAndDelDbByFilePaths(filePaths []string, connectCh chan bool) {
@@ -42,7 +41,7 @@ func RemoveAndDelDbByFilePaths(filePaths []string) (err error) {
 		}
 	}
 
-	belogs.Debug("RemoveAndDelDbByFilePaths(): filePaths:", filePaths, "  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Debug("RemoveAndDelDbByFilePaths(): filePaths:", filePaths, "  time(s):", time.Since(start))
 	return nil
 }
 

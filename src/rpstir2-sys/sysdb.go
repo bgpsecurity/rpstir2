@@ -5,15 +5,14 @@ import (
 	"math/rand"
 	"time"
 
-	model "rpstir2-model"
-
 	"github.com/cpusoft/goutil/belogs"
 	"github.com/cpusoft/goutil/jsonutil"
 	"github.com/cpusoft/goutil/xormdb"
+	model "rpstir2-model"
 	"xorm.io/xorm"
 )
 
-var intiSqls []string = []string{
+var initSqls []string = []string{
 	`drop table if exists lab_rpki_conf`,
 	`drop table if exists lab_rpki_cer_aia`,
 	`drop table if exists lab_rpki_cer_asn`,
@@ -50,26 +49,27 @@ var intiSqls []string = []string{
 	`drop table if exists lab_rpki_sync_log`,
 	`drop table if exists lab_rpki_sync_rrdp_log`,
 	`drop table if exists lab_rpki_sync_url`,
+	`drop table if exists lab_rpki_sync_rrdp_notify`,
+	`drop table if exists lab_rpki_sync_rrdp_delta`,
 	`drop view if exists lab_rpki_crl_revoked_cert_view`,
 	`drop view if exists lab_rpki_mft_file_hash_view`,
 	`drop view if exists lab_rpki_roa_ipaddress_count_view`,
 	`drop view if exists lab_rpki_roa_ipaddress_view`,
 	`drop view if exists lab_rpki_sync_rrdp_log_maxid_view`,
-
 	`
 #################################
 ## main table for cer/crl/roa/mft
 #################################	
 CREATE TABLE lab_rpki_cer (
 	id int(10) unsigned not null primary key auto_increment,
-	sn varchar(128) NOT NULL,
+	sn varchar(1024) NOT NULL,
 	notBefore datetime NOT NULL,
 	notAfter datetime NOT NULL,
-	subject varchar(512) ,
-	issuer varchar(512) ,
+	subject varchar(1024) ,
+	issuer varchar(1024) ,
 	ski varchar(128) ,
 	aki varchar(128) ,
-	filePath varchar(512) NOT NULL ,
+	filePath varchar(1024) NOT NULL ,
 	fileName varchar(128) NOT NULL ,
 	state json comment 'state info in json',
 	jsonAll json not null comment 'all cer info in json',
@@ -81,12 +81,12 @@ CREATE TABLE lab_rpki_cer (
 	origin json comment 'origin(rir->repo) in json',
 	key ski (ski),
 	key aki (aki),
-	key filePath (filePath),
+	key filePath (filePath(256)),
 	key fileName (fileName),
 	key syncLogId (syncLogId),
 	key syncLogFileId (syncLogFileId),
-	unique cerFilePathFileName (filePath,fileName),
-	unique cerSkiFilePath (ski,filePath)
+	unique cerFilePathFileName (filePath(256),fileName),
+	unique cerSkiFilePath (ski,filePath(256))
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='main cer table'
 `,
 
@@ -159,7 +159,7 @@ CREATE TABLE lab_rpki_crl (
 	hasExpired varchar(8) ,
 	aki varchar(128) ,
 	crlNumber bigint(20) unsigned not null ,
-	filePath varchar(512) NOT NULL ,
+	filePath varchar(1024) NOT NULL ,
 	fileName varchar(128) NOT NULL ,
 	state json comment 'state info in json',
 	jsonAll json NOT NULL,
@@ -170,11 +170,11 @@ CREATE TABLE lab_rpki_crl (
 	fileHash varchar(512) NOT NULL ,
 	origin json comment 'origin(rir->repo) in json',
 	key aki (aki),
-	key filePath (filePath), 
+	key filePath (filePath(256)), 
 	key fileName (fileName),
 	key syncLogId (syncLogId),
 	key syncLogFileId (syncLogFileId), 
-	unique crlFilePathFileName (filePath,fileName)
+	unique crlFilePathFileName (filePath(256),fileName)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='crl '
 `,
 
@@ -198,7 +198,7 @@ CREATE TABLE lab_rpki_mft (
 	nextUpdate datetime NOT NULL,
 	ski varchar(128) ,
 	aki varchar(128) ,
-	filePath varchar(512) NOT NULL ,
+	filePath varchar(1024) NOT NULL ,
 	fileName varchar(128) NOT NULL ,
 	state json comment 'state info in json',
 	jsonAll json NOT NULL,
@@ -210,12 +210,12 @@ CREATE TABLE lab_rpki_mft (
 	origin json comment 'origin(rir->repo) in json',
 	key ski (ski),
 	key aki (aki),
-	key filePath (filePath), 
+	key filePath (filePath(256)), 
 	key fileName (fileName),
 	key syncLogId (syncLogId),
 	key syncLogFileId (syncLogFileId), 
-	unique mftFilePathFileName (filePath,fileName),
-	unique mftSkiFilePath (ski,filePath) 
+	unique mftFilePathFileName (filePath(256),fileName),
+	unique mftSkiFilePath (ski,filePath(256)) 
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='manifest'
 `,
 
@@ -258,7 +258,7 @@ CREATE TABLE lab_rpki_roa (
 	asn bigint(20) signed not null,
 	ski varchar(128) ,
 	aki varchar(128) ,
-	filePath varchar(512) NOT NULL ,
+	filePath varchar(1024) NOT NULL ,
 	fileName varchar(128) NOT NULL ,
 	state json comment 'state info in json',
 	jsonAll json NOT NULL,
@@ -270,12 +270,12 @@ CREATE TABLE lab_rpki_roa (
 	origin json comment 'origin(rir->repo) in json',
 	key ski (ski),
 	key aki (aki),
-	key filePath (filePath),
+	key filePath (filePath(256)),
 	key fileName (fileName),
 	key syncLogId (syncLogId),
 	key syncLogFileId (syncLogFileId), 
-	unique roaFilePathFileName (filePath,fileName),
-	unique roaSkiFilePath (ski,filePath) 
+	unique roaFilePathFileName (filePath(256),fileName),
+	unique roaSkiFilePath (ski,filePath(256)) 
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='roa info'
 `,
 
@@ -341,7 +341,7 @@ CREATE TABLE lab_rpki_asa (
 	id int(10) unsigned not null primary key auto_increment,
 	ski varchar(128) ,
 	aki varchar(128) ,
-	filePath varchar(512) NOT NULL ,
+	filePath varchar(1024) NOT NULL ,
 	fileName varchar(128) NOT NULL ,
 	state json comment 'state info in json',
 	jsonAll json NOT NULL,
@@ -353,12 +353,12 @@ CREATE TABLE lab_rpki_asa (
 	origin json comment 'origin(rir->repo) in json',
 	key ski (ski),
 	key aki (aki),
-	key filePath (filePath),
+	key filePath (filePath(256)),
 	key fileName (fileName),
 	key syncLogId (syncLogId),
 	key syncLogFileId (syncLogFileId), 
-	unique asaFilePathFileName (filePath,fileName),
-	unique asaSkiFilePath (ski,filePath) 
+	unique asaFilePathFileName (filePath(256),fileName),
+	unique asaSkiFilePath (ski,filePath(256)) 
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='asa info'
 `,
 
@@ -389,7 +389,6 @@ CREATE TABLE lab_rpki_asa_customer_asn (
 	id int(10) unsigned not null primary key auto_increment,
 	asaId int(10) unsigned not null,
 	customerAsn int(10) unsigned not null,
-	addressFamily int(10) unsigned,
 	key customerAsn (customerAsn),
 	foreign key (asaId) references lab_rpki_asa(id)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='asa customerAsn'
@@ -412,7 +411,7 @@ CREATE TABLE lab_rpki_asa_provider_asn (
 
 	`
 ################################################
-## recored every sync log for cer/crl/roa/mft
+## recored every sync log for cer/crl/roa/mft/asa
 ################################################
 CREATE TABLE lab_rpki_sync_log (
 	id int(10) unsigned not null primary key auto_increment,
@@ -433,7 +432,7 @@ CREATE TABLE lab_rpki_sync_log_file (
 	syncStyle varchar(16) not null comment 'rrdp/rsync' , 
 	syncType varchar(16) not null comment 'add/del/update' ,
 	fileType varchar(16) not null comment 'cer/roa/mft/crl/',
-	filePath varchar(512) NOT NULL ,
+	filePath varchar(1024) NOT NULL ,
 	fileName varchar(128) NOT NULL ,
 	sourceUrl varchar(512) , 
 	jsonAll json comment 'cert json info from cer/crl/mft/roa.jsonAll' ,
@@ -441,9 +440,9 @@ CREATE TABLE lab_rpki_sync_log_file (
 	state json comment '{"sync":"finished","updateCertTable":"notYet/finished"}: have synced ,have published to main table',
 	key fileType (fileType),
 	key syncType (syncType),
-	key filePath (filePath),
+	key filePath (filePath(256)),
 	key fileName (fileName),
-	unique synclogfileFilePathFileName (filePath,fileName,syncLogId),
+	unique synclogfileFilePathFileName (filePath(256),fileName,syncLogId),
 	foreign key (syncLogId) references lab_rpki_sync_log(id)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='recored sync log for cer/roa/mft/crl'
 `,
@@ -467,16 +466,42 @@ CREATE TABLE lab_rpki_sync_rrdp_log (
 	`
 CREATE TABLE lab_rpki_sync_url (
 	id int(10) unsigned not null primary key auto_increment,
-	rrdpUrl varchar(256) comment 'rrdp url',
-	rrdpUrlState json comment '{state:valid/invalid}', 
-	rrdpUpdateTime datetime comment 'rrdp update time', 
-	rsyncUrls varchar(512) not null comment 'rsync url',
-	rsyncUrlState json not null comment '{state:valid/invalid}', 
-	rsyncUpdateTime datetime not null comment 'rsync update time',
+	syncStyle varchar(16) not null comment 'rrdp/rsync',
+	url varchar(256) not null comment 'rrdp/rsync url',
+	state json not null comment '{state:valid/invalid,****}', 
+	updateTime datetime comment 'rrdp update time', 
 	addTime datetime not null comment 'add time',
-	index rrdpUrl (rrdpUrl),
-	unique syncUrlRrdpUrlRsyncUrls (rrdpUrl , rsyncUrls) 
+	unique syncUrl (url) 
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='all rsync/rrdp url'
+`,
+	`
+CREATE TABLE lab_rpki_sync_rrdp_notify (
+	id int(10) unsigned not null primary key auto_increment,
+	notifyUrl varchar(512) not null comment 'notification.xml url',
+	version varchar(16) not null comment 'version',
+	sessionId varchar(512) not null comment 'session_id',
+	snapshotUrl varchar(512) not null comment 'snapshot url',
+	snapshotHash varchar(512) not null comment 'snapshot hash',
+	maxSerial int(10) unsigned comment 'max serial',
+	minSerial int(10) unsigned comment 'min serial',
+	curSerial int(10) unsigned comment 'current serial',
+	state json comment '{state:valid}',
+	updateTime datetime not null comment 'update time',
+	unique notifyUrl (notifyUrl) 
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='rrdp url'
+`,
+	`
+CREATE TABLE lab_rpki_sync_rrdp_delta (
+	id int(10) unsigned not null primary key auto_increment,
+	notifyUrl varchar(512) not null comment 'notification.xml url',
+	deltaUrl  varchar(512) not null comment 'delta url',
+	serial int(10) unsigned comment 'serial',
+	deltaHash varchar(512) not null comment 'delta hash',
+	state json comment '{state:valid}',
+	updateTime datetime not null comment 'update time',
+	index notifyUrl (notifyUrl) ,
+	index serial (serial)
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='rrdp url'
 `,
 
 	`
@@ -501,12 +526,12 @@ CREATE TABLE lab_rpki_rtr_serial_number (
 	serialNumber bigint(20) unsigned not null comment 'serialNumber for rtr_full, rtr_incremental',
 	globalSerialNumber bigint(20) unsigned not null comment 'serialNumber for center vc update by sync and slurm',
 	subpartSerialNumber bigint(20) unsigned not null comment 'serialNumber for sub vc update by slurm',
-	createTime datetime NOT NULL
+	createTime datetime NOT NULL,
+	unique rtrserialNumber (serialNumber) 
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='after every sync repo, serial num  will generate new serialnumber'
 `,
 
 	`
-
 CREATE TABLE lab_rpki_rtr_full (
 	id int(10) unsigned not null primary key auto_increment,
 	serialNumber bigint(20) unsigned not null,
@@ -564,13 +589,14 @@ CREATE TABLE lab_rpki_rtr_incremental (
 CREATE TABLE lab_rpki_rtr_asa_full (
 	id int(10) unsigned not null primary key auto_increment,
 	serialNumber bigint(20) unsigned not null,
-	addressFamily int(10) unsigned,
 	customerAsn int(10) unsigned not null comment 'customer asn',
-	providerAsns varchar(255) comment '[{"providerAsn":65000},{"providerAsn":65001},{"providerAsn":65002}]',
+	providerAsn int(10) unsigned not null comment 'provider asn',
+	addressFamily int(10) unsigned,
 	sourceFrom json not null comment 'come from : {souce:sync/slurm/rush,syncLogId/syncLogFileId/slurmId/slurmFileId/rushDataLogId}',
 	key serialNumber(serialNumber),
 	key customerAsn(customerAsn),
-	unique rtrAsaFullSerialNumberCustomerAsnProviderAsns(serialNumber,customerAsn,providerAsns)
+	key providerAsn(providerAsn),
+	unique rtrAsaFull(serialNumber,customerAsn,providerAsn,addressFamily)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='full rtr asa'
 `,
 
@@ -578,12 +604,13 @@ CREATE TABLE lab_rpki_rtr_asa_full (
 CREATE TABLE lab_rpki_rtr_asa_full_log (
 	id int(10) unsigned not null primary key auto_increment,
 	serialNumber bigint(20) unsigned not null,
-	addressFamily int(10) unsigned,
 	customerAsn int(10) unsigned not null comment 'customer asn',
-	providerAsns varchar(255) comment '[{"providerAsn":65000},{"providerAsn":65001},{"providerAsn":65002}]',
+	providerAsn int(10) unsigned not null comment 'provider asn',
+	addressFamily int(10) unsigned,
 	sourceFrom json not null comment 'come from : {souce:sync/slurm/rush,syncLogId/syncLogFileId/slurmId/slurmFileId/rushDataLogId}',
 	key serialNumber(serialNumber),
-	key customerAsn(customerAsn)
+	key customerAsn(customerAsn),
+	key providerAsn(providerAsn)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='full rtr asa log history'
 `,
 
@@ -592,13 +619,14 @@ CREATE TABLE lab_rpki_rtr_asa_incremental (
 	id int(10) unsigned not null primary key auto_increment,
 	serialNumber bigint(20) unsigned not null,
 	style varchar(16) not null comment 'announce/withdraw, is 1/0 in protocol',
-	addressFamily int(10) unsigned,
 	customerAsn int(10) unsigned not null comment 'customer asn',
-	providerAsns varchar(255) comment '[{"providerAsn":65000},{"providerAsn":65001},{"providerAsn":65002}]',
+	providerAsn int(10) unsigned not null comment 'provider asn',
+	addressFamily int(10) unsigned,
 	sourceFrom json not null comment 'come from : {souce:sync/slurm/rush,syncLogId/syncLogFileId/slurmId/slurmFileId/rushDataLogId}',
 	key serialNumber(serialNumber),
 	key customerAsn(customerAsn),
-	unique rtrIncrementalSerialNumberCustomerAsnProviderAsns(serialNumber,customerAsn,providerAsns)
+	key providerAsn(providerAsn),
+	unique rtrAsaIncremental(serialNumber,customerAsn,providerAsn,addressFamily)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='incremental rtr asa'
 `,
 
@@ -609,18 +637,30 @@ CREATE TABLE lab_rpki_rtr_asa_incremental (
 CREATE TABLE lab_rpki_slurm (
 	id int(10) unsigned not null primary key auto_increment,
 	version int(10) unsigned default 1,
-	style varchar(128) not null comment 'prefixFilter/bgpsecFilter/prefixAssertion/bgpsecAssertion',
-	asn bigint(20) signed ,
-	addressPrefix varchar(512) comment '198.51.100.0/24 or 2001:DB8::/32',
-	maxLength int(10) unsigned ,
-	ski varchar(256) comment 'some base64 ski',
-	routerPublicKey varchar(256) comment 'some base64 ski', 
+	style varchar(128) not null comment 'prefixFilter/bgpsecFilter/prefixAssertion/bgpsecAssertion/aspaFilter/aspaAssertion',
+
+	asn int(10) unsigned comment 'prefix asn',
+	addressPrefix varchar(512) comment 'prefix address: 198.51.100.0/24 or 2001:DB8::/32',
+	maxLength int(10) unsigned  comment 'prefix maxlength',
+
+	ski varchar(256) comment 'bgpsec base64 ski',
+	routerPublicKey varchar(256) comment 'bgpsec base64 ski', 
+
+	customerAsn int(10) unsigned comment 'asa customerAsn',
+	providerAsn  int(10) unsigned comment 'asa providerAsn',
+	addressFamily varchar(16) comment 'asa addressFamily',
+
 	comment varchar(256),
 	treatLevel varchar(64) comment 'critical/major/normal',
 	slurmLogId int(10) unsigned not null comment 'lab_rpki_slurm_log.id',
 	slurmLogFileId int(10) unsigned not null comment 'lab_rpki_slurm_log_file.id',
 	state json not null comment '[rtr:notYet/finished]',
-	unique slurmAsnAddressPrefix_maxLength (asn,addressPrefix,maxLength)
+
+	key asn(asn),
+	key addressPrefix(addressPrefix),
+	key customerAsn(customerAsn),
+	key providerAsn(providerAsn),
+	unique slurmPrefixAsa (asn,addressPrefix,maxLength,customerAsn,providerAsn,addressFamily)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='valid slurms'
 `,
 
@@ -732,6 +772,8 @@ var fullSyncSqls []string = []string{
 	`truncate  table  lab_rpki_sync_log_file`,
 	`truncate  table  lab_rpki_sync_log`,
 	`truncate  table  lab_rpki_sync_url`,
+	`truncate  table  lab_rpki_sync_rrdp_notify`,
+	`truncate  table  lab_rpki_sync_rrdp_delta`,
 }
 var resetAllOtherSqls []string = []string{
 	`truncate  table  lab_rpki_conf`,
@@ -773,6 +815,8 @@ var optimizeSqls []string = []string{
 	`optimize  table  lab_rpki_sync_rrdp_log`,
 	`optimize  table  lab_rpki_sync_log`,
 	`optimize  table  lab_rpki_sync_url`,
+	`optimize  table  lab_rpki_sync_rrdp_notify`,
+	`optimize  table  lab_rpki_sync_rrdp_delta`,
 	`optimize  table  lab_rpki_rtr_session`,
 	`optimize  table  lab_rpki_rtr_serial_number`,
 	`optimize  table  lab_rpki_rtr_full`,
@@ -781,10 +825,11 @@ var optimizeSqls []string = []string{
 	`optimize  table  lab_rpki_rtr_asa_full`,
 	`optimize  table  lab_rpki_rtr_asa_full_log`,
 	`optimize  table  lab_rpki_rtr_asa_incremental`,
-	`optimize  table  lab_rpki_slurm`}
+	`optimize  table  lab_rpki_slurm`,
+}
 
 // when isInit is true, then init all db. otherwise will reset all db
-func InitResetDb(sysStyle SysStyle) error {
+func initResetDb(sysStyle SysStyle) error {
 	session, err := xormdb.NewSession()
 	if err != nil {
 		return err
@@ -792,40 +837,40 @@ func InitResetDb(sysStyle SysStyle) error {
 	defer session.Close()
 
 	//truncate all table
-	err = initResetDb(session, sysStyle)
+	err = initResetImplDb(session, sysStyle)
 	if err != nil {
-		return xormdb.RollbackAndLogError(session, "InitResetDb(): initResetDb fail", err)
+		return xormdb.RollbackAndLogError(session, "initResetDb(): initResetImplDb fail", err)
 	}
 
 	err = xormdb.CommitSession(session)
 	if err != nil {
-		return xormdb.RollbackAndLogError(session, "InitResetDb(): CommitSession fail", err)
+		return xormdb.RollbackAndLogError(session, "initResetDb(): CommitSession fail", err)
 	}
 	return nil
 }
 
 // need to init sessionId when it is empty
-func initResetDb(session *xorm.Session, sysStyle SysStyle) error {
+func initResetImplDb(session *xorm.Session, sysStyle SysStyle) error {
 	defer func(session1 *xorm.Session) {
 		sql := `set foreign_key_checks=1;`
 		if _, err := session1.Exec(sql); err != nil {
-			belogs.Error("initResetDb(): SET foreign_key_checks=1 fail", err)
-			xormdb.RollbackAndLogError(session, "initResetDb():SET foreign_key_checks=1 fail", err)
+			belogs.Error("initResetImplDb(): SET foreign_key_checks=1 fail", err)
+			xormdb.RollbackAndLogError(session, "initResetImplDb():SET foreign_key_checks=1 fail", err)
 		}
 	}(session)
 
 	start := time.Now()
 	sql := `set foreign_key_checks=0;`
 	if _, err := session.Exec(sql); err != nil {
-		belogs.Error("initResetDb(): SET foreign_key_checks=0 fail", err)
-		return xormdb.RollbackAndLogError(session, "initResetDb():SET foreign_key_checks=0 fail: ", err)
+		belogs.Error("initResetImplDb(): SET foreign_key_checks=0 fail", err)
+		return xormdb.RollbackAndLogError(session, "initResetImplDb():SET foreign_key_checks=0 fail: ", err)
 	}
-	belogs.Debug("initResetDb():foreign_key_checks=0;   time(s):", time.Now().Sub(start))
+	belogs.Debug("initResetImplDb():foreign_key_checks=0;   time(s):", time.Since(start))
 
 	// delete rtr_session
 	var sqls []string
 	if sysStyle.SysStyle == "init" {
-		sqls = intiSqls
+		sqls = initSqls
 	} else if sysStyle.SysStyle == "fullsync" || sysStyle.SysStyle == "resetall" {
 		sqls = fullSyncSqls
 		if sysStyle.SysStyle == "resetall" {
@@ -833,17 +878,17 @@ func initResetDb(session *xorm.Session, sysStyle SysStyle) error {
 		}
 		sqls = append(sqls, optimizeSqls...)
 	}
-	belogs.Debug("initResetDb():will Exec sqls:", jsonutil.MarshalJson(sqls))
-	belogs.Info("initResetDb():will Exec len(sqls):", len(sqls))
+	belogs.Debug("initResetImplDb():will Exec sqls:", jsonutil.MarshalJson(sqls))
+	belogs.Info("initResetImplDb():will Exec len(sqls):", len(sqls))
 	for _, sq := range sqls {
-		sqlTime := time.Now()
+		now := time.Now()
 		if _, err := session.Exec(sq); err != nil {
-			belogs.Error("initResetDb():  "+sq+" fail", err)
-			return xormdb.RollbackAndLogError(session, "initResetDb():sql fail: "+sq, err)
+			belogs.Error("initResetImplDb():  "+sq+" fail", err)
+			return xormdb.RollbackAndLogError(session, "initResetImplDb():sql fail: "+sq, err)
 		}
-		belogs.Info("initResetDb(): sq:", sq, ", sql time(s):", time.Now().Sub(sqlTime).Seconds())
+		belogs.Info("initResetImplDb(): sq:", sq, ", sql time(s):", time.Since(now))
 	}
-	belogs.Info("initResetDb(): len(sqls):", len(sqls), ",  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Info("initResetImplDb(): len(sqls):", len(sqls), ",  time(s):", time.Since(start))
 
 	// when resetall,
 	if sysStyle.SysStyle == "resetall" {
@@ -852,10 +897,10 @@ func initResetDb(session *xorm.Session, sysStyle SysStyle) error {
 		rtrSession := model.LabRpkiRtrSession{}
 		rtrSession.SessionId = uint64(rand.Intn(999) + 99)
 		rtrSession.CreateTime = time.Now()
-		belogs.Info("initResetDb():insert lab_rpki_rtr_session:  ", rtrSession)
+		belogs.Info("initResetImplDb():insert lab_rpki_rtr_session:  ", rtrSession)
 		if _, err := session.Insert(&rtrSession); err != nil {
-			belogs.Error("initResetDb():insert rtr_session fail", err)
-			return xormdb.RollbackAndLogError(session, "initResetDb():insert rtr_session fail", err)
+			belogs.Error("initResetImplDb():insert rtr_session fail", err)
+			return xormdb.RollbackAndLogError(session, "initResetImplDb():insert rtr_session fail", err)
 		}
 	}
 	if sysStyle.SysStyle == "init" || sysStyle.SysStyle == "resetall" {
@@ -864,12 +909,12 @@ func initResetDb(session *xorm.Session, sysStyle SysStyle) error {
 			values(?,?,?,?,?) `
 		_, err := session.Exec(sql, "rpOperate", "cacheUpdateType", "manual", "manual", time.Now())
 		if err != nil {
-			belogs.Error("initResetDb(): insert lab_rpki_conf fail", err)
-			return xormdb.RollbackAndLogError(session, "initResetDb():insert lab_rpki_conf fail", err)
+			belogs.Error("initResetImplDb(): insert lab_rpki_conf fail", err)
+			return xormdb.RollbackAndLogError(session, "initResetImplDb():insert lab_rpki_conf fail", err)
 		}
 	}
 	if err := session.Commit(); err != nil {
-		return xormdb.RollbackAndLogError(session, "initResetDb():commit fail", err)
+		return xormdb.RollbackAndLogError(session, "initResetImplDb():commit fail", err)
 	}
 	return nil
 }

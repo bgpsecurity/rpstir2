@@ -34,7 +34,7 @@ func ParseToIpv4Prefix(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel Rt
 	// get zero0
 	err = binary.Read(buf, binary.BigEndian, &zero0)
 	if err != nil {
-		belogs.Error("ParseToIpv4Prefix(): PDU_TYPE_IPV4_PREFIX get zero0 fail: ", buf, err)
+		belogs.Error("ParseToIpv4Prefix(): PDU_TYPE_IPV4_PREFIX get zero0 fail, buf:", buf, err)
 		rtrError := NewRtrError(
 			err,
 			true, protocolVersion, PDU_TYPE_ERROR_CODE_CORRUPT_DATA,
@@ -45,7 +45,7 @@ func ParseToIpv4Prefix(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel Rt
 	// get length
 	err = binary.Read(buf, binary.BigEndian, &length)
 	if err != nil {
-		belogs.Error("ParseToIpv4Prefix(): PDU_TYPE_IPV4_PREFIX get length fail: ", buf, err)
+		belogs.Error("ParseToIpv4Prefix(): PDU_TYPE_IPV4_PREFIX get length fail, buf:", buf, err)
 		rtrError := NewRtrError(
 			err,
 			true, protocolVersion, PDU_TYPE_ERROR_CODE_CORRUPT_DATA,
@@ -53,7 +53,7 @@ func ParseToIpv4Prefix(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel Rt
 		return rtrPduModel, rtrError
 	}
 	if length != 20 {
-		belogs.Error("ParseToIpv4Prefix():PDU_TYPE_IPV4_PREFIX, length must be 20,  ", buf, length)
+		belogs.Error("ParseToIpv4Prefix():PDU_TYPE_IPV4_PREFIX, length must be 20, buf:", buf, "   length:", length)
 		rtrError := NewRtrError(
 			errors.New("pduType is IPV4 PREFIX, length must be 20"),
 			true, protocolVersion, PDU_TYPE_ERROR_CODE_CORRUPT_DATA,
@@ -65,7 +65,7 @@ func ParseToIpv4Prefix(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel Rt
 	// get flags
 	err = binary.Read(buf, binary.BigEndian, &flags)
 	if err != nil {
-		belogs.Error("ParseToIpv4Prefix(): PDU_TYPE_IPV4_PREFIX get flags fail: ", buf, err)
+		belogs.Error("ParseToIpv4Prefix(): PDU_TYPE_IPV4_PREFIX get flags fail, buf:", buf, err)
 		rtrError := NewRtrError(
 			err,
 			true, protocolVersion, PDU_TYPE_ERROR_CODE_CORRUPT_DATA,
@@ -73,7 +73,7 @@ func ParseToIpv4Prefix(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel Rt
 		return rtrPduModel, rtrError
 	}
 	if flags != 0 && flags != 1 {
-		belogs.Error("ParseToIpv4Prefix():PDU_TYPE_IPV4_PREFIX, flags must be 0 or 1, ", buf, flags)
+		belogs.Error("ParseToIpv4Prefix():PDU_TYPE_IPV4_PREFIX, flags must be 0 or 1, buf:", buf, flags)
 		rtrError := NewRtrError(
 			errors.New("pduType is IPV4 PREFIX, flags must be 0 or 1"),
 			true, protocolVersion, PDU_TYPE_ERROR_CODE_CORRUPT_DATA,
@@ -84,7 +84,7 @@ func ParseToIpv4Prefix(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel Rt
 	// get prefixLength
 	err = binary.Read(buf, binary.BigEndian, &prefixLength)
 	if err != nil {
-		belogs.Error("ParseToIpv4Prefix(): PDU_TYPE_IPV4_PREFIX get prefixLength fail: ", buf, err)
+		belogs.Error("ParseToIpv4Prefix(): PDU_TYPE_IPV4_PREFIX get prefixLength fail, buf:", buf, err)
 		rtrError := NewRtrError(
 			err,
 			true, protocolVersion, PDU_TYPE_ERROR_CODE_CORRUPT_DATA,
@@ -95,7 +95,7 @@ func ParseToIpv4Prefix(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel Rt
 	// get maxLength
 	err = binary.Read(buf, binary.BigEndian, &maxLength)
 	if err != nil {
-		belogs.Error("ParseToIpv4Prefix(): PDU_TYPE_IPV4_PREFIX get maxLength fail: ", buf, err)
+		belogs.Error("ParseToIpv4Prefix(): PDU_TYPE_IPV4_PREFIX get maxLength fail, buf:", buf, err)
 		rtrError := NewRtrError(
 			err,
 			true, protocolVersion, PDU_TYPE_ERROR_CODE_CORRUPT_DATA,
@@ -106,7 +106,7 @@ func ParseToIpv4Prefix(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel Rt
 	// get zero1
 	err = binary.Read(buf, binary.BigEndian, &zero1)
 	if err != nil {
-		belogs.Error("ParseToIpv4Prefix(): PDU_TYPE_IPV4_PREFIX get zero1 fail: ", buf, err)
+		belogs.Error("ParseToIpv4Prefix(): PDU_TYPE_IPV4_PREFIX get zero1 fail, buf:", buf, err)
 		rtrError := NewRtrError(
 			err,
 			true, protocolVersion, PDU_TYPE_ERROR_CODE_CORRUPT_DATA,
@@ -117,7 +117,7 @@ func ParseToIpv4Prefix(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel Rt
 	// get ipv4Prefix
 	err = binary.Read(buf, binary.BigEndian, &ipv4Prefix)
 	if err != nil {
-		belogs.Error("ParseToIpv4Prefix(): PDU_TYPE_IPV4_PREFIX get ipv4Prefix fail: ", buf, err)
+		belogs.Error("ParseToIpv4Prefix(): PDU_TYPE_IPV4_PREFIX get ipv4Prefix fail, buf:", buf, err)
 		rtrError := NewRtrError(
 			err,
 			true, protocolVersion, PDU_TYPE_ERROR_CODE_CORRUPT_DATA,
@@ -128,7 +128,7 @@ func ParseToIpv4Prefix(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel Rt
 	// get asn
 	err = binary.Read(buf, binary.BigEndian, &asn)
 	if err != nil {
-		belogs.Error("ParseToIpv4Prefix(): PDU_TYPE_IPV4_PREFIX get asn fail: ", buf, err)
+		belogs.Error("ParseToIpv4Prefix(): PDU_TYPE_IPV4_PREFIX get asn fail, buf:", buf, err)
 		rtrError := NewRtrError(
 			err,
 			true, protocolVersion, PDU_TYPE_ERROR_CODE_CORRUPT_DATA,
@@ -139,6 +139,6 @@ func ParseToIpv4Prefix(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel Rt
 	sq := NewRtrIpv4PrefixModel(protocolVersion, flags, prefixLength,
 		maxLength, ipv4Prefix, asn)
 
-	belogs.Debug("ParseToIpv4Prefix():get PDU_TYPE_IPV4_PREFIX ", buf, jsonutil.MarshalJson(sq))
+	belogs.Debug("ParseToIpv4Prefix():get PDU_TYPE_IPV4_PREFIX, buf:", buf, "  sq:", jsonutil.MarshalJson(sq))
 	return sq, nil
 }

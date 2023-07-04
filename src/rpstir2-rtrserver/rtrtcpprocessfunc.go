@@ -31,7 +31,7 @@ func (rs *RtrTcpServerProcessFunc) OnReceiveAndSend(conn *net.TCPConn, receiveDa
 		return err
 	}
 	belogs.Info("OnReceiveAndSend():server get rtrPduModel:", jsonutil.MarshalJson(rtrPduModel),
-		"    remoteAddr:", conn.RemoteAddr(), "  time(s):", time.Now().Sub(start))
+		"    remoteAddr:", conn.RemoteAddr(), "  time(s):", time.Since(start))
 
 	// process rtrpdumodel --> response rtrpdumodels
 	rtrPduModelResponses, err := ProcessRtrPduModel(buf, rtrPduModel)
@@ -44,7 +44,7 @@ func (rs *RtrTcpServerProcessFunc) OnReceiveAndSend(conn *net.TCPConn, receiveDa
 		return err
 	}
 	belogs.Info("OnReceiveAndSend():server process rtrPduModel:", jsonutil.MarshalJson(rtrPduModel),
-		" and assemable responses, len(responses) is ", len(rtrPduModelResponses), "  time(s):", time.Now().Sub(start))
+		" and assemable responses, len(responses) is ", len(rtrPduModelResponses), "  time(s):", time.Since(start))
 
 	// send response rtrpdumodels
 	if len(rtrPduModelResponses) > 0 {
@@ -57,7 +57,7 @@ func (rs *RtrTcpServerProcessFunc) OnReceiveAndSend(conn *net.TCPConn, receiveDa
 	}
 	belogs.Info("OnReceiveAndSend(): server send responses ok, len(responses) is ", len(rtrPduModelResponses),
 		"    remoteAddr:", conn.RemoteAddr(),
-		"    time(s):", time.Now().Sub(start).Seconds())
+		"    time(s):", time.Since(start))
 	return nil
 }
 func (rs *RtrTcpServerProcessFunc) OnClose(conn *net.TCPConn) {
@@ -74,6 +74,6 @@ func (rs *RtrTcpServerProcessFunc) ActiveSend(conn *net.TCPConn, sendData []byte
 	}
 	belogs.Info("ActiveSend(): conn.Write() ok, len(sendData), n:", len(sendData), n,
 		"    remoteAddr:", conn.RemoteAddr(),
-		"    time(s):", time.Now().Sub(start).Seconds())
+		"    time(s):", time.Since(start))
 	return nil
 }

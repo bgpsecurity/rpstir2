@@ -3,13 +3,12 @@ package rrdp
 import (
 	"time"
 
-	model "rpstir2-model"
-
 	"github.com/cpusoft/goutil/belogs"
 	"github.com/cpusoft/goutil/hashutil"
 	"github.com/cpusoft/goutil/jsonutil"
 	"github.com/cpusoft/goutil/osutil"
 	"github.com/cpusoft/goutil/rrdputil"
+	model "rpstir2-model"
 )
 
 // connectRrdpUrlCh: whether connect to notifyurl, will tell others to remove rsync path, or just ignore. will defer close(connectRrdpUrlCh)
@@ -28,7 +27,7 @@ func RrdpByUrlImpl(rrdpByUrlModel RrdpByUrlModel, connectRrdpUrlCh chan bool,
 		close(connectRrdpUrlCh)
 		belogs.Error("RrdpByUrlImpl(): GetRrdpNotification fail, rrdpByUrlModel:",
 			jsonutil.MarshalJson(rrdpByUrlModel), "  will send false to connectRrdpUrlCh,  err:", err,
-			"  time(s):", time.Now().Sub(start).Seconds())
+			"  time(s):", time.Since(start))
 		return nil, err
 	}
 
@@ -36,7 +35,7 @@ func RrdpByUrlImpl(rrdpByUrlModel RrdpByUrlModel, connectRrdpUrlCh chan bool,
 	close(connectRrdpUrlCh)
 	// connect ok
 	belogs.Info("RrdpByUrlImpl(): connect Notify Url ok:", rrdpByUrlModel.NotifyUrl,
-		", will send true to connectRrdpUrlCh ,  time(s):", time.Now().Sub(start).Seconds())
+		", will send true to connectRrdpUrlCh ,  time(s):", time.Since(start))
 
 	// no need update
 	belogs.Debug("RrdpByUrlImpl(): compare :",
@@ -88,7 +87,7 @@ func RrdpByUrlImpl(rrdpByUrlModel RrdpByUrlModel, connectRrdpUrlCh chan bool,
 		return nil, err
 	}
 	belogs.Info("RrdpByUrlImpl(): end ok, notifyUrl, len(files):", rrdpByUrlModel.NotifyUrl, len(snapshotDeltaResult.RrdpFiles),
-		"  time(s):", time.Now().Sub(start).Seconds())
+		"  time(s):", time.Since(start))
 	return snapshotDeltaResult.RrdpFiles, nil
 
 }
@@ -115,7 +114,7 @@ func ConvertToSyncLogFile(
 	// filetype
 	fileType := osutil.ExtNoDot(rrdpFile.FileName)
 	rtr := "notNeed"
-	if osutil.ExtNoDot(rrdpFile.FileName) == "roa" {
+	if fileType == "roa" || fileType == "asa" {
 		rtr = "notYet"
 	}
 
@@ -126,7 +125,7 @@ func ConvertToSyncLogFile(
 	}
 	state := jsonutil.MarshalJson(syncLogFileState)
 
-	//lab_rpki_sync_log_file
+	// syncLogFile
 	syncLogFile = model.SyncLogFile{
 		SyncLogId: syncLogId,
 		FileType:  fileType,

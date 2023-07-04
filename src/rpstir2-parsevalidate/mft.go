@@ -2,6 +2,7 @@ package parsevalidate
 
 import (
 	"errors"
+	"math/big"
 	"strconv"
 	"strings"
 	"time"
@@ -193,6 +194,15 @@ func parseMftModel(certFile string, mftModel *model.MftModel, stateModel *model.
 			Detail: err.Error()}
 		stateModel.AddError(&stateMsg)
 	}
+	// get IP address in EE: RFC9286, will check ipaddress(should be empty)
+	mftModel.EeCertModel.CerIpAddressModel, _, err = openssl.ParseCerIpAddressModelByOpensslResults(results)
+	if err != nil {
+		belogs.Error("parseMftModel(): ParseCerIpAddressModelByOpensslResults: err: ", err, ": "+certFile)
+		stateMsg := model.StateMsg{Stage: "parsevalidate",
+			Fail:   "Fail to parse file",
+			Detail: err.Error()}
+		stateModel.AddError(&stateMsg)
+	}
 	belogs.Debug("parseMftModel(): mftModel:", jsonutil.MarshalJson(mftModel))
 	return nil
 }
@@ -255,13 +265,17 @@ func validateMftModel(mftModel *model.MftModel, stateModel *model.StateModel) (e
 			Detail: "Manifest Number length is " + le}
 		stateModel.AddWarning(&stateMsg)
 	}
-	isHex, err := regexputil.IsHex(mftModel.MftNumber)
-	if !isHex || err != nil {
+
+	//isHex, err := regexputil.IsHex(mftModel.MftNumber)
+	//if !isHex || err != nil {
+	_, ok := new(big.Int).SetString(mftModel.MftNumber, 16)
+	if !ok {
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
 			Fail:   "Manifest Number is not a hexadecimal number",
 			Detail: mftModel.MftNumber}
 		stateModel.AddError(&stateMsg)
 	}
+
 	if len(mftModel.MftNumber) > 1024 {
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
 			Fail:   "Manifest Number is too long",
@@ -284,11 +298,22 @@ func validateMftModel(mftModel *model.MftModel, stateModel *model.StateModel) (e
 	// not actually check file
 	for _, fileHash := range mftModel.FileHashModels {
 		fileName := fileHash.File
+		check := regexputil.CheckRpkiFileName(fileName)
+		if !check {
+			stateMsg := model.StateMsg{Stage: "parsevalidate",
+				Fail:   "The haracters in file name is illegal",
+				Detail: "The file is " + fileName}
+			stateModel.AddError(&stateMsg)
+		}
+
 		hash := fileHash.Hash
 		ext := osutil.Ext(fileName)
-		if ext != ".cer" && ext != ".roa" && ext != ".crl" && ext != ".gbr" {
+		// no .mft
+		// https://www.iana.org/assignments/rpki/rpki.xhtml
+		if ext != ".cer" && ext != ".roa" && ext != ".crl" && ext != ".gbr" &&
+			ext != ".asa" && ext != ".sig" {
 			stateMsg := model.StateMsg{Stage: "parsevalidate",
-				Fail:   "The file in fileList is not one of the three types of cer/roa/crl/gbr",
+				Fail:   "The file in fileList is not one of the types of cer/roa/crl/gbr/asa/sig",
 				Detail: "The file is " + fileName}
 			stateModel.AddError(&stateMsg)
 		}
@@ -338,21 +363,13 @@ func validateMftModel(mftModel *model.MftModel, stateModel *model.StateModel) (e
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
 			Fail:   "ThisUpdate is later than the current time",
 			Detail: "The current time is " + convert.Time2StringZone(now) + ", thisUpdate is " + convert.Time2StringZone(mftModel.ThisUpdate)}
-		if conf.Bool("policy::allowNotYetMft") {
-			stateModel.AddWarning(&stateMsg)
-		} else {
-			stateModel.AddError(&stateMsg)
-		}
+		stateModel.AddError(&stateMsg)
 	}
 	if mftModel.NextUpdate.Before(now) {
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
 			Fail:   "NextUpdate is earlier than the current time",
 			Detail: "The current time is " + convert.Time2StringZone(now) + ", nextUpdate is " + convert.Time2StringZone(mftModel.NextUpdate)}
-		if conf.Bool("policy::allowStaleMft") {
-			stateModel.AddWarning(&stateMsg)
-		} else {
-			stateModel.AddError(&stateMsg)
-		}
+		stateModel.AddError(&stateMsg)
 	}
 	if mftModel.ThisUpdate.After(mftModel.NextUpdate) {
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
@@ -363,13 +380,25 @@ func validateMftModel(mftModel *model.MftModel, stateModel *model.StateModel) (e
 
 	if mftModel.ThisUpdate.Before(mftModel.EeCertModel.NotBefore) {
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
-			Fail:   "ThisUpdate is later than the NotBefore of EE",
+			Fail:   "ThisUpdate of MFT is later than the NotBefore of EE",
 			Detail: ""}
 		stateModel.AddError(&stateMsg)
 	}
+	if !mftModel.ThisUpdate.Equal(mftModel.EeCertModel.NotBefore) {
+		stateMsg := model.StateMsg{Stage: "parsevalidate",
+			Fail:   "ThisUpdate of MFT is not equal to the NotBefore of EE",
+			Detail: ""}
+		stateModel.AddWarning(&stateMsg)
+	}
 	if mftModel.NextUpdate.After(mftModel.EeCertModel.NotAfter) {
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
-			Fail:   "NextUpdate is later than the NotAfter of EE",
+			Fail:   "NextUpdate of MFT is later than the NotAfter of EE",
+			Detail: ""}
+		stateModel.AddWarning(&stateMsg)
+	}
+	if !mftModel.NextUpdate.Equal(mftModel.EeCertModel.NotAfter) {
+		stateMsg := model.StateMsg{Stage: "parsevalidate",
+			Fail:   "NextUpdate of MFT is not equal to the NotAfter of EE",
 			Detail: ""}
 		stateModel.AddWarning(&stateMsg)
 	}
@@ -399,6 +428,15 @@ func validateMftModel(mftModel *model.MftModel, stateModel *model.StateModel) (e
 		stateMsg := model.StateMsg{Stage: "parsevalidate",
 			Fail:   "AKI length is wrong",
 			Detail: ""}
+		stateModel.AddError(&stateMsg)
+	}
+
+	// rfc9286
+	if len(mftModel.EeCertModel.CerIpAddressModel.CerIpAddresses) != 0 {
+		stateMsg := model.StateMsg{Stage: "parsevalidate",
+			Fail: "sbgp-ipAddrBlock of MFT's EE should be empty",
+			Detail: "INRs must use the 'inherit' attribute, the current length is " +
+				convert.ToString(len(mftModel.EeCertModel.CerIpAddressModel.CerIpAddresses))}
 		stateModel.AddError(&stateMsg)
 	}
 

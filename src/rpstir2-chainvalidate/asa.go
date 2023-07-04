@@ -34,7 +34,7 @@ func getChainAsas(chains *Chains, wg *sync.WaitGroup) {
 		chains.AddAsa(&chainAsa)
 	}
 
-	belogs.Debug("getChainAsas(): end, len(chainAsaSqls):", len(chainAsaSqls), ",   len(chains.AsaIds):", len(chains.AsaIds), "  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Debug("getChainAsas(): end, len(chainAsaSqls):", len(chainAsaSqls), ",   len(chains.AsaIds):", len(chains.AsaIds), "  time(s):", time.Since(start))
 	return
 }
 
@@ -56,7 +56,7 @@ func validateAsas(chains *Chains, wg *sync.WaitGroup) {
 	asaWg.Wait()
 	close(chainAsaCh)
 
-	belogs.Info("validateAsas(): end, len(asaIds):", len(asaIds), "  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Info("validateAsas(): end, len(asaIds):", len(asaIds), "  time(s):", time.Since(start))
 
 }
 
@@ -137,7 +137,7 @@ func validateAsa(chains *Chains, asaId uint64, wg *sync.WaitGroup, chainAsaCh ch
 		belogs.Debug("validateAsa(): stateModel have errors or warnings, asaId :", asaId, "  stateModel:", jsonutil.MarshalJson(chainAsa.StateModel))
 	}
 	chains.UpdateFileTypeIdToAsa(&chainAsa)
-	belogs.Debug("validateAsa():end UpdateFileTypeIdToAsa, asaId:", asaId, "  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Debug("validateAsa():end UpdateFileTypeIdToAsa, asaId:", asaId, "  time(s):", time.Since(start))
 }
 
 func getAsaParentChainCers(chains *Chains, asaId uint64) (chainCerAlones []ChainCerAlone, err error) {

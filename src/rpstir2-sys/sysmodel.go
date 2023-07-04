@@ -9,6 +9,16 @@ type SysStyle struct {
 	SyncPolicy string `json:"syncPolicy"`
 }
 
+type SysModel struct {
+	// "init" :  will create all table;
+	// "fullsync": will remove current data to forece full sync data, and retain rtr/slurm/transfer data.
+	// "resetall" will remove all data including rtr/slurm/transfer;
+	//SysStyle string `json:"sysStyle"`
+	SysData string `json:"sysData"`
+	// direct/entire
+	//SyncPolicy string `json:"syncPolicy"`
+}
+
 type CertResults struct {
 	CerResult CertResult `json:"cerResult"`
 	CrlResult CertResult `json:"crlResult"`

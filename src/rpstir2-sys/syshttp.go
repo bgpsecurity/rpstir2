@@ -5,8 +5,6 @@ import (
 	"net/http"
 	"os"
 
-	model "rpstir2-model"
-
 	"github.com/cpusoft/goutil/belogs"
 	"github.com/cpusoft/goutil/conf"
 	"github.com/cpusoft/goutil/fileutil"
@@ -14,9 +12,9 @@ import (
 	"github.com/cpusoft/goutil/httpclient"
 	"github.com/cpusoft/goutil/jsonutil"
 	"github.com/gin-gonic/gin"
+	model "rpstir2-model"
 )
 
-//
 func InitReset(c *gin.Context) {
 	belogs.Debug("InitReset()")
 	sysStyle := SysStyle{}
@@ -41,7 +39,7 @@ func InitReset(c *gin.Context) {
 				conf.String("rpstir2-rp::serverHttpsPort")
 			var path string
 			if sysStyle.SyncPolicy == "direct" {
-				path = url + "/directsync/directurlstart"
+				path = url + "/directsync/urlstart"
 				belogs.Info("initReset(): will call direct url first:", path)
 				err = httpclient.PostAndUnmarshalResponseModel(path, ``, false, nil)
 				if err != nil {
@@ -50,7 +48,7 @@ func InitReset(c *gin.Context) {
 					return
 				}
 
-				path = url + "/directsync/directsyncstart"
+				path = url + "/directsync/syncstart"
 				belogs.Info("initReset(): will call direct sync second:", path)
 				go httpclient.Post(path, ``, false)
 
@@ -113,6 +111,10 @@ func ExportRoas(c *gin.Context) {
 	c.JSON(http.StatusOK, r)
 }
 
+// export all rtrs for manrs to valdations
+// https://github.com/manrs-tools/MANRS-IXP-validation-tool
+// https://github.com/manrs-tools/MANRS-IXP-validation-tool/blob/main/validator/tests/roa_test.json
+// https://github.com/manrs-tools/MANRS-IXP-validation-tool/blob/main/validator/tests/test_validate.py
 func ExportRtrForManrs(c *gin.Context) {
 	belogs.Info("ExportRtrForManrs()")
 	r, err := exportRtrForManrs()
@@ -121,7 +123,7 @@ func ExportRtrForManrs(c *gin.Context) {
 		return
 	}
 	belogs.Info("ExportRtrForManrs():exportRtrForManrs:", jsonutil.MarshalJson(r))
-	c.JSON(http.StatusOK, jsonutil.MarshallJsonIndent(r))
+	c.JSON(http.StatusOK, r)
 }
 
 func ExportRtrForManrsConsole() (err error) {

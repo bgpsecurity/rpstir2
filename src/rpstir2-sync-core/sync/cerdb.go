@@ -141,6 +141,6 @@ func delCerDb(session *xorm.Session, filePathPrefix string) (err error) {
 		return err
 	}
 	belogs.Info("delCerDb():delete lab_rpki_cer_*** ok, by filePathPrefix :", filePathPrefix,
-		"  len(cerIds)", len(cerIds), "     time(s):", time.Now().Sub(start).Seconds())
+		"  len(cerIds)", len(cerIds), "     time(s):", time.Since(start))
 	return nil
 }

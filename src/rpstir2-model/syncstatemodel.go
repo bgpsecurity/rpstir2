@@ -116,7 +116,7 @@ func (ss *ServiceState) EnterState(state string) (s *ServiceState, err error) {
 func (ss *ServiceState) LeaveState(state string) (s *ServiceState, err error) {
 	ss.curStateMutex.Lock()
 	defer ss.curStateMutex.Unlock()
-	belogs.Debug("LeaveState():state:", state, "   ss.isRunning :", ss.IsRunning, "  ss.runningState:", ss.RunningState)
+	belogs.Info("LeaveState():state:", state, "   ss.isRunning :", ss.IsRunning, "  ss.runningState:", ss.RunningState)
 
 	if state == "rtr" || state == "end" {
 		ss.IsRunning = "false"

@@ -20,6 +20,7 @@ type ChainCertSql struct {
 	// for crl
 	CerFiles string `json:"-" xorm:"cerFiles varchar(2048)"`
 	RoaFiles string `json:"-" xorm:"roaFiles varchar(2048)"`
+	AsaFiles string `json:"-" xorm:"asaFiles varchar(2048)"`
 	MftFiles string `json:"-" xorm:"mftFiles varchar(2048)"`
 }
 
@@ -65,13 +66,16 @@ func (c *ChainCertSql) ToChainCrl() (chainCrl ChainCrl) {
 	chainCrl.FileName = crlModel.FileName
 	chainCrl.Aki = crlModel.Aki
 	chainCrl.CrlNumber = crlModel.CrlNumber
+	chainCrl.ThisUpdate = crlModel.ThisUpdate
+	chainCrl.NextUpdate = crlModel.NextUpdate
 
 	revokedCertModels := jsonutil.MarshalJson(crlModel.RevokedCertModels)
 	belogs.Debug("ToChainCrl(): revokedCertModels:", revokedCertModels)
 	jsonutil.UnmarshalJson(revokedCertModels, &chainCrl.ChainRevokedCerts)
 	belogs.Debug("ToChainCrl(): chainCrl.ChainRevokedCerts:", chainCrl.ChainRevokedCerts)
 
-	belogs.Debug("ToChainCrl(): c.CerFiles:", c.CerFiles, "   c.RoaFiles:", c.RoaFiles, "   c.MftFiles:", c.MftFiles)
+	belogs.Debug("ToChainCrl(): c.CerFiles:", c.CerFiles, "   c.RoaFiles:", c.RoaFiles,
+		"   c.AsaFiles:", c.AsaFiles, "   c.MftFiles:", c.MftFiles)
 	shouldRevokedCerts := make([]string, 0)
 	if len(c.CerFiles) > 0 {
 		cerFiles := strings.Split(c.CerFiles, ",")
@@ -80,6 +84,10 @@ func (c *ChainCertSql) ToChainCrl() (chainCrl ChainCrl) {
 	if len(c.RoaFiles) > 0 {
 		roaFiles := strings.Split(c.RoaFiles, ",")
 		shouldRevokedCerts = append(shouldRevokedCerts, roaFiles...)
+	}
+	if len(c.AsaFiles) > 0 {
+		asaFiles := strings.Split(c.AsaFiles, ",")
+		shouldRevokedCerts = append(shouldRevokedCerts, asaFiles...)
 	}
 	if len(c.MftFiles) > 0 {
 		mftFiles := strings.Split(c.MftFiles, ",")
@@ -106,6 +114,8 @@ func (c *ChainCertSql) ToChainMft() (chainMft ChainMft) {
 	chainMft.Aki = mftModel.Aki
 	chainMft.Ski = mftModel.Ski
 	chainMft.MftNumber = mftModel.MftNumber
+	chainMft.ThisUpdate = mftModel.ThisUpdate
+	chainMft.NextUpdate = mftModel.NextUpdate
 	chainMft.EeCertStart = mftModel.EeCertModel.EeCertStart
 	chainMft.EeCertEnd = mftModel.EeCertModel.EeCertEnd
 
@@ -194,6 +204,7 @@ type ChainCer struct {
 	ChildChainCrls      []ChainCrl      `json:"childChainCrls"`
 	ChildChainMfts      []ChainMft      `json:"childChainMfts"`
 	ChildChainRoas      []ChainRoa      `json:"childChainRoas"`
+	ChildChainAsas      []ChainAsa      `json:"childChainAsas"`
 
 	StateModel model.StateModel `json:"-"`
 }
@@ -270,11 +281,13 @@ func (c *ChainCrlSql) ToChainCrl() (chainCrl ChainCrl) {
 }
 */
 type ChainCrl struct {
-	Id        uint64 `json:"id" xorm:"id int"`
-	FilePath  string `json:"-" xorm:"filePath varchar(512)"`
-	FileName  string `json:"-" xorm:"fileName varchar(128)"`
-	Aki       string `json:"-" xorm:"aki varchar(128)"`
-	CrlNumber uint64 `json:"-" xorm:"crlNumber int unsigned"`
+	Id         uint64    `json:"id" xorm:"id int"`
+	FilePath   string    `json:"-" xorm:"filePath varchar(512)"`
+	FileName   string    `json:"-" xorm:"fileName varchar(128)"`
+	Aki        string    `json:"-" xorm:"aki varchar(128)"`
+	CrlNumber  uint64    `json:"-" xorm:"crlNumber int unsigned"`
+	ThisUpdate time.Time `json:"-" xorm:"thisUpdate datetime"`
+	NextUpdate time.Time `json:"-" xorm:"nextUpdate  datetime"`
 
 	ChainRevokedCerts []ChainRevokedCert `json:"-"`
 
@@ -323,6 +336,8 @@ type ChainMft struct {
 	Ski            string          `json:"-" xorm:"ski varchar(128)"`
 	Aki            string          `json:"-" xorm:"aki varchar(128)"`
 	MftNumber      string          `json:"-" xorm:"mftNumber varchar(1024)"`
+	ThisUpdate     time.Time       `json:"thisUpdate" xorm:"thisUpdate datetime"`
+	NextUpdate     time.Time       `json:"nextUpdate" xorm:"nextUpdate  datetime"`
 	State          string          `json:"-" xorm:"state json"`
 	EeCertStart    uint64          `json:"-" xorm:"eeCertStart int"`
 	EeCertEnd      uint64          `json:"-" xorm:"eeCertEnd int"`
@@ -334,6 +349,9 @@ type ChainMft struct {
 	//should be revoked
 	ChainSnInCrlRevoked ChainSnInCrlRevoked `json:"-"`
 
+	// RFC9286
+	PreviousMft PreviousMft `json:"-"`
+
 	StateModel model.StateModel `json:"-"`
 }
 type ChainFileHash struct {
@@ -341,6 +359,21 @@ type ChainFileHash struct {
 	Hash string `json:"-" xorm:"hash varchar(1024)"`
 
 	Path string `json:"-" xorm:"path varchar(2048)"`
+}
+
+type PreviousMft struct {
+	Found      bool      `json:"-"`
+	MftNumber  string    `json:"-" xorm:"mftNumber varchar(1024)"`
+	ThisUpdate time.Time `json:"-" xorm:"thisUpdate datetime"`
+	NextUpdate time.Time `json:"-" xorm:"nextUpdate  datetime"`
+}
+
+type SameAkiCrl struct {
+	Found      bool      `json:"-"`
+	FilePath   string    `json:"-"`
+	FileName   string    `json:"-"`
+	ThisUpdate time.Time `json:"-"`
+	NextUpdate time.Time `json:"-"`
 }
 
 /*

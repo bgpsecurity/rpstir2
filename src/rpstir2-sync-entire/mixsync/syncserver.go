@@ -73,7 +73,7 @@ func startSyncServer(spQueue *SyncParseQueue, syncState *SyncState, syncServerWg
 
 			// return out of the for
 			belogs.Info("startSyncServer():end this sync server ssuccess: syncResultJson:", syncResultJson,
-				"  time(s):", time.Now().Sub(start))
+				"  time(s):", time.Since(start))
 			return
 		}
 	}

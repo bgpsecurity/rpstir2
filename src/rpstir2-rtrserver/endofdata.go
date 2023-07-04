@@ -44,7 +44,7 @@ func ParseToEndOfData(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel Rtr
 	// get sessionId
 	err = binary.Read(buf, binary.BigEndian, &sessionId)
 	if err != nil {
-		belogs.Error("ParseToEndOfData(): PDU_TYPE_END_OF_DATA get sessionId fail: ", buf, err)
+		belogs.Error("ParseToEndOfData(): PDU_TYPE_END_OF_DATA get sessionId fail, buf:", buf, err)
 		rtrError := NewRtrError(
 			err,
 			true, protocolVersion, PDU_TYPE_ERROR_CODE_CORRUPT_DATA,
@@ -55,7 +55,7 @@ func ParseToEndOfData(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel Rtr
 	// get length
 	err = binary.Read(buf, binary.BigEndian, &length)
 	if err != nil {
-		belogs.Error("ParseToEndOfData(): PDU_TYPE_END_OF_DATA get length fail: ", buf, err)
+		belogs.Error("ParseToEndOfData(): PDU_TYPE_END_OF_DATA get length fail, buf:", buf, err)
 		rtrError := NewRtrError(
 			err,
 			true, protocolVersion, PDU_TYPE_ERROR_CODE_CORRUPT_DATA,
@@ -63,7 +63,7 @@ func ParseToEndOfData(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel Rtr
 		return rtrPduModel, rtrError
 	}
 	if protocolVersion == PDU_PROTOCOL_VERSION_0 && length != 12 {
-		belogs.Error("ParseToEndOfData():PDU_TYPE_END_OF_DATA, when version is 0, length must be 12, ", buf, length)
+		belogs.Error("ParseToEndOfData():PDU_TYPE_END_OF_DATA, when version is 0, length must be 12, buf:", buf, "  length:", length)
 		rtrError := NewRtrError(
 			errors.New("pduType is CACHE RESPONSE, when version is 0, length must be 12"),
 			true, protocolVersion, PDU_TYPE_ERROR_CODE_CORRUPT_DATA,
@@ -71,7 +71,7 @@ func ParseToEndOfData(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel Rtr
 		return rtrPduModel, rtrError
 	}
 	if protocolVersion == PDU_PROTOCOL_VERSION_1 && length != 24 {
-		belogs.Error("ParseToEndOfData():PDU_TYPE_END_OF_DATA,   when version is 1, length must be 24, ", buf, length)
+		belogs.Error("ParseToEndOfData():PDU_TYPE_END_OF_DATA,   when version is 1, length must be 24, buf:", buf, "  length:", length)
 		rtrError := NewRtrError(
 			errors.New("pduType is CACHE RESPONSE, when version is 1, length must be 24"),
 			true, protocolVersion, PDU_TYPE_ERROR_CODE_CORRUPT_DATA,
@@ -82,7 +82,7 @@ func ParseToEndOfData(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel Rtr
 	// get serialNumber
 	err = binary.Read(buf, binary.BigEndian, &serialNumber)
 	if err != nil {
-		belogs.Error("ParseToEndOfData(): PDU_TYPE_END_OF_DATA get serialNumber fail: ", buf, err)
+		belogs.Error("ParseToEndOfData(): PDU_TYPE_END_OF_DATA get serialNumber fail, buf:", buf, err)
 		rtrError := NewRtrError(
 			err,
 			true, protocolVersion, PDU_TYPE_ERROR_CODE_CORRUPT_DATA,
@@ -94,7 +94,7 @@ func ParseToEndOfData(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel Rtr
 		// get refreshInterval
 		err = binary.Read(buf, binary.BigEndian, &refreshInterval)
 		if err != nil {
-			belogs.Error("ParseToEndOfData(): PDU_TYPE_END_OF_DATA get refreshInterval fail: ", buf, err)
+			belogs.Error("ParseToEndOfData(): PDU_TYPE_END_OF_DATA get refreshInterval fail, buf:", buf, err)
 			rtrError := NewRtrError(
 				err,
 				true, protocolVersion, PDU_TYPE_ERROR_CODE_CORRUPT_DATA,
@@ -105,7 +105,7 @@ func ParseToEndOfData(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel Rtr
 		// get retryInterval
 		err = binary.Read(buf, binary.BigEndian, &retryInterval)
 		if err != nil {
-			belogs.Error("ParseToEndOfData(): PDU_TYPE_END_OF_DATA get retryInterval fail: ", buf, err)
+			belogs.Error("ParseToEndOfData(): PDU_TYPE_END_OF_DATA get retryInterval fail, buf:", buf, err)
 			rtrError := NewRtrError(
 				err,
 				true, protocolVersion, PDU_TYPE_ERROR_CODE_CORRUPT_DATA,
@@ -116,7 +116,7 @@ func ParseToEndOfData(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel Rtr
 		// get expireInterval
 		err = binary.Read(buf, binary.BigEndian, &expireInterval)
 		if err != nil {
-			belogs.Error("ParseToEndOfData(): PDU_TYPE_END_OF_DATA get expireInterval fail: ", buf, err)
+			belogs.Error("ParseToEndOfData(): PDU_TYPE_END_OF_DATA get expireInterval fail, buf:", buf, err)
 			rtrError := NewRtrError(
 				err,
 				true, protocolVersion, PDU_TYPE_ERROR_CODE_CORRUPT_DATA,
@@ -128,7 +128,7 @@ func ParseToEndOfData(buf *bytes.Reader, protocolVersion uint8) (rtrPduModel Rtr
 	sq := NewRtrEndOfDataModel(protocolVersion, sessionId,
 		serialNumber, refreshInterval,
 		retryInterval, expireInterval)
-	belogs.Debug("ParseToEndOfData():get PDU_TYPE_END_OF_DATA ", buf, jsonutil.MarshalJson(sq))
+	belogs.Debug("ParseToEndOfData():get PDU_TYPE_END_OF_DATA, buf:", buf, "  sq:", jsonutil.MarshalJson(sq))
 	return sq, nil
 }
 func assembleEndOfDataResponses(protocolVersion uint8, sessionId uint16,

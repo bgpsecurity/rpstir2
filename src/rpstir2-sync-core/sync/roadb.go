@@ -121,6 +121,6 @@ func delRoaDb(session *xorm.Session, filePathPrefix string) (err error) {
 	}
 
 	belogs.Info("delRoaDb():delete lab_rpki_roa_*** ok, by filePathPrefix :", filePathPrefix,
-		"  len(roaIds)", len(roaIds), "     time(s):", time.Now().Sub(start).Seconds())
+		"  len(roaIds)", len(roaIds), "     time(s):", time.Since(start))
 	return nil
 }

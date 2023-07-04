@@ -1,7 +1,7 @@
 package model
 
 import (
-	jsonutil "github.com/cpusoft/goutil/jsonutil"
+	"github.com/cpusoft/goutil/jsonutil"
 )
 
 // error: simple error message;  detail: describe error;

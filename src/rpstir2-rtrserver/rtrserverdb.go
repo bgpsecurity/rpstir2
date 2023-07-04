@@ -4,10 +4,9 @@ import (
 	"errors"
 	"time"
 
-	model "rpstir2-model"
-
 	"github.com/cpusoft/goutil/belogs"
 	"github.com/cpusoft/goutil/xormdb"
+	model "rpstir2-model"
 )
 
 func getSessionIdDb() (sessionId uint16, err error) {
@@ -62,18 +61,20 @@ func getRtrIncrementalAndSessionIdAndSerialNumberDb(clientSerialNumber uint32) (
 
 	sessionId, err = getSessionIdDb()
 	if err != nil {
+		belogs.Error("getRtrIncrementalAndSessionIdAndSerialNumberDb():getSessionIdDb fail:", err)
 		return nil, nil, sessionId, serialNumber, err
 	}
 
 	// lab_rpki_rtr_serial_number, get serialNumber
 	serialNumber, err = getMaxSerialNumberDb()
 	if err != nil {
+		belogs.Error("getRtrIncrementalAndSessionIdAndSerialNumberDb():getMaxSerialNumberDb fail:", err)
 		return nil, nil, sessionId, serialNumber, err
 	}
 
 	belogs.Info("getRtrIncrementalAndSessionIdAndSerialNumberDb():len(rtrIncrementals) :", len(rtrIncrementals),
 		"   sessionId:", sessionId, "  serialNumber:", serialNumber,
-		"   clientSerialNumber:", clientSerialNumber, "  time(s):", time.Now().Sub(start))
+		"   clientSerialNumber:", clientSerialNumber, "  time(s):", time.Since(start))
 	return rtrIncrementals, rtrAsaIncrementals, sessionId, serialNumber, nil
 }
 
@@ -94,7 +95,7 @@ func getRtrFullAndSessionIdAndSerialNumberDb() (rtrFulls []model.LabRpkiRtrFull,
 	belogs.Debug("getRtrFullAndSessionIdAndSerialNumberDb():select lab_rpki_rtr_full, len :", len(rtrFulls))
 
 	rtrAsaFulls = make([]model.LabRpkiRtrAsaFull, 0)
-	err = xormdb.XormEngine.Table("lab_rpki_rtr_asa_full").Cols("id, serialNumber, addressFamily, customerAsn,providerAsns").
+	err = xormdb.XormEngine.Table("lab_rpki_rtr_asa_full").Cols("id, serialNumber, customerAsn, providerAsn, addressFamily").
 		OrderBy("id").Find(&rtrAsaFulls)
 	if err != nil {
 		belogs.Error("getRtrFullAndSessionIdAndSerialNumberDb():select  lab_rpki_rtr_asa_full fail:", err)
@@ -105,16 +106,18 @@ func getRtrFullAndSessionIdAndSerialNumberDb() (rtrFulls []model.LabRpkiRtrFull,
 	// lab_rpki_rtr_serial_number, get serialNumber
 	serialNumber, err = getMaxSerialNumberDb()
 	if err != nil {
+		belogs.Error("getRtrFullAndSessionIdAndSerialNumberDb():getMaxSerialNumberDb fail:", err)
 		return nil, nil, sessionId, serialNumber, err
 	}
 
 	sessionId, err = getSessionIdDb()
 	if err != nil {
+		belogs.Error("getRtrFullAndSessionIdAndSerialNumberDb():getSessionIdDb fail:", err)
 		return nil, nil, sessionId, serialNumber, err
 	}
 	belogs.Info("getRtrFullAndSessionIdAndSerialNumberDb():len(rtrFulls) :", len(rtrFulls), "  len(rtrAsaFulls):", len(rtrAsaFulls),
 		"   sessionId:", sessionId, "  serialNumber:", serialNumber,
-		"   time(s):", time.Now().Sub(start))
+		"   time(s):", time.Since(start))
 	return rtrFulls, rtrAsaFulls, sessionId, serialNumber, nil
 }
 func getSessionIdAndSerialNumberDb() (sessionId uint16, serialNumber uint32, err error) {
@@ -122,12 +125,15 @@ func getSessionIdAndSerialNumberDb() (sessionId uint16, serialNumber uint32, err
 	// lab_rpki_rtr_serial_number, get serialNumber
 	serialNumber, err = getMaxSerialNumberDb()
 	if err != nil {
+		belogs.Error("getSessionIdAndSerialNumberDb():getMaxSerialNumberDb fail:", err)
 		return sessionId, serialNumber, err
 	}
 
 	sessionId, err = getSessionIdDb()
 	if err != nil {
+		belogs.Error("getSessionIdAndSerialNumberDb():getSessionIdDb fail:", err)
 		return sessionId, serialNumber, err
 	}
+	belogs.Debug("getSessionIdAndSerialNumberDb(): serialNumber:", serialNumber, "   sessionId:", sessionId)
 	return sessionId, serialNumber, nil
 }

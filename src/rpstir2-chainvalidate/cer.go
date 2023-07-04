@@ -36,7 +36,7 @@ func getChainCers(chains *Chains, wg *sync.WaitGroup) {
 		chains.AddCer(&chainCer)
 	}
 
-	belogs.Debug("getChainCers(): end, len(chainCerSqls):", len(chainCerSqls), ",   len(chains.CerIds):", len(chains.CerIds), ",  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Debug("getChainCers(): end, len(chainCerSqls):", len(chainCerSqls), ",   len(chains.CerIds):", len(chains.CerIds), ",  time(s):", time.Since(start))
 	return
 }
 
@@ -57,7 +57,7 @@ func validateCers(chains *Chains, wg *sync.WaitGroup) {
 	cerWg.Wait()
 	close(chainCerCh)
 
-	belogs.Info("validateCers():end len(cerIds):", len(cerIds), "  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Info("validateCers():end len(cerIds):", len(cerIds), "  time(s):", time.Since(start))
 }
 
 func validateCer(chains *Chains, cerId uint64, wg *sync.WaitGroup, chainCerCh chan int) {
@@ -83,15 +83,20 @@ func validateCer(chains *Chains, cerId uint64, wg *sync.WaitGroup, chainCerCh ch
 	belogs.Debug("validateCer():chainCer.ParentChainCers, cerId, len(chainCer.ParentChainCers):", cerId, len(chainCer.ParentChainCerAlones))
 
 	chainCer.ChildChainCerAlones, chainCer.ChildChainCrls,
-		chainCer.ChildChainMfts, chainCer.ChildChainRoas, err = getChildChainCersCrlsMftsRoas(chains, cerId)
+		chainCer.ChildChainMfts, chainCer.ChildChainRoas, chainCer.ChildChainAsas,
+		err = getChildChainCersCrlsMftsRoasAsas(chains, cerId)
 	if err != nil {
-		belogs.Error("validateCer(): getChildChainCersCrlsMftsRoas fail:", cerId, err)
+		belogs.Error("validateCer(): getChildChainCersCrlsMftsRoasAsas fail:", cerId, err)
 		chainCer.StateModel.JudgeState()
 		chains.UpdateFileTypeIdToCer(&chainCer)
 		return
 	}
-	belogs.Debug("validateCer():chainCer.ChildChains, cerId:", cerId, len(chainCer.ChildChainCerAlones),
-		len(chainCer.ChildChainCrls), len(chainCer.ChildChainMfts), len(chainCer.ChildChainRoas))
+	belogs.Debug("validateCer():chainCer.ChildChains, cerId:", cerId,
+		"   len(chainCer.ChildChainCerAlones):", len(chainCer.ChildChainCerAlones),
+		"   len(chainCer.ChildChainCrls):", len(chainCer.ChildChainCrls),
+		"   len(chainCer.ChildChainMfts):", len(chainCer.ChildChainMfts),
+		"   len(chainCer.ChildChainRoas):", len(chainCer.ChildChainRoas),
+		"   len(chainCer.ChildChainAsas):", len(chainCer.ChildChainAsas))
 
 	// if is root cer, then verify self
 	if chainCer.IsRoot {
@@ -223,7 +228,7 @@ func validateCer(chains *Chains, cerId uint64, wg *sync.WaitGroup, chainCerCh ch
 	}
 
 	chains.UpdateFileTypeIdToCer(&chainCer)
-	belogs.Debug("validateCer():end  UpdateFileTypeIdToCer: cerId:", cerId, "  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Debug("validateCer():end  UpdateFileTypeIdToCer: cerId:", cerId, "  time(s):", time.Since(start))
 	return
 
 }
@@ -404,76 +409,93 @@ func getCerParentChainCer(chains *Chains, cerId uint64) (parentChainCer ChainCer
 	return parentChainCer, nil
 }
 
-func getChildChainCersCrlsMftsRoas(chains *Chains, cerId uint64) (childChainCerAlones []ChainCerAlone,
+func getChildChainCersCrlsMftsRoasAsas(chains *Chains, cerId uint64) (
+	childChainCerAlones []ChainCerAlone,
 	childChainCrls []ChainCrl,
 	childChainMfts []ChainMft,
-	childChainRoas []ChainRoa, err error) {
+	childChainRoas []ChainRoa,
+	childChainAsas []ChainAsa, err error) {
 	start := time.Now()
 
 	chainCer, err := chains.GetCerById(cerId)
 	if err != nil {
-		belogs.Error("getChildChainCersCrlsMftsRoas(): GetCer, cerId:", cerId, err)
-		return nil, nil, nil, nil, err
+		belogs.Error("getChildChainCersCrlsMftsRoasAsas(): GetCer, cerId:", cerId, err)
+		return nil, nil, nil, nil, nil, err
 	}
 	childChainCerAlones = make([]ChainCerAlone, 0)
 	childChainCrls = make([]ChainCrl, 0)
 	childChainMfts = make([]ChainMft, 0)
 	childChainRoas = make([]ChainRoa, 0)
+	childChainAsas = make([]ChainAsa, 0)
 
 	// cer's ski --> child's aki
 	ski := chainCer.Ski
 	childsAki := ski
 	fileTypeIds, ok := chains.AkiToFileTypeIds[childsAki]
-	belogs.Debug("getChildChainCersCrlsMftsRoas(): cerId fileTypeIds, ok:", cerId, fileTypeIds, ok)
+	belogs.Debug("getChildChainCersCrlsMftsRoasAsas(): cerId fileTypeIds, ok:", cerId, fileTypeIds, ok)
 	if ok {
 		for i := range fileTypeIds.FileTypeIds {
 			fileTypeId := fileTypeIds.FileTypeIds[i]
-			belogs.Debug("getChildChainCersCrlsMftsRoas(): cerId, fileTypeId, ok:", cerId, fileTypeId, ok)
+			belogs.Debug("getChildChainCersCrlsMftsRoasAsas(): cerId, fileTypeId, ok:", cerId, fileTypeId, ok)
 			if ok {
 				fileType := string(fileTypeId[:3])
-				belogs.Debug("getChildChainCersCrlsMftsRoas(): cerId fileType:", cerId, fileType)
+				belogs.Debug("getChildChainCersCrlsMftsRoasAsas(): cerId fileType:", cerId, fileType)
 				switch fileType {
 				case "cer":
 					chainCerTmp, err := chains.GetCerByFileTypeId(fileTypeId)
 					if err != nil {
-						belogs.Error("getChildChainCersCrlsMftsRoas(): GetCerByFileTypeId, cerId,fileTypeId,err:", cerId, fileTypeId, err)
-						return nil, nil, nil, nil, err
+						belogs.Error("getChildChainCersCrlsMftsRoasAsas(): GetCerByFileTypeId, cerId,fileTypeId,err:", cerId, fileTypeId, err)
+						return nil, nil, nil, nil, nil, err
+					}
+					// if ski==aki of cer, so not add to child
+					if chainCerTmp.Id == chainCer.Id {
+						belogs.Info("getChildChainCersCrlsMftsRoasAsas(): not add as child, when chainCerTmp.Id == chainCer.Id:",
+							chainCerTmp.Id, chainCer.Id, " cerId fileType:", cerId, fileType)
+						continue
 					}
 					chainCerAloneTmp := NewChainCerAlone(&chainCerTmp)
 					childChainCerAlones = append(childChainCerAlones, *chainCerAloneTmp)
-					belogs.Debug("getChildChainCersCrlsMftsRoas(): GetCerByFileTypeId cerId:", cerId,
+					belogs.Debug("getChildChainCersCrlsMftsRoasAsas(): GetCerByFileTypeId cerId:", cerId,
 						"   chainCerAloneTmp.Id:", chainCerAloneTmp.Id, "  len(childChainCerAlones):", len(childChainCerAlones))
 				case "crl":
 					chainCrl, err := chains.GetCrlByFileTypeId(fileTypeId)
 					if err != nil {
-						belogs.Error("getChildChainCersCrlsMftsRoas(): GetCrlByFileTypeId, cerId,fileTypeId,err:", cerId, fileTypeId, err)
-						return nil, nil, nil, nil, err
+						belogs.Error("getChildChainCersCrlsMftsRoasAsas(): GetCrlByFileTypeId, cerId,fileTypeId,err:", cerId, fileTypeId, err)
+						return nil, nil, nil, nil, nil, err
 					}
 					childChainCrls = append(childChainCrls, chainCrl)
 				case "mft":
 					chainMft, err := chains.GetMftByFileTypeId(fileTypeId)
 					if err != nil {
-						belogs.Error("getChildChainCersCrlsMftsRoas(): GetMftByFileTypeId, cerId,fileTypeId,err:", cerId, fileTypeId, err)
-						return nil, nil, nil, nil, err
+						belogs.Error("getChildChainCersCrlsMftsRoasAsas(): GetMftByFileTypeId, cerId,fileTypeId,err:", cerId, fileTypeId, err)
+						return nil, nil, nil, nil, nil, err
 					}
 					childChainMfts = append(childChainMfts, chainMft)
 				case "roa":
 					chainRoa, err := chains.GetRoaByFileTypeId(fileTypeId)
 					if err != nil {
-						belogs.Error("getChildChainCersCrlsMftsRoas(): GetRoaByFileTypeId, cerId,fileTypeId,err:", cerId, fileTypeId, err)
-						return nil, nil, nil, nil, err
+						belogs.Error("getChildChainCersCrlsMftsRoasAsas(): GetRoaByFileTypeId, cerId,fileTypeId,err:", cerId, fileTypeId, err)
+						return nil, nil, nil, nil, nil, err
 					}
 					childChainRoas = append(childChainRoas, chainRoa)
+				case "asa":
+					chainAsa, err := chains.GetAsaByFileTypeId(fileTypeId)
+					if err != nil {
+						belogs.Error("getChildChainCersCrlsMftsRoasAsas(): GetAsaByFileTypeId, cerId,fileTypeId,err:", cerId, fileTypeId, err)
+						return nil, nil, nil, nil, nil, err
+					}
+					childChainAsas = append(childChainAsas, chainAsa)
 				}
 			}
 
 		}
 	}
-	belogs.Debug("getChildChainCersCrlsMftsRoas():get all child, cerId:", cerId,
+	belogs.Debug("getChildChainCersCrlsMftsRoasAsas():get all child, cerId:", cerId,
 		"  len(childChainCerAlones):", len(childChainCerAlones),
 		"  len(childChainCrls):", len(childChainCrls),
+		"  len(childChainMfts):", len(childChainMfts),
 		"  len(childChainRoas):", len(childChainRoas),
-		"  len(childChainMfts):", len(childChainMfts), "  time(s):", time.Now().Sub(start).Seconds())
+		"  len(childChainAsas):", len(childChainAsas), "  time(s):", time.Since(start))
 	return
 
 }

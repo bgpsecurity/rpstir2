@@ -3,11 +3,10 @@ package rrdp
 import (
 	"time"
 
-	model "rpstir2-model"
-
 	"github.com/cpusoft/goutil/belogs"
 	"github.com/cpusoft/goutil/jsonutil"
 	"github.com/cpusoft/goutil/xormdb"
+	model "rpstir2-model"
 	"xorm.io/xorm"
 )
 
@@ -32,7 +31,7 @@ func GetLastSyncRrdpLogsDb() (syncRrdpLogs map[string]model.LabRpkiSyncRrdpLog, 
 		belogs.Error("GetLastSyncRrdpLogsDb(): find fail:", err)
 		return nil, err
 	}
-	belogs.Info("GetLastSyncRrdpLogsDb(): len(rrdps):", len(rrdps), " ,  time(s):", time.Now().Sub(start).Seconds())
+	belogs.Info("GetLastSyncRrdpLogsDb(): len(rrdps):", len(rrdps), " ,  time(s):", time.Since(start))
 
 	syncRrdpLogs = make(map[string]model.LabRpkiSyncRrdpLog)
 	for i := range rrdps {
@@ -40,7 +39,7 @@ func GetLastSyncRrdpLogsDb() (syncRrdpLogs map[string]model.LabRpkiSyncRrdpLog, 
 		belogs.Info("GetLastSyncRrdpLogsDb(): rrdp :", jsonutil.MarshalJson(rrdps[i]))
 	}
 	belogs.Info("GetLastSyncRrdpLogsDb(): len(syncRrdpLogs):", len(syncRrdpLogs),
-		" ,  time(s):", time.Now().Sub(start).Seconds())
+		" ,  time(s):", time.Since(start))
 	return syncRrdpLogs, nil
 }
 
@@ -59,7 +58,7 @@ func GetLastSyncRrdpLogDb(rrdpUrl string) (syncRrdpLog model.LabRpkiSyncRrdpLog,
 		return syncRrdpLog, false, err
 	}
 	belogs.Info("getLastSyncRrdpLogDb(): syncRrdpLog:", jsonutil.MarshalJson(syncRrdpLog),
-		" ,  time(s):", time.Now().Sub(start).Seconds())
+		" ,  time(s):", time.Since(start))
 	return syncRrdpLog, has, nil
 }
 
@@ -88,11 +87,11 @@ func GetLastSyncRrdpLog(notifyUrl string, sessionId string, minSerial, maxSerial
 	return has, syncRrdpLog, nil
 }
 */
-func InsertSyncRrdpLog(
+func insertSyncRrdpLogDb(
 	session *xorm.Session, syncLogId uint64, snapshotDeltaResult *SnapshotDeltaResult) (err error) {
 
 	//then rrdpType is snapshot, lastSerial is 0(will set null in mysql), and default rrdpType is snapshot
-	belogs.Debug("InsertSyncRrdpLog(): syncLogId ,  snapshotDeltaResult :", syncLogId, jsonutil.MarshalJson(snapshotDeltaResult))
+	belogs.Debug("insertSyncRrdpLogDb(): syncLogId ,  snapshotDeltaResult :", syncLogId, jsonutil.MarshalJson(snapshotDeltaResult))
 
 	//lab_rpki_sync_log
 	sqlStr := `INSERT lab_rpki_sync_rrdp_log(syncLogId,  notifyUrl,  sessionId,  
@@ -103,7 +102,7 @@ func InsertSyncRrdpLog(
 		xormdb.SqlNullInt(int64(snapshotDeltaResult.LastSerial)), snapshotDeltaResult.Serial,
 		snapshotDeltaResult.RrdpTime, snapshotDeltaResult.RrdpType, snapshotDeltaResult.SnapshotOrDeltaUrl)
 	if err != nil {
-		belogs.Error("InsertSyncRrdpLog(): INSERT lab_rpki_sync_rrdp_log fail:",
+		belogs.Error("insertSyncRrdpLogDb(): INSERT lab_rpki_sync_rrdp_log fail:",
 			syncLogId, jsonutil.MarshalJson(snapshotDeltaResult), err)
 		return err
 	}

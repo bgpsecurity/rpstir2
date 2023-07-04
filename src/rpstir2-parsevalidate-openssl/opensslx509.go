@@ -72,6 +72,11 @@ func ParseCerIpAddressModelByOpensslResults(results []string) (cerIpAddressModel
 			cerIpAddress.AddressPrefixRange = jsonutil.MarshalJson(addressPrefixRanges)
 		} else {
 			if len(ipp) == 0 || ipp == "inherit" {
+				/*
+					sbgp-ipAddrBlock: critical
+					  IPv4: inherit
+					  IPv6: inherit
+				*/
 				belogs.Debug("ParseCerIpAddressModelByOpensslResults():ipp is null or is inherit:", ipp)
 				break
 			}

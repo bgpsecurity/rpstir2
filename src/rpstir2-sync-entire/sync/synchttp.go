@@ -3,13 +3,12 @@ package sync
 import (
 	"errors"
 
-	model "rpstir2-model"
-
 	"github.com/cpusoft/goutil/belogs"
 	"github.com/cpusoft/goutil/conf"
 	"github.com/cpusoft/goutil/ginserver"
 	"github.com/cpusoft/goutil/httpclient"
 	"github.com/gin-gonic/gin"
+	model "rpstir2-model"
 )
 
 // start to sync
@@ -106,8 +105,8 @@ func RrdpResult(c *gin.Context) {
 }
 
 // sync from local, for history repo data: need reset and just start from diff, then parse....
-func SyncLocalStart(c *gin.Context) {
-	belogs.Info("SyncLocalStart(): start")
-	go LocalStart()
+func LocalSyncStart(c *gin.Context) {
+	belogs.Info("LocalSyncStart(): start")
+	go localSyncStart()
 	ginserver.ResponseOk(c, nil)
 }

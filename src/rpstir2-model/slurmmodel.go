@@ -18,7 +18,7 @@ type PrefixFilters struct {
 	PrefixLength    uint64   `json:"-"`
 	MaxPrefixLength uint64   `json:"maxPrefixLength"`
 	Comment         string   `json:"comment"`
-	TreatLevel      string   `json:"treatLevel"`
+	TreatLevel      string   `json:"treatLevel,omitempty"`
 }
 
 // set asn==-1 means asn is empty
@@ -28,14 +28,30 @@ type BgpsecFilters struct {
 	Comment string   `json:"comment"`
 }
 
+type AspaFilters struct {
+	CustomerAsn  null.Int       `json:"customerAsid"`
+	ProviderAsns []ProviderAsns `json:"providers"`
+	Comment      string         `json:"comment"`
+}
+
+type ProviderAsns struct {
+	ProviderAsn   null.Int `json:"providerAsid"`
+	AddressFamily string   `json:"afiLimit"` //IPv4 IPV6
+}
+
+const (
+	SLURM_PROVIDER_ASNS_ADDRESS_FAMILY_IPV4 = "IPv4"
+	SLURM_PROVIDER_ASNS_ADDRESS_FAMILY_IPV6 = "IPv6"
+)
+
 type ValidationOutputFilters struct {
 	PrefixFilters []PrefixFilters `json:"prefixFilters"`
 	BgpsecFilters []BgpsecFilters `json:"bgpsecFilters"`
+	AspaFilters   []AspaFilters   `json:"aspaFilters"`
 }
 
 // assertion
-// FormatPrefix, MaxPrefixLength and PrefixLength are not in json
-// set asn==-1 means asn is empty
+// set !asn.Valid means asn is empty
 // TreatLevel: critical/major/normal
 type PrefixAssertions struct {
 	Asn             null.Int `json:"asn"`
@@ -56,6 +72,13 @@ type BgpsecAssertions struct {
 type LocallyAddedAssertions struct {
 	PrefixAssertions []PrefixAssertions `json:"prefixAssertions"`
 	BgpsecAssertions []BgpsecAssertions `json:"bgpsecAssertions"`
+	AspaAssertions   []AspaAssertions   `json:"aspaAssertions"`
+}
+
+type AspaAssertions struct {
+	CustomerAsn  null.Int       `json:"customerAsid"`
+	ProviderAsns []ProviderAsns `json:"providers"`
+	Comment      string         `json:"comment"`
 }
 
 type Slurm struct {

@@ -26,13 +26,15 @@ func rsyncByUrl(spQueue *SyncParseQueue, syncChan SyncChan) {
 	// SyncingCount should +1 and then -1
 	atomic.AddInt64(&spQueue.SyncingCount, 1)
 	belogs.Debug("rsyncByUrl(): before rsync, syncChan:", syncChan, "    SyncingCount:", atomic.LoadInt64(&spQueue.SyncingCount))
+	rsyncutil.SetTimeout(24)
+	defer rsyncutil.ResetAllTimeout()
 	rsyncDestPath, _, err := rsyncutil.RsyncQuiet(syncChan.Url, syncChan.Dest)
 	atomic.AddInt64(&spQueue.SyncingCount, -1)
 	belogs.Debug("rsyncByUrl(): rsync syncChan:", syncChan, "     SyncingCount:", atomic.LoadInt64(&spQueue.SyncingCount),
 		"     rsyncDestPath:", rsyncDestPath)
 	if err != nil {
 		spQueue.SyncResult.FailUrls.Store(syncChan.Url, err.Error())
-		belogs.Error("rsyncByUrl():RsyncQuiet fail, syncChan.Url:", syncChan.Url, "   err:", err, "  time(s):", time.Now().Sub(start).Seconds())
+		belogs.Error("rsyncByUrl():RsyncQuiet fail, syncChan.Url:", syncChan.Url, "   err:", err, "  time(s):", time.Since(start))
 		belogs.Debug("rsyncByUrl():RsyncQuiet fail, before SyncingAndParsingCount-1:", atomic.LoadInt64(&spQueue.SyncingAndParsingCount))
 		atomic.AddInt64(&spQueue.SyncingAndParsingCount, -1)
 		belogs.Debug("rsyncByUrl():RsyncQuiet fail, after SyncingAndParsingCount-1:", atomic.LoadInt64(&spQueue.SyncingAndParsingCount))
@@ -48,7 +50,7 @@ func rsyncByUrl(spQueue *SyncParseQueue, syncChan SyncChan) {
 	belogs.Info("rsyncByUrl(): after parseChan:", jsonutil.MarshalJson(parseChan),
 		"     SyncingCount:", atomic.LoadInt64(&spQueue.SyncingCount),
 		"     rsyncDestPath:", rsyncDestPath,
-		"     time(s):", time.Now().Sub(start).Seconds())
+		"     time(s):", time.Since(start))
 
 }
 
