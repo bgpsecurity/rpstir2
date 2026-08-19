@@ -1,0 +1,150 @@
+package sys
+
+import (
+	"errors"
+	"net/http"
+	"os"
+
+	"github.com/bgpsecurity/rpstir2/model"
+	"github.com/cpusoft/goutil/belogs"
+	"github.com/cpusoft/goutil/conf"
+	"github.com/cpusoft/goutil/fileutil"
+	"github.com/cpusoft/goutil/ginserver"
+	"github.com/cpusoft/goutil/httpclient"
+	"github.com/cpusoft/goutil/jsonutil"
+	"github.com/gin-gonic/gin"
+)
+
+// InitReset 初始化数据库和本地缓存目录
+//
+//	@param c gin上下文
+func InitReset(c *gin.Context) {
+	belogs.Debug("InitReset()")
+	sysStyle := SysStyle{}
+	err := c.ShouldBindJSON(&sysStyle)
+	if err != nil {
+		belogs.Error("InitReset(): ShouldBindJSON:", err)
+		ginserver.ResponseFail(c, err, "")
+		return
+	}
+	belogs.Info("InitReset():get sysStyle:", jsonutil.MarshalJson(sysStyle))
+	if sysStyle.SysStyle != "init" && sysStyle.SysStyle != "fullsync" {
+		belogs.Error("InitReset(): SysStyle should be init or fullsync, it is ", sysStyle.SysStyle)
+		ginserver.ResponseFail(c, errors.New("SysStyle should be init or fullsync"), "")
+		return
+	}
+	belogs.Debug("InitReset(): sysStyle:", sysStyle)
+
+	go func() {
+		err := initReset(sysStyle)
+		if err == nil && sysStyle.SysStyle == "fullsync" {
+			url := "https://" + conf.String("rpstir2-rp::serverHost") + ":" +
+				conf.String("rpstir2-rp::serverHttpsPort")
+			var path string
+			if sysStyle.SyncPolicy == "entire" {
+				path = url + "/entiresync/syncstart"
+				belogs.Info("initReset(): will call entire sync:", path)
+				go httpclient.Post(path, `{"syncStyle": "sync"}`, false)
+			}
+
+		}
+	}()
+	ginserver.ResponseOk(c, nil)
+
+}
+
+// enter
+func ServiceState(c *gin.Context) {
+	belogs.Debug("ServiceState()")
+
+	ssr := model.ServiceStateRequest{}
+	err := c.ShouldBindJSON(&ssr)
+	if err != nil {
+		belogs.Error("ServiceState(): ShouldBindJSON fail :", err)
+		ginserver.ResponseFail(c, err, "")
+		return
+	}
+	belogs.Info("ServiceState(): ServiceStateRequest:", jsonutil.MarshalJson(ssr))
+	serviceState, err := handleServiceState(ssr)
+	if err != nil {
+		belogs.Error("ServiceState(): ServiceState fail, ssr :", jsonutil.MarshalJson(ssr),
+			"    serviceState:", serviceState, err)
+		ginserver.ResponseFail(c, err, "")
+		return
+	}
+	belogs.Info("ServiceState(): serviceState:", jsonutil.MarshalJson(serviceState))
+	ginserver.ResponseOk(c, *serviceState)
+}
+
+// just return valid/warning/invalid count in cer/roa/mft/crl
+func Results(c *gin.Context) {
+	belogs.Info("Results()")
+
+	r, err := getResults()
+	if err != nil {
+		ginserver.ResponseFail(c, err, "")
+		return
+	}
+	belogs.Info("Results():results:", jsonutil.MarshalJson(r))
+	c.JSON(http.StatusOK, r)
+}
+
+func ExportRoas(c *gin.Context) {
+	belogs.Info("ExportRoas()")
+	r, err := exportRoas()
+	if err != nil {
+		ginserver.ResponseFail(c, err, "")
+		return
+	}
+	belogs.Info("ExportRoas():exportRoas:", jsonutil.MarshalJson(r))
+	c.JSON(http.StatusOK, r)
+}
+
+// export all rtrs for manrs to valdations
+// https://github.com/manrs-tools/MANRS-IXP-validation-tool
+// https://github.com/manrs-tools/MANRS-IXP-validation-tool/blob/main/validator/tests/roa_test.json
+// https://github.com/manrs-tools/MANRS-IXP-validation-tool/blob/main/validator/tests/test_validate.py
+func ExportRtrForManrs(c *gin.Context) {
+	belogs.Info("ExportRtrForManrs()")
+	r, err := exportRtrForManrs()
+	if err != nil {
+		ginserver.ResponseFail(c, err, "")
+		return
+	}
+	belogs.Info("ExportRtrForManrs():exportRtrForManrs:", jsonutil.MarshalJson(r))
+	c.JSON(http.StatusOK, r)
+}
+
+func ExportRtrForManrsConsole() (err error) {
+	if len(os.Args) < 2 {
+		return errors.New("no file name")
+	}
+	fileName := os.Args[1]
+
+	r, err := exportRtrForManrs()
+	if err != nil {
+		belogs.Error("fail to get export file :", err)
+		return errors.New("fail to get export file")
+	}
+	belogs.Debug("export number :", len(r))
+
+	err = fileutil.WriteBytesToFile(fileName, []byte(jsonutil.MarshalJsonIndent(r)))
+	if err != nil {
+		belogs.Error("fail to write to export file :", err)
+		return errors.New("fail to write to export file")
+	}
+	belogs.Info("success to export to file:", fileName)
+	return nil
+}
+
+func ExportChainRepos(c *gin.Context) {
+	belogs.Info("ExportChainRepos()")
+
+	r, err := exportChainRepos()
+	if err != nil {
+		ginserver.ResponseFail(c, err, "")
+		return
+	}
+	belogs.Info("ExportChainRepos(): chainRepos:", jsonutil.MarshalJson(r))
+	c.JSON(http.StatusOK, r)
+}

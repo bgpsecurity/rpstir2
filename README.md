@@ -17,14 +17,16 @@ RPSTIR2 is capable of running on CentOS7(64bit)/Ubuntu18(64bit) or higher.
 OpenSSL version must be 1.1.1b or higher, and  "enable-rfc3779" needs to be set when compiling OpenSSL.
 
 ```shell
-$ wget --no-verbose --inet4-only https://www.openssl.org/source/openssl-1.1.1f.tar.gz 
-$ tar xzvf openssl-1.1.1f.tar.gz 
-$ cd openssl-1.1.1f
-$ ./config shared enable-rfc3779
+$ mkdir -p /home/openssl 
+$ cd /home/openssl
+$ wget  https://github.com/openssl/openssl/releases/download/openssl-3.5.7/openssl-3.5.7.tar.gz
+$ tar xzvf openssl-3.5.7.tar.gz
+$ cd openssl-3.5.7
+$ ./config  shared enable-rfc3779 --prefix=/home/openssl/openssl -Wl,-rpath,'/home/openssl/openssl/lib64'
 $ make
 $ make install
-$ echo "export PATH=/usr/local/ssl/bin:$PATH" >> /root/.bashrc
-$ source /root/.bashrc
+$ /home/openssl/openssl/bin/openssl version
+$ OpenSSL 3.5.7
 ```
 
 ### 2.2 Install MySQL
@@ -52,26 +54,26 @@ Before installing RPSTIR2, you should create directories in advance, one of whic
 
 | Directory  | Path                      |
 | :--------: | ------------------------- |
-| programDir | /root/rpki/rpstir2        |
-| dataDir    | /root/rpki/data           |
+| programDir | /home/rpki/rpstir2        |
+| dataDir    | /home/rpki/data           |
 
 
 ```shell
-$ mkdir -p /root/rpki/ /root/rpki/rpstir2  /root/rpki/data  /root/rpki/data/rrdprepo  /root/rpki/data/rsyncrepo /root/rpki/data/tal
+$ mkdir -p /home/rpki/ /home/rpki/rpstir2  /home/rpki/data  /home/rpki/data/rrdprepo  /home/rpki/data/rsyncrepo /home/rpki/data/tal
 ```
 
 ### 2.5 Download RPSTIR2 
 
 ```shell
-$ cd /root/rpki/
+$ cd /home/rpki/
 $ git clone https://github.com/bgpsecurity/rpstir2.git 
-$ cd /root/rpki/rpstir2/bin
+$ cd /home/rpki/rpstir2/bin
 $ chmod +x *
-$ cp /root/rpki/rpstir2/build/tal/*  /root/rpki/data/tal/
+$ cp /home/rpki/rpstir2/build/tal/*  /home/rpki/data/tal/
 ```
 
 ### 2.6 Configure RPSTIR2
-You can modify configuration parameters of programDir, dataDir, mysql, and  port in configuration file(/root/rpki/rpstir2/conf/project.conf). 
+You can modify configuration parameters of programDir, dataDir, mysql, and  port in configuration file(/home/rpki/rpstir2/conf/project.conf). 
 
 ## 3 Running RPSTIR2
 The RPSTIR2 must be started first, you can check for errors by looking at the log files in ./log/ directory.
@@ -80,12 +82,12 @@ The RPSTIR2 must be started first, you can check for errors by looking at the lo
 You can check the log files in ./log/ to see whether the program is started successfully.
 
 ```shell
-$ cd /root/rpki/rpstir2/bin
+$ cd /home/rpki/rpstir2/bin
 $./rpstir2.sh start 
 ```
 
 ```shell
-$ cd /root/rpki/rpstir2/bin
+$ cd /home/rpki/rpstir2/bin
 $./rpstir2.sh stop 
 ```
 
@@ -93,7 +95,7 @@ $./rpstir2.sh stop
 This command is used to initialize or reset the database. Please check the log files in ./log/ to see if the execution is successful.
 
 ```shell
-$ cd /root/rpki/rpstir2/bin
+$ cd /home/rpki/rpstir2/bin
 $./rpstir2.sh start 
 $./rpstir2.sh init 
 ```
@@ -103,7 +105,7 @@ You can use crontab to perform scheduled synchronization tasks. Then RPSTIR2 wil
 
 ```shell
 $ crontab -e
-10 */4 * * *  cd /root/rpki/rpstir2/bin/;./rpstir2.sh crontab
+10 */4 * * *  /home/rpki/rpstir2/bin/rpstir2.sh sync
 ```
 Note: The RPSTIR2 service must start first. 
 
@@ -111,7 +113,7 @@ Note: The RPSTIR2 service must start first.
 You can download RPKI objects with rsync or RRDP protocol, and complete the subsequent validation procedure. 
 
 ```shell
-$ cd /root/rpki/rpstir2/bin
+$ cd /home/rpki/rpstir2/bin
 $ ./rpstir2.sh sync  
 ```
 
@@ -119,7 +121,7 @@ $ ./rpstir2.sh sync
 Because rsync and RRDP take long time to run, they are executed in the background. So you need a command to determine if the synchronization and validation process is complete.
 
 ```shell
-$ cd /root/rpki/rpstir2/bin
+$ cd /home/rpki/rpstir2/bin
 $ ./rpstir2.sh state   | jq .
 ```
 
@@ -130,7 +132,7 @@ When you get the following JSON message, if "isRunning" is "true", it means that
 	"result": "ok",
 	"msg": "",
 	"data": {
-		"startTime": "2020-01-01 01:01:01 CST",
+		"startTime": "2026-01-01 01:01:01 CST",
 		"isRunning": "false",
 		"runningState": "idle"
 	}
@@ -142,35 +144,41 @@ Note: jq can format JSON for output
 You can get results of synchronization and validation. It shows the valid, warning and invalid number of cer, roa, mft and crl respectively.
 
 ```shell
-$ cd /root/rpki/rpstir2/bin
+$ cd /home/rpki/rpstir2/bin
 $./rpstir2.sh results  | jq .
 ```
 ```JSON
 {
-    "cerResult": {
-        "fileType": "cer",
-        "validCount": 16920,
-        "warningCount": 0,
-        "invalidCount": 6
-    },
-    "crlResult": {
-        "fileType": "crl",
-        "validCount": 16916,
-        "warningCount": 0,
-        "invalidCount": 51
-    },
-    "mftResult": {
-        "fileType": "mft",
-        "validCount": 16914,
-        "warningCount": 0,
-        "invalidCount": 71
-    },
-    "roaResult": {
-        "fileType": "roa",
-        "validCount": 31779,
-        "warningCount": 0,
-        "invalidCount": 288
-    }
+	"cerResult": {
+		"fileType": "cer",
+		"validCount": 16920,
+		"warningCount": 0,
+		"invalidCount": 6
+	},
+	"crlResult": {
+		"fileType": "crl",
+		"validCount": 16916,
+		"warningCount": 0,
+		"invalidCount": 51
+	},
+	"mftResult": {
+		"fileType": "mft",
+		"validCount": 16914,
+		"warningCount": 0,
+		"invalidCount": 71
+	},
+	"roaResult": {
+		"fileType": "roa",
+		"validCount": 31779,
+		"warningCount": 0,
+		"invalidCount": 288
+	},
+	"moaResult": {
+		"fileType": "moa",
+		"validCount": 1,
+		"warningCount": 0,
+		"invalidCount": 0
+	}
 }
 ```
 
@@ -180,7 +188,7 @@ $./rpstir2.sh results  | jq .
 You can get all valid roas after sync.
 
 ```shell
-$ cd /root/rpki/rpstir2/bin
+$ cd /home/rpki/rpstir2/bin
 $./rpstir2.sh exportroas | jq .
 ```
 ```
@@ -204,109 +212,18 @@ $./rpstir2.sh exportroas | jq .
 
 
 ### 3.8 Parse file
-You can parse cer/mft/crl/roa/sig/asa file.
-
-```shell
-$ cd /root/rpki/rpstir2/bin
-$./rpstir2.sh parse ../doc/checklist.sig | jq .
-```
-```JSON
-{
-  "data": {
-    "signerInfoModel": {
-      "messageDigest": "BD32690504277FE2D1CCEF127174F0ACA0A1785170452C472BE631839425400D",
-      "signingTime": "2021-02-10T14:50:25Z",
-      "contentType": "1.3.6.1.4.1.41948.49",
-      "digestAlgorithm": "sha256",
-      "version": 3
-    },
-    "eeCertModel": {
-      "eeCertEnd": 1279,
-      "eeCertStart": 224,
-      "crldpModel": {
-        "critical": false,
-        "crldps": [
-          "rsync://chloe.sobornost.net/rpki/RIPE-nljobsnijders/LMq8Kl3LkWGqticaaLl6IAGSsJ4.crl"
-        ]
-      },
-      "cerIpAddressModel": {
-        "critical": false,
-        "cerIpAddresses": null
-      },
-      "siaModel": {
-        "critical": false,
-        "signedObject": "",
-        "caRepository": "",
-        "rpkiNotify": "",
-        "rpkiManifest": ""
-      },
-      "issuerAll": "CN=2ccabc2a5dcb9161aab6271a68b97a200192b09e",
-      "subjectAll": "CN=EE",
-      "isCa": false,
-      "version": 3,
-      "digestAlgorithm": "SHA256-RSA",
-      "sn": "9",
-      "notBefore": "2021-02-10T22:50:10+08:00",
-      "notAfter": "2022-02-10T22:50:10+08:00",
-      "keyUsageModel": {
-        "keyUsageValue": "Digital Signature",
-        "critical": true,
-        "keyUsage": 1
-      },
-      "extKeyUsages": [],
-      "basicConstraintsValid": false
-    },
-    "aiaModel": {
-      "critical": false,
-      "caIssuers": "rsync://rpki.ripe.net/repository/DEFAULT/LMq8Kl3LkWGqticaaLl6IAGSsJ4.cer"
-    },
-    "version": 0,
-    "ski": "41ca827f3de666e9f7323f3059f6a7bb8b671175",
-    "aki": "2ccabc2a5dcb9161aab6271a68b97a200192b09e",
-    "filePath": "",
-    "fileName": "checklist.sig",
-    "fileHash": "fe44eb4ef1e389c1879f000f31485bac43e3c51a66040337625aa887a20d9556",
-    "rpkiSignedChecklist": {
-      "fileHashModels": [
-        {
-          "hash": "9516dd64be7c1725b9fca117120e58e8d842a5206873399b3ddffc91c4b6acf0",
-          "file": "b42_ipv6_loa.png"
-        },
-        {
-          "hash": "0ae1394722005cd92f4c6aa024d5d6b3e2e67d629f11720d9478a633a117a1c7",
-          "file": "b42_service_definition.json"
-        }
-      ],
-      "digestAlgorithm": "2.16.840.1.101.3.4.2.1",
-      "cerIpAddresses": [
-        {
-          "addressPrefixRange": "",
-          "rangeEnd": "",
-          "rangeStart": "",
-          "max": "",
-          "min": "",
-          "addressPrefix": "2001:67c:208c::/48",
-          "addressFamily": 2
-        }
-      ]
-    },
-    "eContentType": "1.3.6.1.4.1.41948.49"
-  },
-  "msg": "",
-  "result": "ok"
-}
-```
+You can parse cer/mft/crl/roa/asa/moa file.
 
 
 ```shell
-$ cd /root/rpki/rpstir2/bin
+$ cd /home/rpki/rpstir2/bin
 $./rpstir2.sh parse ../doc/AS211321.asa | jq .
 ```
 ```JSON
 {
   "data": {
     "signerInfoModel": {
-      "messageDigest": "C7388599A2D43808F7BB13A0D095FFCFBBA880AE850C2699F67B764538E66CA0",
+      "messageDigest": "c7388599a2d43808f7bb13a0d095ffcfbba880ae850c2699f67b764538e66ca0",
       "signingTime": "2021-11-11T11:19:00Z",
       "contentType": "1.2.840.113549.1.9.16.1.49",
       "digestAlgorithm": "sha256",
@@ -341,7 +258,7 @@ $./rpstir2.sh parse ../doc/AS211321.asa | jq .
       "notBefore": "2021-11-11T19:14:00+08:00",
       "notAfter": "2022-11-10T19:19:00+08:00",
       "keyUsageModel": {
-        "keyUsageValue": "Digital Signature",
+        "keyUsageValue": "Certificate Sign, CRL Sign",
         "critical": true,
         "keyUsage": 1
       },
@@ -362,29 +279,131 @@ $./rpstir2.sh parse ../doc/AS211321.asa | jq .
     "version": 0,
     "ski": "37ca1dde4d094734ab3b048269e12fddaeaa691b",
     "aki": "7088be00ca85327ca016c9074ed007c3fa919991",
-    "filePath": "",
+    "filePath": "/tmp/ParseFile219618154/",
     "fileName": "AS211321.asa",
     "fileHash": "e2f896d37de277e93309ef52f01fe3131b762b1383e86cd7933887ad7eaf1257",
-    "asProviderAttestations": [
+    "customerAsns": [
       {
-        "ProviderAsIds": [
-          {
-            "addressFamilyIdentifier": "",
-            "providerAsId": 65000
-          },
-          {
-            "addressFamilyIdentifier": "0x0001",
-            "providerAsId": 65001
-          },
-          {
-            "addressFamilyIdentifier": "0x0002",
-            "providerAsId": 65002
-          }
+        "ProviderAsnOwners": null,
+        "providerAsns": [
+          65000,
+          65001,
+          65002
         ],
-        "customerAsId": 211321
+        "customerAsnOwner": "",
+        "customerAsn": 211321,
+        "version": 0
       }
     ],
     "eContentType": "1.2.840.113549.1.9.16.1.49"
+  },
+  "msg": "",
+  "result": "ok"
+}
+```
+
+
+```shell
+$ cd /home/rpki/rpstir2/bin
+$./rpstir2.sh parse ../doc/rpki-fzca-bottom-1784704862072011507.moa | jq .
+```
+```JSON
+{
+  "data": {
+    "signerInfoModel": {
+      "messageDigest": "8f47c533085798537794a9d33e7ec108a60c635edf1c810c2423b2888afaa2cd",
+      "signingTime": "2026-07-22T07:21:02Z",
+      "contentType": "1.2.840.113549.1.9.16.1.24",
+      "digestAlgorithm": "sha256",
+      "version": 3
+    },
+    "eeCertModel": {
+      "eeCertEnd": 1241,
+      "eeCertStart": 97,
+      "crldpModel": {
+        "critical": false,
+        "crldps": [
+          "rsync://rpki.fzca.com/repository/bottom/rpki-fzca-bottom.crl"
+        ]
+      },
+      "cerIpAddressModel": {
+        "critical": true,
+        "cerIpAddresses": [
+          {
+            "addressPrefixRange": "\"10.2.0.0/16\"",
+            "rangeEnd": "0a.02.ff.ff",
+            "rangeStart": "0a.02.00.00",
+            "max": "",
+            "min": "",
+            "addressPrefix": "10.2/16",
+            "addressFamily": 1
+          },
+          {
+            "addressPrefixRange": "\"110.112.114.0/24\"",
+            "rangeEnd": "6e.70.72.ff",
+            "rangeStart": "6e.70.72.00",
+            "max": "",
+            "min": "",
+            "addressPrefix": "110.112.114/24",
+            "addressFamily": 1
+          },
+          {
+            "addressPrefixRange": "\"2001:0:200:101::/64\"",
+            "rangeEnd": "2001:0000:0200:0101:ffff:ffff:ffff:ffff",
+            "rangeStart": "2001:0000:0200:0101:0000:0000:0000:0000",
+            "max": "",
+            "min": "",
+            "addressPrefix": "2001:0:200:101/64",
+            "addressFamily": 2
+          }
+        ]
+      },
+      "siaModel": {
+        "critical": false,
+        "signedObject": "rsync://rpki.fzca.com/repository/bottom/rpki-fzca-bottom-1784704862072011507.moa",
+        "caRepository": "",
+        "rpkiNotify": "",
+        "rpkiManifest": ""
+      },
+      "issuerAll": "CN=rpki-fzca-middle",
+      "subjectAll": "CN=rpki-fzca-bottom",
+      "isCa": false,
+      "version": 3,
+      "digestAlgorithm": "SHA256-RSA",
+      "sn": "6a606f55",
+      "notBefore": "2026-07-22T15:21:02+08:00",
+      "notAfter": "2036-07-19T15:21:02+08:00",
+      "keyUsageModel": {
+        "keyUsageValue": "Certificate Sign, CRL Sign",
+        "critical": true,
+        "keyUsage": 1
+      },
+      "extKeyUsages": [],
+      "basicConstraintsValid": false
+    },
+    "aiaModel": {
+      "critical": false,
+      "caIssuers": "rsync://rpki.fzca.com/repository/middle/rpki-fzca-middle.cer"
+    },
+    "siaModel": {
+      "critical": false,
+      "signedObject": "rsync://rpki.fzca.com/repository/bottom/rpki-fzca-bottom-1784704862072011507.moa",
+      "caRepository": "",
+      "rpkiNotify": "",
+      "rpkiManifest": ""
+    },
+    "ipv4Prefixes": [
+      "110.112.114.0/24",
+      "10.2.0.0/16"
+    ],
+    "version": 0,
+    "ski": "f142b67e3c0d555d71cc5199d91a60d5f4c7b82b",
+    "aki": "295dafa87fe33f8036c4b51fae51fd582e8eb8f2",
+    "filePath": "/tmp/ParseFile1184945333/",
+    "fileName": "rpki-fzca-bottom-1784704862072011507.moa",
+    "fileHash": "f20173a4f3c2a142299174c7e5866666230476304099293549f5b0ea39096763",
+    "eContentType": "1.2.840.113549.1.9.16.1.24",
+    "ipv6MappingPrefix": "2001:0:200:101::/64"
   },
   "msg": "",
   "result": "ok"
@@ -395,14 +414,14 @@ $./rpstir2.sh parse ../doc/AS211321.asa | jq .
 You can compile the program by yourself if you have installed GoLang.
 
 ```shell
-$ cd /root/rpki/rpstir2/bin
+$ cd /home/rpki/rpstir2/bin
 $./rpstir2.sh rebuild
 ```
 
 ### 3.10 Help
 
 ```shell
-$ cd /root/rpki/rpstir2/bin
+$ cd /home/rpki/rpstir2/bin
 $./rpstir2.sh help
 ```
 

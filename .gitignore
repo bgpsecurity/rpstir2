@@ -1,8 +1,10 @@
 
 /.settings/*.prefs
 /pkg
-*.sum
 /.vscode/settings.json
 /bin/*.bat
 /src/rpstir2.exe
 /bin/*.exe
+/bin/rpstir2
+/log/rpstir2.log
+/log/nohup.log

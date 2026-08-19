@@ -29,7 +29,7 @@ function startFunc()
 
 function stopFunc()
 {
-  pidhttp=`ps -ef|grep 'rpstir2'|grep -v grep|grep -v 'rpstir2.sh' |awk '{print $2}'`
+  pidhttp=`ps -ef|grep 'rpstir2'|grep -v grep|grep -v 'rpstir2.sh'|grep -v 'rpstir2-rp'|grep -v 'rpstir2-vc' |awk '{print $2}'`
   echo "The current rpstir2 process id is $pidhttp"
   for pid in $pidhttp
   do
@@ -98,8 +98,7 @@ case $1 in
   stop | end | shutdown | shut)
     echo "stop rpstir2 server"
     stopFunc
-    ;;
-  
+    ;;  
   init)
     echo "initialize rpstir2 database"
     echo ${serverHost}":"${serverHttpsPort}
@@ -117,7 +116,7 @@ case $1 in
     curl -s -k -d '{"syncStyle": "sync"}'  -H "Content-type: application/json" -X POST https://${serverHost}:${serverHttpsPort}/entiresync/syncstart
     echo -e "\n"
     ;;
-  crontab )
+  crontab)
     source /etc/profile
     source ~/.bashrc
     echo "start rpstir2 crontab sync"
@@ -125,20 +124,19 @@ case $1 in
     curl -s -k -d '{"syncStyle": "sync"}'  -H "Content-type: application/json" -X POST https://${serverHost}:${serverHttpsPort}/entiresync/syncstart
     echo -e "\n"
     ;; 
-  fullsync ) 
+  fullsync) 
     echo "start rpstir2 fullsync"
     echo ${serverHost}":"${serverHttpsPort}
     curl -v -k -d '{"sysStyle": "fullsync","syncPolicy":"entire"}'  -H "Content-type: application/json" -X POST https://${serverHost}:${serverHttpsPort}/sys/initreset
     echo -e "\n"
-    ;;  
-   
-  state )    
+    ;;     
+  state)    
     #echo "get rpstir2 states"
     #echo ${serverHost}":"${serverHttpsPort}
     curl -s -k -d '{"operate":"get"}'  -H "Content-type: application/json" -X POST https://${serverHost}:${serverHttpsPort}/sys/servicestate
     echo -e "\n"
     ;;   
-  results )    
+  results)    
     #echo "get rpstir2 results"
     #echo ${serverHost}":"${serverHttpsPort}
     curl -s -k -d "" -X POST https://${serverHost}:${serverHttpsPort}/sys/results
